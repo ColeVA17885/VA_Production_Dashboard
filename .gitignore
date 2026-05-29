@@ -1,0 +1,5 @@
+# Only the production board lives in this repo.
+# Everything else in this folder stays local.
+*
+!.gitignore
+!index.html

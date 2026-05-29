@@ -73,10 +73,54 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', syst
 .conn-label { font-size: 0.72rem; color: #64748b; }
 
 /* ── Stats Bar ── */
-.stats-bar { padding: 8px 24px; background: var(--muted); border-bottom: 1px solid var(--border); display: flex; gap: 20px; font-size: 0.78rem; color: var(--muted-foreground); flex-shrink: 0; align-items: center; }
+.stats-bar { padding: 8px 24px; background: var(--muted); border-bottom: 1px solid var(--border); display: flex; gap: 16px; font-size: 0.78rem; color: var(--muted-foreground); flex-shrink: 0; align-items: center; flex-wrap: wrap; }
 .stat-item { display: flex; align-items: center; gap: 6px; }
 .stat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .stats-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.stat-divider { width: 1px; height: 16px; background: var(--border); margin: 0 2px; }
+.stat-label { font-weight: 600; color: var(--foreground); font-size: 0.75rem; }
+.stat-stage { background: var(--background); border: 1px solid var(--border); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; }
+.stat-stage strong { color: var(--foreground); font-weight: 600; }
+.stat-stage-label { color: var(--muted-foreground); }
+
+/* ── Card days-open badge ── */
+.card-days { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 9999px; background: var(--secondary); color: var(--muted-foreground); font-size: 0.68rem; font-weight: 600; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.card-days.warn { background: #fef3c7; color: #854d0e; }
+.card-days.bad  { background: #fee2e2; color: #991b1b; }
+
+/* ── Filter chips bar ── */
+.filter-bar { padding: 10px 24px; background: var(--background); border-bottom: 1px solid var(--border); display: flex; gap: 6px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+.filter-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 9999px; border: 1px solid var(--border); background: var(--background); color: var(--muted-foreground); font-family: inherit; font-size: 0.78rem; font-weight: 500; cursor: pointer; transition: all 0.12s; }
+.filter-chip:hover { background: var(--accent); color: var(--foreground); }
+.filter-chip.active { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.filter-chip-count { font-size: 0.68rem; padding: 0 5px; border-radius: 9999px; background: rgba(0,0,0,0.08); }
+.filter-chip.active .filter-chip-count { background: rgba(255,255,255,0.2); }
+.filter-select { padding: 4px 26px 4px 11px; border-radius: 9999px; border: 1px solid var(--border); background: var(--background); color: var(--muted-foreground); font-family: inherit; font-size: 0.78rem; font-weight: 500; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; }
+.filter-select.active { background-color: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.filter-label { font-size: 0.72rem; color: var(--muted-foreground); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 4px; }
+.filter-clear { font-size: 0.72rem; color: var(--muted-foreground); background: none; border: none; cursor: pointer; padding: 4px 8px; font-family: inherit; }
+.filter-clear:hover { color: var(--foreground); text-decoration: underline; }
+
+/* ── Dashboard ── */
+.dashboard { padding: 24px; overflow-y: auto; flex: 1; background: var(--muted); }
+.dash-grid { display: grid; gap: 16px; max-width: 1280px; margin: 0 auto; }
+.dash-kpi-row { grid-template-columns: repeat(4, 1fr); display: grid; gap: 16px; }
+.dash-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm); }
+.dash-card h3 { font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.dash-kpi-value { font-size: 2rem; font-weight: 700; color: var(--foreground); letter-spacing: -0.02em; line-height: 1.1; }
+.dash-kpi-sub { font-size: 0.78rem; color: var(--muted-foreground); margin-top: 4px; }
+.dash-row-2 { display: grid; gap: 16px; grid-template-columns: 2fr 1fr; }
+.dash-table { width: 100%; font-size: 0.875rem; }
+.dash-table th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground); font-weight: 600; padding: 6px 8px 8px; border-bottom: 1px solid var(--border); }
+.dash-table td { padding: 8px; border-bottom: 1px solid var(--border); }
+.dash-table tr:last-child td { border-bottom: none; }
+.dash-table td.num { text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.dash-bar { height: 6px; background: var(--secondary); border-radius: 9999px; overflow: hidden; margin-top: 4px; }
+.dash-bar-fill { height: 100%; background: var(--primary); border-radius: 9999px; transition: width 0.4s; }
+@media (max-width: 900px) {
+  .dash-kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .dash-row-2 { grid-template-columns: 1fr; }
+}
 
 /* ── Loading screen ── */
 .loading-screen { position: fixed; inset: 0; background: var(--background); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 999; transition: opacity 0.4s; }
@@ -303,6 +347,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     <div class="mode-tabs">
       <button class="mode-tab active" id="tabProduction" onclick="switchMode('production')">Production</button>
       <button class="mode-tab" id="tabService" onclick="switchMode('service')">Service</button>
+      <button class="mode-tab" id="tabDashboard" onclick="switchMode('dashboard')">Dashboard</button>
     </div>
   </div>
   <div class="header-actions">
@@ -317,8 +362,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   <span class="stat-item"><span class="conn-dot loading" id="connDot"></span><span class="conn-label" id="connLabel">Connecting…</span></span>
 </div>
 
+<!-- ─── Filter Bar ─────────────────────────────────────────────────────────── -->
+<div class="filter-bar" id="filterBar"></div>
+
 <!-- ─── Board ─────────────────────────────────────────────────────────────── -->
 <div class="board-container" id="boardContainer"></div>
+
+<!-- ─── Dashboard View ─────────────────────────────────────────────────────── -->
+<div class="dashboard" id="dashboardView" style="display:none"></div>
 
 <!-- ─── New / Edit Ticket Modal ───────────────────────────────────────────── -->
 <div class="overlay" id="ticketOverlay" onclick="overlayClick(event,'ticketOverlay')">
@@ -430,6 +481,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     <div class="modal-ftr" style="justify-content:space-between">
       <button class="btn btn-secondary" onclick="closeOverlay('detailOverlay')">Close</button>
       <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" id="detailLabelBtn">&#127991; Print Label</button>
         <button class="btn btn-secondary" id="detailExportBtn">&#128438; Export Packing List</button>
         <button class="btn btn-primary" id="detailEditBtn">Edit Ticket</button>
       </div>
@@ -533,6 +585,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
       <div id="catalogBody"></div>
     </div>
     <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="cleanupCatalog()" title="Auto-strip marketing lines like 'NDAA Compliant Bundle'">&#10024; Clean Up</button>
       <button class="btn btn-secondary" onclick="addCatalogEntry()">+ Add Part Number</button>
       <button class="btn btn-primary" onclick="saveCatalog()">Save Catalog</button>
     </div>
@@ -1104,15 +1157,15 @@ const DEFAULT_CATALOG = {
 
 // ─── Stage Config ───────────────────────────────────────────────────────────
 const STAGES = [
-  { id:'initial',  label:'Initial Order',  cls:'col-initial'  },
-  { id:'kitting',  label:'Kitting',         cls:'col-kitting'  },
-  { id:'ordering', label:'Ordering Parts',  cls:'col-ordering' },
-  { id:'kitted',   label:'Kitted',          cls:'col-kitted'   },
-  { id:'wip',      label:'WIP',             cls:'col-wip'      },
-  { id:'testing',  label:'FCF / Testing',   cls:'col-testing'  },
-  { id:'mock',     label:'Mock',            cls:'col-mock'     },
-  { id:'shipping', label:'Shipping',        cls:'col-shipping' },
-  { id:'shipped',  label:'Fully Shipped',   cls:'col-shipped'  },
+  { id:'initial',  label:'Initial Order',  shortLabel:'Initial',  cls:'col-initial'  },
+  { id:'kitting',  label:'Kitting',         shortLabel:'Kitting',  cls:'col-kitting'  },
+  { id:'ordering', label:'Ordering Parts',  shortLabel:'Ordering', cls:'col-ordering' },
+  { id:'kitted',   label:'Kitted',          shortLabel:'Kitted',   cls:'col-kitted'   },
+  { id:'wip',      label:'WIP',             shortLabel:'WIP',      cls:'col-wip'      },
+  { id:'testing',  label:'FCF / Testing',   shortLabel:'FCF',      cls:'col-testing'  },
+  { id:'mock',     label:'Mock',            shortLabel:'Mock',     cls:'col-mock'     },
+  { id:'shipping', label:'Shipping',        shortLabel:'Shipping', cls:'col-shipping' },
+  { id:'shipped',  label:'Fully Shipped',   shortLabel:'Shipped',  cls:'col-shipped'  },
 ];
 
 const SERVICE_STAGES = [
@@ -1141,6 +1194,7 @@ let dragSrcId = null;
 let initialLoadDone = false;
 let svcLoadDone = false;
 let shippedCollapsed = (() => { try { return localStorage.getItem('shippedCollapsed') === '1'; } catch(err) { return false; } })();
+let filters = { quick: null, customer: '', bird: '' }; // quick: 'urgent'|'overdue'|'duesoon'|'thisweek'|null
 
 // ─── Firebase Helpers ────────────────────────────────────────────────────────
 function fbSetTicket(ticket) {
@@ -1268,14 +1322,20 @@ function renderBoard() {
     return;
   }
 
+  renderFilterBar();
+  const today = new Date(); today.setHours(0,0,0,0);
+
   STAGES.forEach(st => {
-    const stTickets = tickets.filter(t => t.stage === st.id && (!q ||
-      t.title.toLowerCase().includes(q) ||
-      (t.orderNum||'').toLowerCase().includes(q) ||
-      (t.accessories||'').toLowerCase().includes(q) ||
-      (t.partIds||[]).join(' ').toLowerCase().includes(q) ||
-      (t.notes||'').toLowerCase().includes(q)
-    ));
+    const stTickets = tickets.filter(t => t.stage === st.id
+      && (!q ||
+        (t.company||t.title||'').toLowerCase().includes(q) ||
+        (t.orderNum||'').toLowerCase().includes(q) ||
+        (t.accessories||'').toLowerCase().includes(q) ||
+        (t.partIds||[]).join(' ').toLowerCase().includes(q) ||
+        (t.notes||'').toLowerCase().includes(q)
+      )
+      && passesFilters(t, today)
+    );
     const isCollapsible = st.id === 'shipped';
     const collapsed = isCollapsible && shippedCollapsed;
     const col = document.createElement('div');
@@ -1302,11 +1362,219 @@ function renderBoard() {
   renderStats();
 }
 
+function passesFilters(t, today) {
+  if (filters.customer && (t.company||t.title||'') !== filters.customer) return false;
+  if (filters.bird && t.bird !== filters.bird) return false;
+  if (!filters.quick) return true;
+  const dc = dlClass(t.deadline);
+  if (filters.quick === 'urgent')   return t.priority === 'urgent';
+  if (filters.quick === 'overdue')  return t.deadline && new Date(t.deadline+'T00:00:00') < today && t.stage !== 'shipped';
+  if (filters.quick === 'duesoon')  return dc === 'dl-urgent' || dc === 'dl-warn';
+  if (filters.quick === 'recent')   return t.createdAt && (Date.now() - new Date(t.createdAt).getTime()) < 7*86400000;
+  return true;
+}
+
+function renderFilterBar() {
+  const bar = document.getElementById('filterBar');
+  if (!bar || appMode !== 'production') return;
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Counts for chips
+  const urgent  = tickets.filter(t => t.priority === 'urgent' && t.stage !== 'shipped').length;
+  const overdue = tickets.filter(t => t.deadline && new Date(t.deadline+'T00:00:00') < today && t.stage !== 'shipped').length;
+  const duesoon = tickets.filter(t => { const c=dlClass(t.deadline); return (c==='dl-urgent'||c==='dl-warn') && t.stage !== 'shipped'; }).length;
+
+  // Dynamic dropdown options from existing tickets (active only)
+  const activeTickets = tickets.filter(t => t.stage !== 'shipped');
+  const customers = [...new Set(activeTickets.map(t => t.company||t.title).filter(Boolean))].sort();
+  const birds     = [...new Set(activeTickets.map(t => t.bird).filter(Boolean))].sort();
+
+  const chip = (key, label, count) => `<button class="filter-chip ${filters.quick===key?'active':''}" onclick="setFilter('quick','${key}')">${label}${count!=null?`<span class="filter-chip-count">${count}</span>`:''}</button>`;
+
+  const anyActive = filters.quick || filters.customer || filters.bird;
+
+  bar.innerHTML = `
+    <span class="filter-label">Filter</span>
+    <button class="filter-chip ${!anyActive?'active':''}" onclick="clearFilters()">All</button>
+    ${chip('urgent',  'Urgent',   urgent)}
+    ${chip('overdue', 'Overdue',  overdue)}
+    ${chip('duesoon', 'Due Soon', duesoon)}
+    ${chip('recent',  'New (7d)', null)}
+    <select class="filter-select ${filters.customer?'active':''}" onchange="setFilter('customer',this.value)">
+      <option value="">Any Customer</option>
+      ${customers.map(c => `<option value="${esc(c)}" ${filters.customer===c?'selected':''}>${esc(c)}</option>`).join('')}
+    </select>
+    <select class="filter-select ${filters.bird?'active':''}" onchange="setFilter('bird',this.value)">
+      <option value="">Any Bird</option>
+      ${birds.map(b => `<option value="${esc(b)}" ${filters.bird===b?'selected':''}>${esc(b)}</option>`).join('')}
+    </select>
+    ${anyActive ? `<button class="filter-clear" onclick="clearFilters()">✕ Clear</button>` : ''}
+  `;
+}
+
+function setFilter(key, val) {
+  if (key === 'quick') filters.quick = (filters.quick === val) ? null : val;
+  else filters[key] = val;
+  renderBoard();
+}
+
+function clearFilters() {
+  filters = { quick: null, customer: '', bird: '' };
+  renderBoard();
+}
+
 function toggleShipped(e) {
   e.stopPropagation();
   shippedCollapsed = !shippedCollapsed;
   try { localStorage.setItem('shippedCollapsed', shippedCollapsed ? '1' : '0'); } catch(err) {}
   renderBoard();
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const now = Date.now();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const wip = tickets.filter(t => t.stage !== 'shipped').length;
+
+  // Throughput windows
+  const tput = (days) => tickets.filter(t => {
+    const sa = getShippedAt(t);
+    return sa && (now - sa.getTime()) <= days*86400000;
+  }).length;
+  const tp7  = tput(7);
+  const tp30 = tput(30);
+
+  // On-time rate (shipped tickets with deadline, completed on or before)
+  const shippedWithDl = tickets.filter(t => t.stage==='shipped' && t.deadline && getShippedAt(t));
+  const onTime = shippedWithDl.filter(t => getShippedAt(t) <= new Date(t.deadline+'T23:59:59'));
+  const onTimePct = shippedWithDl.length ? Math.round((onTime.length / shippedWithDl.length) * 100) : null;
+
+  // Avg cycle time
+  const done = tickets.filter(t => t.stage==='shipped' && t.createdAt && getShippedAt(t));
+  let avgCycle = '—';
+  if (done.length) {
+    const ms = done.reduce((s,t) => s + (getShippedAt(t) - new Date(t.createdAt)), 0) / done.length;
+    avgCycle = (ms / 86400000).toFixed(1) + ' days';
+  }
+
+  // Stage cycle times (skip shipping/shipped)
+  const stageRows = STAGES.filter(s => s.id !== 'shipping' && s.id !== 'shipped')
+    .map(s => ({ label: s.label, id: s.id, days: avgDaysInStage(s.id) }));
+  const maxStage = Math.max(0.1, ...stageRows.map(r => r.days || 0));
+
+  // Bottleneck = longest active ticket (in any in-progress stage)
+  let bottleneck = null;
+  tickets.forEach(t => {
+    if (t.stage === 'shipped') return;
+    const lastMove = (t.history && t.history.length) ? new Date(t.history[t.history.length-1].at).getTime() : (t.createdAt ? new Date(t.createdAt).getTime() : null);
+    if (!lastMove) return;
+    const stuckMs = now - lastMove;
+    if (!bottleneck || stuckMs > bottleneck.stuckMs) bottleneck = { t, stuckMs };
+  });
+
+  // Recent activity (last 8 stage moves)
+  const recent = [];
+  tickets.forEach(t => (t.history||[]).forEach(h => recent.push({ t, h })));
+  recent.sort((a,b) => new Date(b.h.at) - new Date(a.h.at));
+  const recentTop = recent.slice(0, 8);
+
+  // Top customers by volume (all-time)
+  const custCount = {};
+  tickets.forEach(t => { const c = t.company||t.title; if (c) custCount[c] = (custCount[c]||0) + 1; });
+  const topCustomers = Object.entries(custCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  // Overdue & urgent counts
+  const overdue = tickets.filter(t => t.deadline && new Date(t.deadline+'T00:00:00') < today && t.stage !== 'shipped').length;
+  const urgent  = tickets.filter(t => t.priority === 'urgent' && t.stage !== 'shipped').length;
+
+  const onTimeTone = onTimePct == null ? '' : onTimePct >= 90 ? 'color:#16a34a' : onTimePct >= 70 ? 'color:#d97706' : 'color:#dc2626';
+
+  document.getElementById('dashboardView').innerHTML = `
+    <div class="dash-grid">
+      <div class="dash-kpi-row">
+        <div class="dash-card"><h3>WIP</h3><div class="dash-kpi-value">${wip}</div><div class="dash-kpi-sub">Active tickets</div></div>
+        <div class="dash-card"><h3>Throughput</h3><div class="dash-kpi-value">${tp7}</div><div class="dash-kpi-sub">Shipped last 7 days · ${tp30} last 30d</div></div>
+        <div class="dash-card"><h3>On-Time Rate</h3><div class="dash-kpi-value" style="${onTimeTone}">${onTimePct==null?'—':onTimePct+'%'}</div><div class="dash-kpi-sub">${shippedWithDl.length} shipped w/ deadline</div></div>
+        <div class="dash-card"><h3>Avg Cycle Time</h3><div class="dash-kpi-value">${avgCycle}</div><div class="dash-kpi-sub">${done.length} completed builds</div></div>
+      </div>
+
+      <div class="dash-row-2">
+        <div class="dash-card">
+          <h3>Average Time per Stage</h3>
+          <table class="dash-table">
+            <thead><tr><th>Stage</th><th style="text-align:right">Avg</th><th></th></tr></thead>
+            <tbody>
+              ${stageRows.map(r => `
+                <tr>
+                  <td>${r.label}</td>
+                  <td class="num">${fmtDays(r.days)}</td>
+                  <td style="width:40%"><div class="dash-bar"><div class="dash-bar-fill" style="width:${r.days?Math.min(100,(r.days/maxStage)*100):0}%"></div></div></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="dash-card">
+          <h3>Attention</h3>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <div class="dash-kpi-sub">Overdue</div>
+              <div style="font-size:1.5rem;font-weight:700;color:${overdue>0?'#dc2626':'#16a34a'}">${overdue}</div>
+            </div>
+            <div>
+              <div class="dash-kpi-sub">Urgent priority</div>
+              <div style="font-size:1.5rem;font-weight:700;color:${urgent>0?'#d97706':'var(--foreground)'}">${urgent}</div>
+            </div>
+            ${bottleneck ? `
+            <div>
+              <div class="dash-kpi-sub">Longest-stuck ticket</div>
+              <div style="font-weight:600;margin-top:2px">${esc(bottleneck.t.company||bottleneck.t.title||'')}</div>
+              <div class="dash-kpi-sub">${fmtDays(bottleneck.stuckMs/86400000)} in ${STAGES.find(s=>s.id===bottleneck.t.stage)?.label||bottleneck.t.stage}</div>
+            </div>` : ''}
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-row-2">
+        <div class="dash-card">
+          <h3>Recent Activity</h3>
+          ${recentTop.length === 0 ? '<div class="dash-kpi-sub">No stage changes yet.</div>' : `
+          <table class="dash-table">
+            <tbody>
+              ${recentTop.map(({t,h}) => {
+                const from = STAGES.find(s=>s.id===h.from)?.label||h.from;
+                const to   = STAGES.find(s=>s.id===h.to)?.label||h.to;
+                const when = timeAgo(new Date(h.at).getTime());
+                return `<tr>
+                  <td><strong>${esc(t.company||t.title||'')}</strong> <span class="dash-kpi-sub">${esc(t.orderNum||'')}</span></td>
+                  <td class="dash-kpi-sub">${from} → <strong style="color:var(--foreground)">${to}</strong></td>
+                  <td class="num dash-kpi-sub">${when}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>`}
+        </div>
+        <div class="dash-card">
+          <h3>Top Customers</h3>
+          ${topCustomers.length === 0 ? '<div class="dash-kpi-sub">No tickets yet.</div>' : `
+          <table class="dash-table">
+            <tbody>
+              ${topCustomers.map(([name, n]) => `
+                <tr><td>${esc(name)}</td><td class="num">${n}</td></tr>`).join('')}
+            </tbody>
+          </table>`}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function timeAgo(ms) {
+  const d = (Date.now() - ms) / 1000;
+  if (d < 60) return 'just now';
+  if (d < 3600) return Math.floor(d/60) + 'm ago';
+  if (d < 86400) return Math.floor(d/3600) + 'h ago';
+  if (d < 7*86400) return Math.floor(d/86400) + 'd ago';
+  return new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
 
 function buildCard(t) {
@@ -1331,6 +1599,11 @@ function buildCard(t) {
     ? `<div class="card-acc-label">Accessories</div><div class="card-acc">${esc(t.accessories)}</div>`
     : '';
 
+  const dOpen = daysOpen(t);
+  const daysCls = dOpen >= 30 ? 'bad' : dOpen >= 14 ? 'warn' : '';
+  const daysBadge = t.createdAt && t.stage !== 'shipped'
+    ? `<span class="card-days ${daysCls}" title="Open ${dOpen} day${dOpen===1?'':'s'} since creation">${dOpen}d</span>` : '';
+
   el.innerHTML = `
     <div class="card-top">
       <div class="card-title">${esc(t.company||t.title||'')}</div>
@@ -1344,7 +1617,10 @@ function buildCard(t) {
     ${t.orderNum?`<div class="card-order"><span class="card-order-label">SN: </span>${esc(t.orderNum)}</div>`:''}
     ${accHTML}
     <div class="card-footer">
-      ${dc?`<span class="card-deadline ${dc}">${dl}</span>`:'<span class="dl-none">No deadline</span>'}
+      <div style="display:flex;gap:6px;align-items:center">
+        ${dc?`<span class="card-deadline ${dc}">${dl}</span>`:'<span class="dl-none">No deadline</span>'}
+        ${daysBadge}
+      </div>
       <span class="card-priority ${pc}">${pl}</span>
     </div>`;
   return el;
@@ -1388,25 +1664,42 @@ function getShippedAt(t) {
   return new Date(entries[entries.length-1].at);
 }
 
+function daysOpen(t) {
+  if (!t.createdAt) return 0;
+  return Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 86400000);
+}
+
+// Average days tickets spent in `stageId` (only counts completed transitions out of it)
+function avgDaysInStage(stageId) {
+  const durations = [];
+  tickets.forEach(t => {
+    if (!t.createdAt) return;
+    const startStage = (t.history && t.history[0]?.from) || t.stage;
+    const events = [{ stage: startStage, at: new Date(t.createdAt).getTime() }];
+    (t.history||[]).forEach(h => events.push({ stage: h.to, at: new Date(h.at).getTime() }));
+    for (let i = 0; i < events.length - 1; i++) {
+      if (events[i].stage === stageId) durations.push(events[i+1].at - events[i].at);
+    }
+  });
+  if (!durations.length) return null;
+  return (durations.reduce((a,b)=>a+b,0) / durations.length) / 86400000;
+}
+
+function fmtDays(d) {
+  if (d == null) return '—';
+  if (d < 1) return '<1d';
+  return Math.round(d) + 'd';
+}
+
 function renderStats() {
-  const today = new Date(); today.setHours(0,0,0,0);
   const now = new Date();
-  const total = tickets.length;
-  const shipped = tickets.filter(t=>t.stage==='shipped').length;
-  const inProg = total - shipped;
-  const overdue = tickets.filter(t=>t.deadline && new Date(t.deadline+'T00:00:00')<today && t.stage!=='shipped').length;
-  const urgent = tickets.filter(t=>{ const d=dlClass(t.deadline); return d==='dl-urgent'||d==='dl-warn'; }).length;
+  const inProg = tickets.filter(t => t.stage !== 'shipped').length;
 
   // ── Units shipped in past 30 days ──────────────────────────────────────────
   const monthAgo = new Date(now.getTime() - 30*24*3600000);
   const recentShippedTickets = tickets.filter(t => { const sa=getShippedAt(t); return sa && sa>=monthAgo; });
-  const unitsShipped30 = recentShippedTickets.reduce((sum,t) => {
-    return sum + (t.partIds||[]).reduce((s,id) => s + ((t.partQtys||{})[id] || 1), 0);
-  }, 0);
-
-  // ── Tickets moved to Fully Shipped this calendar month ─────────────────────
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const shippedThisMonth = tickets.filter(t => { const sa=getShippedAt(t); return sa && sa>=startOfMonth; }).length;
+  const unitsShipped30 = recentShippedTickets.reduce((sum,t) =>
+    sum + (t.partIds||[]).reduce((s,id) => s + ((t.partQtys||{})[id] || 1), 0), 0);
 
   // ── Avg time open before Fully Shipped (weeks, nearest 0.5) ───────────────
   const doneTickets = tickets.filter(t => t.stage==='shipped' && t.createdAt && getShippedAt(t));
@@ -1418,19 +1711,22 @@ function renderStats() {
     avgWeeksStr = rounded === 1 ? '1 wk' : `${rounded} wks`;
   }
 
+  // ── Per-stage avg time (skip shipping + shipped) ───────────────────────────
+  const stageAvgs = STAGES
+    .filter(s => s.id !== 'shipping' && s.id !== 'shipped')
+    .map(s => ({ label: s.shortLabel || s.label, days: avgDaysInStage(s.id) }));
+
   const dot = document.getElementById('connDot');
   const lbl = document.getElementById('connLabel');
-  const monthName = now.toLocaleDateString('en-US',{month:'short'});
 
   document.getElementById('statsBar').innerHTML = `
     <span class="stat-item"><span class="conn-dot ${dot?.classList.contains('online')?'online':dot?.classList.contains('offline')?'offline':'loading'}" id="connDot"></span><span class="conn-label" id="connLabel">${lbl?.textContent||'Connecting…'}</span></span>
-    <span class="stat-item"><span class="stat-dot" style="background:#0f172a"></span>Total <strong style="color:#0f172a;font-weight:600">${total}</strong></span>
     <span class="stat-item"><span class="stat-dot" style="background:#3b82f6"></span>In Progress <strong style="color:#0f172a;font-weight:600">${inProg}</strong></span>
     <span class="stat-item"><span class="stat-dot" style="background:#16a34a"></span>Units Shipped (30d) <strong style="color:#166534;font-weight:600">${unitsShipped30}</strong></span>
-    <span class="stat-item"><span class="stat-dot" style="background:#06b6d4"></span>Shipped ${monthName} <strong style="color:#0e7490;font-weight:600">${shippedThisMonth}</strong></span>
     <span class="stat-item"><span class="stat-dot" style="background:#8b5cf6"></span>Avg to Ship <strong style="color:#6d28d9;font-weight:600">${avgWeeksStr}</strong></span>
-    ${overdue?`<span class="stat-item"><span class="stat-dot" style="background:#ef4444"></span>Overdue <strong style="color:#991b1b;font-weight:600">${overdue}</strong></span>`:''}
-    ${urgent&&!overdue?`<span class="stat-item"><span class="stat-dot" style="background:#f59e0b"></span>Due Soon <strong style="color:#854d0e;font-weight:600">${urgent}</strong></span>`:''}
+    <span class="stat-divider"></span>
+    <span class="stat-label">Avg by Stage:</span>
+    ${stageAvgs.map(s => `<span class="stat-item stat-stage" title="Avg days in ${s.label}"><span class="stat-stage-label">${s.label}</span> <strong>${fmtDays(s.days)}</strong></span>`).join('')}
   `;
 }
 
@@ -1489,6 +1785,27 @@ function switchMode(mode) {
   appMode = mode;
   document.getElementById('tabProduction').classList.toggle('active', mode==='production');
   document.getElementById('tabService').classList.toggle('active', mode==='service');
+  document.getElementById('tabDashboard').classList.toggle('active', mode==='dashboard');
+
+  // Toggle visibility: board vs dashboard
+  const boardEl = document.getElementById('boardContainer');
+  const dashEl  = document.getElementById('dashboardView');
+  const statsEl = document.getElementById('statsBar');
+  const filterEl= document.getElementById('filterBar');
+  if (mode === 'dashboard') {
+    boardEl.style.display = 'none';
+    dashEl.style.display = 'block';
+    statsEl.style.display = 'none';
+    filterEl.style.display = 'none';
+    document.getElementById('newTicketBtn').style.display = 'none';
+    renderDashboard();
+    return;
+  }
+  boardEl.style.display = '';
+  dashEl.style.display = 'none';
+  statsEl.style.display = '';
+  filterEl.style.display = mode==='service' ? 'none' : '';
+  document.getElementById('newTicketBtn').style.display = '';
   document.getElementById('newTicketBtn').textContent = mode==='service' ? '+ New RMA' : '+ New Ticket';
   const catalogBtn = document.getElementById('catalogBtn');
   if (catalogBtn) catalogBtn.style.display = mode==='service' ? 'none' : 'block';
@@ -1751,6 +2068,7 @@ function openDetail(id) {
   document.getElementById('detailTitle').innerHTML = esc(t.company||t.title||'');
   document.getElementById('detailEditBtn').onclick = () => { closeOverlay('detailOverlay'); openTicketModal(null, id); };
   document.getElementById('detailExportBtn').onclick = () => exportPackingList(id);
+  document.getElementById('detailLabelBtn').onclick = () => printLabel(id);
 
   const stageName = STAGES.find(s=>s.id===t.stage)?.label || t.stage;
   const dc = dlClass(t.deadline);
@@ -1905,6 +2223,45 @@ function toggleCompCheck(ticketId, index) {
   if (progBar)  progBar.style.width = pct + '%';
 
   fbSetTicket(t);
+}
+
+// ─── Print Serial Label (2"x1" tag) ───────────────────────────────────────────
+function printLabel(id) {
+  const t = tickets.find(x => x.id === id);
+  if (!t) return;
+  const customer = (t.company || t.title || '').replace(/</g,'&lt;');
+  const sn = (t.orderNum || '').replace(/</g,'&lt;');
+  const bird = (t.bird || '').replace(/</g,'&lt;');
+  const birdQty = t.birdQty && t.birdQty > 1 ? `${t.birdQty}× ` : '';
+  const printed = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Label — ${sn || customer}</title>
+<style>
+  @page { size: 2in 1in; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #000; }
+  .label { width: 2in; height: 1in; padding: 0.08in 0.1in; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; }
+  .customer { font-size: 11pt; font-weight: 800; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bird { font-size: 7pt; color: #444; }
+  .sn { font-family: 'Courier New', monospace; font-size: 10pt; font-weight: 700; letter-spacing: 0.5px; }
+  .footer { display: flex; justify-content: space-between; font-size: 6pt; color: #666; }
+  .va { font-weight: 700; color: #000; }
+  @media screen { body { background: #ddd; padding: 20px; } .label { background: white; border: 1px solid #999; margin: 0 auto 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); } }
+</style></head><body>
+  <div class="label">
+    <div>
+      <div class="customer">${customer || '—'}</div>
+      ${bird ? `<div class="bird">${birdQty}${bird}</div>` : ''}
+    </div>
+    ${sn ? `<div class="sn">SN: ${sn}</div>` : ''}
+    <div class="footer"><span class="va">✈ Vision Aerial</span><span>${printed}</span></div>
+  </div>
+  <script>setTimeout(() => window.print(), 300);<\/script>
+</body></html>`;
+
+  const w = window.open('', '_blank', 'width=400,height=300');
+  if (w) { w.document.write(html); w.document.close(); }
 }
 
 // ─── Export Packing List ──────────────────────────────────────────────────────
@@ -2094,6 +2451,78 @@ function saveCatalog() {
   catalog = newCat;
   fbSetCatalog(catalog); // → saves to Firebase for all users
   closeOverlay('catalogOverlay');
+}
+
+// ─── Catalog Bulk Cleanup ────────────────────────────────────────────────────
+// Lines matching any of these patterns (case-insensitive) will be removed from
+// every catalog entry's components. Add/remove patterns as needed.
+const CATALOG_FLUFF_PATTERNS = [
+  /^NDAA\s*Compliant\s*Bundle\.?$/i,
+  /^Demo\s*Bundle\.?$/i,
+  /^Made\s*in\s*America\.?$/i,
+  /^Camera\s*&?\s*Lens\s*Only,?\s*No\s*Mounting,?\s*No\s*Aircraft\.?$/i,
+  /^Sensor\s*Only,?\s*No\s*Mounting(,?\s*No\s*Aircraft)?\.?$/i,
+  /\(PPS\)/i,                       // tag "(PPS)" appearing alone or in headers
+  /^Customer:?\s*$/i,
+  /^Notes?:?\s*$/i,
+];
+
+function cleanupCatalog() {
+  // Operate on the live DOM so the user can review before saving.
+  const entries = document.querySelectorAll('.catalog-entry');
+  const removed = {};      // pattern label → count
+  const dupHeaders = [];   // entries where a header duplicated the name
+  let totalRemoved = 0;
+
+  entries.forEach(el => {
+    const name = el.querySelector('.cat-name').value.trim();
+    const ta = el.querySelector('.cat-comps');
+    const lines = ta.value.split('\n').map(s=>s.trim()).filter(Boolean);
+
+    const kept = lines.filter(line => {
+      // Strip lines matching any fluff pattern
+      for (const re of CATALOG_FLUFF_PATTERNS) {
+        if (re.test(line)) {
+          const key = re.source;
+          removed[key] = (removed[key]||0) + 1;
+          totalRemoved++;
+          return false;
+        }
+      }
+      // Strip lines that are literally the same as the part name (header repetition)
+      if (name && line.toLowerCase() === name.toLowerCase()) {
+        dupHeaders.push(name);
+        totalRemoved++;
+        return false;
+      }
+      return true;
+    });
+
+    // De-dupe within entry (keeps first occurrence)
+    const seen = new Set();
+    const deduped = kept.filter(l => {
+      const k = l.toLowerCase();
+      if (seen.has(k)) { totalRemoved++; return false; }
+      seen.add(k); return true;
+    });
+
+    ta.value = deduped.join('\n');
+  });
+
+  if (totalRemoved === 0) {
+    alert('Catalog is already clean — no fluff lines found.');
+    return;
+  }
+
+  const summary = [
+    `Removed ${totalRemoved} line(s) across ${entries.length} entries:`,
+    ...Object.entries(removed).map(([pat,n]) => `  • ${n}× matching "${pat.replace(/\\\.?\\\?\$/,'').replace(/\^|\$/g,'').replace(/\\s\*/g,' ').replace(/\\\?/g,'?')}"`),
+    dupHeaders.length ? `  • ${dupHeaders.length}× duplicate name-as-header` : '',
+    '',
+    'Review the changes in the modal, then click "Save Catalog" to apply.',
+    '(Cancel just discards — your saved catalog is untouched until you Save.)'
+  ].filter(Boolean).join('\n');
+  alert(summary);
 }
 
 // ─── Overlay helpers ─────────────────────────────────────────────────────────
