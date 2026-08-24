@@ -1,0 +1,23 @@
+rules_version = '2';
+
+// Only the two authorized users may read/write tasks.
+// Replace the two UIDs below with the same values you paste into index.html.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthorized() {
+      return request.auth != null && (
+        request.auth.uid == "a8gMRWQko4duduqBELcWwIni4sP2" ||
+        request.auth.uid == "QNMXBvA2z8QdM2Qh4CYzaR0Yr3h2"
+      );
+    }
+
+    match /tasks/{taskId} {
+      allow read, write: if isAuthorized();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

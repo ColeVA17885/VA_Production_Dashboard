@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#1f2937" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<title>Tech Tasks</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-2: #273449;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --success: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --high: #ef4444;
+    --med: #f59e0b;
+    --low: #64748b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* Login */
+  #loginScreen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .login-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    width: 100%;
+    max-width: 380px;
+  }
+  .login-card h1 { margin: 0 0 4px; font-size: 24px; }
+  .login-card p.sub { margin: 0 0 24px; color: var(--muted); font-size: 14px; }
+  .login-card label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
+  .login-card input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+  }
+  .login-card input:focus { outline: none; border-color: var(--accent); }
+  .login-card button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 11px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .login-card button:hover { background: var(--accent-hover); }
+  .login-card button:disabled { opacity: 0.6; cursor: not-allowed; }
+  #loginError { margin-top: 12px; color: var(--danger); font-size: 13px; min-height: 18px; }
+
+  /* App */
+  #app { display: none; min-height: 100vh; flex-direction: column; }
+  header {
+    padding: 12px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 { margin: 0; font-size: 18px; }
+  header .role-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  header .spacer { flex: 1; }
+  header .who { font-size: 13px; color: var(--muted); }
+  header .logout {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  header .logout:hover { background: var(--panel-2); }
+
+  main {
+    flex: 1;
+    padding: 20px;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Owner: add form */
+  .add-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .add-card h2 { margin: 0 0 12px; font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .add-card .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .add-card input[type=text] {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+  }
+  .add-card select {
+    padding: 10px 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+  }
+  .add-card input:focus, .add-card select:focus { outline: none; border-color: var(--accent); }
+  .add-card button {
+    padding: 10px 18px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .add-card button:hover { background: var(--accent-hover); }
+
+  /* Filter tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+  }
+  .tab {
+    flex: 1;
+    padding: 8px 12px;
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+  }
+  .tab.active { background: var(--panel-2); color: var(--text); }
+  .tab .count { opacity: 0.6; font-size: 12px; margin-left: 4px; }
+
+  /* Task list */
+  .task-list { display: flex; flex-direction: column; gap: 8px; }
+  .task {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--low);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .task.priority-high { border-left-color: var(--high); }
+  .task.priority-med { border-left-color: var(--med); }
+  .task.priority-low { border-left-color: var(--low); }
+  .task.status-done { opacity: 0.6; }
+  .task.status-done .task-title { text-decoration: line-through; }
+
+  .task-top { display: flex; align-items: flex-start; gap: 10px; }
+  .task-title {
+    flex: 1;
+    font-size: 15px;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .task-meta {
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .task-meta .chip {
+    padding: 2px 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .task-meta .chip.high { color: var(--high); border-color: rgba(239,68,68,0.4); }
+  .task-meta .chip.med { color: var(--med); border-color: rgba(245,158,11,0.4); }
+  .task-meta .chip.low { color: var(--muted); }
+
+  .task-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .task-actions button {
+    padding: 6px 12px;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .task-actions button:hover { background: var(--border); }
+  .task-actions button.primary { background: var(--accent); border-color: var(--accent); }
+  .task-actions button.primary:hover { background: var(--accent-hover); }
+  .task-actions button.success { background: var(--success); border-color: var(--success); }
+  .task-actions button.danger { color: var(--danger); }
+  .task-actions button.danger:hover { background: rgba(239,68,68,0.15); }
+
+  .note-box {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--muted);
+    white-space: pre-wrap;
+  }
+  .note-box.editable {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+    padding: 6px;
+  }
+  .note-box textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+    min-height: 32px;
+    padding: 4px 6px;
+  }
+  .note-box textarea:focus { outline: none; }
+  .note-box button {
+    padding: 4px 10px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 20px;
+    font-size: 14px;
+  }
+
+  .setup-notice {
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.4);
+    color: var(--warn);
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .setup-notice code {
+    background: rgba(0,0,0,0.3);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>Tech Tasks</h1>
+    <p class="sub">Sign in to continue</p>
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username" />
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" />
+    <button id="loginBtn">Sign in</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <h1>Tech Tasks</h1>
+    <span class="role-badge" id="roleBadge">—</span>
+    <span class="spacer"></span>
+    <span class="who" id="whoLabel"></span>
+    <button class="logout" id="logoutBtn">Sign out</button>
+  </header>
+
+  <main>
+    <div id="setupNotice" class="setup-notice" style="display:none;"></div>
+
+    <!-- Owner: add task -->
+    <div class="add-card" id="addCard" style="display:none;">
+      <h2>Assign a task</h2>
+      <div class="row">
+        <input id="newTitle" type="text" placeholder="What needs doing?" />
+        <select id="newPriority">
+          <option value="med">Medium</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
+        </select>
+        <button id="addBtn">Add</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-filter="open">Open <span class="count" id="cntOpen">0</span></button>
+      <button class="tab" data-filter="progress">In Progress <span class="count" id="cntProgress">0</span></button>
+      <button class="tab" data-filter="done">Done <span class="count" id="cntDone">0</span></button>
+      <button class="tab" data-filter="all">All <span class="count" id="cntAll">0</span></button>
+    </div>
+
+    <div class="task-list" id="taskList"></div>
+  </main>
+</div>
+
+<!-- Firebase (modular v10 CDN) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
+    setPersistence, browserLocalPersistence
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc,
+    query, orderBy, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ============================================================
+  // FIREBASE CONFIG — paste your values here (Step 3 of README)
+  // ============================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyDuU8D7PSVohXJtKZuJGPNhxFUlxtj30W0",
+    authDomain: "prod-task-6fa06.firebaseapp.com",
+    projectId: "prod-task-6fa06",
+    storageBucket: "prod-task-6fa06.firebasestorage.app",
+    messagingSenderId: "536109745887",
+    appId: "1:536109745887:web:b2f4a5c3d0bbc9cb4c0b6a"
+  };
+
+  // ============================================================
+  // USER IDS — after you create the two accounts, paste their
+  // UIDs here so the app knows who is the owner and who is the tech.
+  // Find UIDs at: Firebase console → Authentication → Users.
+  // ============================================================
+  const OWNER_UID = "a8gMRWQko4duduqBELcWwIni4sP2";
+  const TECH_UID  = "QNMXBvA2z8QdM2Qh4CYzaR0Yr3h2";
+
+  // ============================================================
+
+  const notConfigured = firebaseConfig.apiKey.startsWith("PASTE");
+  const notWired = OWNER_UID.startsWith("PASTE") || TECH_UID.startsWith("PASTE");
+
+  const $ = (id) => document.getElementById(id);
+
+  if (notConfigured) {
+    $("setupNotice").style.display = "block";
+    $("setupNotice").innerHTML =
+      "<b>Setup needed.</b> Open <code>index.html</code> and paste your Firebase config values into <code>firebaseConfig</code>. See <code>SETUP.md</code>.";
+    $("loginScreen").style.display = "none";
+    $("app").style.display = "flex";
+    // stop here — nothing to do until config is filled in
+  } else {
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    await setPersistence(auth, browserLocalPersistence);
+
+    // ---------- Login ----------
+    $("loginBtn").addEventListener("click", doLogin);
+    $("password").addEventListener("keydown", (e) => { if (e.key === "Enter") doLogin(); });
+
+    async function doLogin() {
+      const email = $("email").value.trim();
+      const password = $("password").value;
+      const btn = $("loginBtn");
+      const err = $("loginError");
+      err.textContent = "";
+      if (!email || !password) { err.textContent = "Enter email and password."; return; }
+      btn.disabled = true;
+      btn.textContent = "Signing in...";
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (e) {
+        err.textContent = friendlyAuthError(e);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Sign in";
+      }
+    }
+
+    function friendlyAuthError(e) {
+      const c = e.code || "";
+      if (c.includes("invalid") || c.includes("wrong-password") || c.includes("user-not-found"))
+        return "Wrong email or password.";
+      if (c.includes("network")) return "Network problem — check connection.";
+      if (c.includes("too-many-requests")) return "Too many attempts. Wait a bit.";
+      return e.message || "Sign-in failed.";
+    }
+
+    $("logoutBtn").addEventListener("click", () => signOut(auth));
+
+    // ---------- State ----------
+    let currentUser = null;
+    let currentRole = null; // 'owner' | 'tech' | null
+    let tasksUnsub = null;
+    let tasks = [];
+    let filter = "open";
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (tasksUnsub) { tasksUnsub(); tasksUnsub = null; }
+      if (!user) {
+        $("loginScreen").style.display = "flex";
+        $("app").style.display = "none";
+        tasks = [];
+        return;
+      }
+      // Determine role
+      if (user.uid === OWNER_UID) currentRole = "owner";
+      else if (user.uid === TECH_UID) currentRole = "tech";
+      else currentRole = null;
+
+      if (notWired) {
+        // Config OK but UIDs not pasted yet — show helpful notice with this user's UID
+        $("setupNotice").style.display = "block";
+        $("setupNotice").innerHTML =
+          "<b>Almost done.</b> Signed in as <code>" + escapeHtml(user.email) + "</code>. This account's UID is:<br><br><code>" +
+          user.uid + "</code><br><br>Paste it into <code>OWNER_UID</code> or <code>TECH_UID</code> in <code>index.html</code>. See <code>SETUP.md</code>.";
+      }
+
+      if (!currentRole && !notWired) {
+        $("setupNotice").style.display = "block";
+        $("setupNotice").innerHTML = "This account isn't authorized. Sign out and use the owner or tech account.";
+      }
+
+      $("loginScreen").style.display = "none";
+      $("app").style.display = "flex";
+      $("whoLabel").textContent = user.email;
+      $("roleBadge").textContent = currentRole || "unknown";
+      $("addCard").style.display = currentRole === "owner" ? "block" : "none";
+
+      subscribeTasks();
+    });
+
+    function subscribeTasks() {
+      const q = query(collection(db, "tasks"), orderBy("createdAt", "desc"));
+      tasksUnsub = onSnapshot(q, (snap) => {
+        tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        render();
+      }, (err) => {
+        console.error("tasks snapshot error:", err);
+        $("taskList").innerHTML = '<div class="empty">Could not load tasks. Check Firestore rules.</div>';
+      });
+    }
+
+    // ---------- Add task ----------
+    $("addBtn").addEventListener("click", addTask);
+    $("newTitle").addEventListener("keydown", (e) => { if (e.key === "Enter") addTask(); });
+
+    async function addTask() {
+      const title = $("newTitle").value.trim();
+      const priority = $("newPriority").value;
+      if (!title) return;
+      try {
+        await addDoc(collection(db, "tasks"), {
+          title,
+          priority,
+          status: "open",
+          note: "",
+          createdAt: serverTimestamp(),
+          createdBy: currentUser.uid,
+          startedAt: null,
+          completedAt: null
+        });
+        $("newTitle").value = "";
+        $("newPriority").value = "med";
+        $("newTitle").focus();
+      } catch (e) {
+        alert("Could not add task: " + e.message);
+      }
+    }
+
+    // ---------- Filter tabs ----------
+    document.querySelectorAll(".tab").forEach(t => {
+      t.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+        t.classList.add("active");
+        filter = t.dataset.filter;
+        render();
+      });
+    });
+
+    // ---------- Render ----------
+    function render() {
+      const cntOpen = tasks.filter(t => t.status === "open").length;
+      const cntProgress = tasks.filter(t => t.status === "progress").length;
+      const cntDone = tasks.filter(t => t.status === "done").length;
+      $("cntOpen").textContent = cntOpen;
+      $("cntProgress").textContent = cntProgress;
+      $("cntDone").textContent = cntDone;
+      $("cntAll").textContent = tasks.length;
+
+      const filtered = filter === "all" ? tasks : tasks.filter(t => t.status === filter);
+      const list = $("taskList");
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="empty">Nothing here.</div>';
+        return;
+      }
+
+      // Sort: priority first for open, then by createdAt desc
+      const prioRank = { high: 0, med: 1, low: 2 };
+      const sorted = filtered.slice().sort((a, b) => {
+        if (a.status === "open" && b.status === "open") {
+          const pd = (prioRank[a.priority] ?? 3) - (prioRank[b.priority] ?? 3);
+          if (pd !== 0) return pd;
+        }
+        return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+      });
+
+      list.innerHTML = sorted.map(renderTask).join("");
+      wireTaskActions();
+    }
+
+    function renderTask(t) {
+      const prioLabel = { high: "High", med: "Med", low: "Low" }[t.priority] || "Med";
+      const prioClass = t.priority || "med";
+      const created = fmtDate(t.createdAt);
+      const started = t.startedAt ? "Started " + fmtDate(t.startedAt) : "";
+      const done = t.completedAt ? "Done " + fmtDate(t.completedAt) : "";
+      const isOwner = currentRole === "owner";
+      const isTech = currentRole === "tech";
+
+      let actions = "";
+      if (t.status === "open") {
+        if (isTech) actions += `<button class="primary" data-act="start" data-id="${t.id}">Start</button>`;
+        if (isTech) actions += `<button class="success" data-act="done" data-id="${t.id}">Done</button>`;
+        if (isOwner) actions += `<button data-act="cycle-prio" data-id="${t.id}">Priority: ${prioLabel}</button>`;
+        if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
+      } else if (t.status === "progress") {
+        if (isTech) actions += `<button class="success" data-act="done" data-id="${t.id}">Mark done</button>`;
+        if (isTech) actions += `<button data-act="reopen" data-id="${t.id}">Back to open</button>`;
+        if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
+      } else if (t.status === "done") {
+        if (isTech || isOwner) actions += `<button data-act="reopen" data-id="${t.id}">Reopen</button>`;
+        if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
+      }
+
+      const noteHtml = isTech
+        ? `<div class="note-box editable">
+             <textarea data-note-id="${t.id}" placeholder="Add a note...">${escapeHtml(t.note || "")}</textarea>
+             <button data-act="save-note" data-id="${t.id}">Save</button>
+           </div>`
+        : (t.note ? `<div class="note-box">${escapeHtml(t.note)}</div>` : "");
+
+      const metaBits = [
+        `<span class="chip ${prioClass}">${prioLabel}</span>`,
+        created ? `<span>Added ${created}</span>` : "",
+        started ? `<span>${started}</span>` : "",
+        done ? `<span>${done}</span>` : ""
+      ].filter(Boolean).join("");
+
+      return `
+        <div class="task priority-${prioClass} status-${t.status}">
+          <div class="task-top">
+            <div class="task-title">${escapeHtml(t.title)}</div>
+          </div>
+          <div class="task-meta">${metaBits}</div>
+          ${noteHtml}
+          <div class="task-actions">${actions}</div>
+        </div>
+      `;
+    }
+
+    function wireTaskActions() {
+      document.querySelectorAll("[data-act]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.id;
+          const act = btn.dataset.act;
+          const ref = doc(db, "tasks", id);
+          try {
+            if (act === "start") {
+              await updateDoc(ref, { status: "progress", startedAt: serverTimestamp() });
+            } else if (act === "done") {
+              await updateDoc(ref, { status: "done", completedAt: serverTimestamp() });
+            } else if (act === "reopen") {
+              await updateDoc(ref, { status: "open", startedAt: null, completedAt: null });
+            } else if (act === "delete") {
+              if (confirm("Delete this task?")) await deleteDoc(ref);
+            } else if (act === "cycle-prio") {
+              const t = tasks.find(x => x.id === id);
+              const next = { high: "med", med: "low", low: "high" }[t.priority || "med"];
+              await updateDoc(ref, { priority: next });
+            } else if (act === "save-note") {
+              const ta = document.querySelector(`textarea[data-note-id="${id}"]`);
+              await updateDoc(ref, { note: ta.value });
+              btn.textContent = "Saved";
+              setTimeout(() => { btn.textContent = "Save"; }, 1200);
+            }
+          } catch (e) {
+            alert("Action failed: " + e.message);
+          }
+        });
+      });
+    }
+
+    function fmtDate(ts) {
+      if (!ts || !ts.seconds) return "";
+      const d = new Date(ts.seconds * 1000);
+      const now = new Date();
+      const sameDay = d.toDateString() === now.toDateString();
+      if (sameDay) return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      return d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " +
+             d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+  }
+
+  // Register service worker for PWA install
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+</script>
+</body>
+</html>

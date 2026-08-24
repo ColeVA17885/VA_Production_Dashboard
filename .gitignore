@@ -1,5 +1,7 @@
-# Only the production board lives in this repo.
+# Only the production board and techtasks app live in this repo.
 # Everything else in this folder stays local.
 *
 !.gitignore
 !index.html
+!techtasks
+!techtasks/**
