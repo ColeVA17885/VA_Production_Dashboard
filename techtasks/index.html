@@ -192,18 +192,24 @@
   .task {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-left: 3px solid var(--low);
+    border-left: 3px solid var(--accent);
     border-radius: 10px;
     padding: 14px 16px;
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
-  .task.priority-high { border-left-color: var(--high); }
-  .task.priority-med { border-left-color: var(--med); }
-  .task.priority-low { border-left-color: var(--low); }
-  .task.status-done { opacity: 0.6; }
+  .task.status-progress { border-left-color: var(--warn); }
+  .task.status-done { opacity: 0.6; border-left-color: var(--success); }
   .task.status-done .task-title { text-decoration: line-through; }
+  .task .rank {
+    display: inline-block;
+    min-width: 22px;
+    text-align: right;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    margin-right: 6px;
+  }
 
   .task-top { display: flex; align-items: flex-start; gap: 10px; }
   .task-title {
@@ -239,6 +245,8 @@
     font-size: 13px;
   }
   .task-actions button:hover { background: var(--border); }
+  .task-actions button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .task-actions button:disabled:hover { background: var(--panel-2); }
   .task-actions button.primary { background: var(--accent); border-color: var(--accent); }
   .task-actions button.primary:hover { background: var(--accent-hover); }
   .task-actions button.success { background: var(--success); border-color: var(--success); }
@@ -340,13 +348,13 @@
       <h2>Assign a task</h2>
       <div class="row">
         <input id="newTitle" type="text" placeholder="What needs doing?" />
-        <select id="newPriority">
-          <option value="med">Medium</option>
-          <option value="high">High</option>
-          <option value="low">Low</option>
-        </select>
         <button id="addBtn">Add</button>
       </div>
+      <p style="margin:10px 0 0;font-size:12px;color:var(--muted);">New tasks go to the bottom. Use the up/down arrows to reorder — whatever's on top is highest priority.</p>
+    </div>
+
+    <div id="clearDoneWrap" style="display:none; margin-bottom: 12px; text-align: right;">
+      <button id="clearDoneBtn" style="padding:8px 14px;background:transparent;border:1px solid var(--border);color:var(--danger);border-radius:6px;font-size:13px;cursor:pointer;">Clear all done</button>
     </div>
 
     <div class="tabs">
@@ -507,26 +515,39 @@
 
     async function addTask() {
       const title = $("newTitle").value.trim();
-      const priority = $("newPriority").value;
       if (!title) return;
+      // New task goes to the bottom of the open list.
+      const openTasks = tasks.filter(t => t.status === "open");
+      const maxOrder = openTasks.reduce((m, t) => Math.max(m, t.order ?? 0), 0);
       try {
         await addDoc(collection(db, "tasks"), {
           title,
-          priority,
           status: "open",
           note: "",
+          order: maxOrder + 1000,
           createdAt: serverTimestamp(),
           createdBy: currentUser.uid,
           startedAt: null,
           completedAt: null
         });
         $("newTitle").value = "";
-        $("newPriority").value = "med";
         $("newTitle").focus();
       } catch (e) {
         alert("Could not add task: " + e.message);
       }
     }
+
+    // ---------- Clear all done ----------
+    $("clearDoneBtn").addEventListener("click", async () => {
+      const done = tasks.filter(t => t.status === "done");
+      if (!done.length) return;
+      if (!confirm(`Delete all ${done.length} done task${done.length === 1 ? "" : "s"}?`)) return;
+      try {
+        await Promise.all(done.map(t => deleteDoc(doc(db, "tasks", t.id))));
+      } catch (e) {
+        alert("Could not clear done: " + e.message);
+      }
+    });
 
     // ---------- Filter tabs ----------
     document.querySelectorAll(".tab").forEach(t => {
@@ -548,6 +569,10 @@
       $("cntDone").textContent = cntDone;
       $("cntAll").textContent = tasks.length;
 
+      // Show "Clear all done" only on Done tab, for owner, when there are done tasks
+      $("clearDoneWrap").style.display =
+        (filter === "done" && currentRole === "owner" && cntDone > 0) ? "block" : "none";
+
       const filtered = filter === "all" ? tasks : tasks.filter(t => t.status === filter);
       const list = $("taskList");
 
@@ -556,34 +581,53 @@
         return;
       }
 
-      // Sort: priority first for open, then by createdAt desc
-      const prioRank = { high: 0, med: 1, low: 2 };
+      // Sort:
+      //   open      → by `order` ascending (owner-controlled priority; top = highest)
+      //   progress  → by startedAt asc (oldest in-progress first)
+      //   done      → by completedAt desc (most recent first)
+      //   all       → open first (by order), then progress, then done
+      const statusRank = { open: 0, progress: 1, done: 2 };
       const sorted = filtered.slice().sort((a, b) => {
-        if (a.status === "open" && b.status === "open") {
-          const pd = (prioRank[a.priority] ?? 3) - (prioRank[b.priority] ?? 3);
-          if (pd !== 0) return pd;
+        const sd = (statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9);
+        if (sd !== 0) return sd;
+        if (a.status === "open") {
+          return (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER);
         }
-        return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+        if (a.status === "progress") {
+          return (a.startedAt?.seconds || 0) - (b.startedAt?.seconds || 0);
+        }
+        // done
+        return (b.completedAt?.seconds || 0) - (a.completedAt?.seconds || 0);
       });
 
-      list.innerHTML = sorted.map(renderTask).join("");
+      // Compute open-list positions for up/down arrow enabling & rank number
+      const openSorted = sorted.filter(t => t.status === "open");
+      const openIdx = new Map(openSorted.map((t, i) => [t.id, i]));
+
+      list.innerHTML = sorted.map(t => renderTask(t, openIdx, openSorted.length)).join("");
       wireTaskActions();
     }
 
-    function renderTask(t) {
-      const prioLabel = { high: "High", med: "Med", low: "Low" }[t.priority] || "Med";
-      const prioClass = t.priority || "med";
+    function renderTask(t, openIdx, openCount) {
       const created = fmtDate(t.createdAt);
       const started = t.startedAt ? "Started " + fmtDate(t.startedAt) : "";
       const done = t.completedAt ? "Done " + fmtDate(t.completedAt) : "";
       const isOwner = currentRole === "owner";
       const isTech = currentRole === "tech";
 
+      // Owner reorder controls for open tasks
+      const idx = openIdx.get(t.id);
+      const isOpen = t.status === "open";
+      const canUp = isOpen && idx !== undefined && idx > 0;
+      const canDown = isOpen && idx !== undefined && idx < openCount - 1;
+      const rank = isOpen && idx !== undefined ? `<span class="rank">${idx + 1}.</span>` : "";
+
       let actions = "";
-      if (t.status === "open") {
+      if (isOpen) {
+        if (isOwner) actions += `<button data-act="up" data-id="${t.id}" ${canUp ? "" : "disabled"}>↑</button>`;
+        if (isOwner) actions += `<button data-act="down" data-id="${t.id}" ${canDown ? "" : "disabled"}>↓</button>`;
         if (isTech) actions += `<button class="primary" data-act="start" data-id="${t.id}">Start</button>`;
         if (isTech) actions += `<button class="success" data-act="done" data-id="${t.id}">Done</button>`;
-        if (isOwner) actions += `<button data-act="cycle-prio" data-id="${t.id}">Priority: ${prioLabel}</button>`;
         if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
       } else if (t.status === "progress") {
         if (isTech) actions += `<button class="success" data-act="done" data-id="${t.id}">Mark done</button>`;
@@ -602,18 +646,17 @@
         : (t.note ? `<div class="note-box">${escapeHtml(t.note)}</div>` : "");
 
       const metaBits = [
-        `<span class="chip ${prioClass}">${prioLabel}</span>`,
         created ? `<span>Added ${created}</span>` : "",
         started ? `<span>${started}</span>` : "",
         done ? `<span>${done}</span>` : ""
       ].filter(Boolean).join("");
 
       return `
-        <div class="task priority-${prioClass} status-${t.status}">
+        <div class="task status-${t.status}">
           <div class="task-top">
-            <div class="task-title">${escapeHtml(t.title)}</div>
+            <div class="task-title">${rank}${escapeHtml(t.title)}</div>
           </div>
-          <div class="task-meta">${metaBits}</div>
+          ${metaBits ? `<div class="task-meta">${metaBits}</div>` : ""}
           ${noteHtml}
           <div class="task-actions">${actions}</div>
         </div>
@@ -635,10 +678,8 @@
               await updateDoc(ref, { status: "open", startedAt: null, completedAt: null });
             } else if (act === "delete") {
               if (confirm("Delete this task?")) await deleteDoc(ref);
-            } else if (act === "cycle-prio") {
-              const t = tasks.find(x => x.id === id);
-              const next = { high: "med", med: "low", low: "high" }[t.priority || "med"];
-              await updateDoc(ref, { priority: next });
+            } else if (act === "up" || act === "down") {
+              await moveTask(id, act === "up" ? -1 : 1);
             } else if (act === "save-note") {
               const ta = document.querySelector(`textarea[data-note-id="${id}"]`);
               await updateDoc(ref, { note: ta.value });
@@ -650,6 +691,30 @@
           }
         });
       });
+    }
+
+    async function moveTask(id, direction) {
+      // Swap `order` with the adjacent open task in the given direction (-1 up, +1 down).
+      const openSorted = tasks
+        .filter(t => t.status === "open")
+        .slice()
+        .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
+      const idx = openSorted.findIndex(t => t.id === id);
+      const swapIdx = idx + direction;
+      if (idx < 0 || swapIdx < 0 || swapIdx >= openSorted.length) return;
+      const a = openSorted[idx];
+      const b = openSorted[swapIdx];
+      // Backfill missing order values so swap always works.
+      const orderA = a.order ?? (idx + 1) * 1000;
+      const orderB = b.order ?? (swapIdx + 1) * 1000;
+      try {
+        await Promise.all([
+          updateDoc(doc(db, "tasks", a.id), { order: orderB }),
+          updateDoc(doc(db, "tasks", b.id), { order: orderA })
+        ]);
+      } catch (e) {
+        alert("Could not move: " + e.message);
+      }
     }
 
     function fmtDate(ts) {
