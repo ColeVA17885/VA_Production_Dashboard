@@ -134,23 +134,43 @@
     background: var(--panel);
     border: 1px solid var(--border-soft);
     border-radius: 14px;
-    padding: 6px 6px 6px 14px;
+    padding: 12px 14px;
     margin-bottom: 22px;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 8px;
   }
-  .add-card svg { flex-shrink: 0; color: var(--muted); }
+  .add-card .add-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .add-card svg.plus { flex-shrink: 0; color: var(--muted); }
   .add-card input[type=text] {
     flex: 1;
-    padding: 12px 4px;
+    padding: 8px 2px;
     background: transparent;
     border: none;
     color: var(--text);
-    font-size: 15px;
+    font-size: 17px;
+    font-weight: 500;
   }
   .add-card input:focus { outline: none; }
   .add-card input::placeholder { color: var(--muted); }
+  .add-card textarea {
+    background: transparent;
+    border: none;
+    color: var(--text-2);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 4px 2px 4px 30px;
+    resize: vertical;
+    min-height: 26px;
+    line-height: 1.5;
+    width: 100%;
+  }
+  .add-card textarea:focus { outline: none; }
+  .add-card textarea::placeholder { color: var(--muted); opacity: 0.7; }
   .add-card button {
     padding: 9px 18px;
     background: var(--accent);
@@ -240,62 +260,90 @@
 
   .task-header {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: center;
+    gap: 12px;
   }
   .rank-badge {
     flex-shrink: 0;
-    width: 26px;
-    height: 26px;
-    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
     background: var(--accent-soft);
     color: var(--accent);
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-variant-numeric: tabular-nums;
-    margin-top: 1px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: border-color 0.15s, transform 0.05s;
+    padding: 0;
+    font-family: inherit;
   }
+  .rank-badge:hover { border-color: var(--accent); }
+  .rank-badge:active { transform: scale(0.94); }
+  .rank-badge.readonly { cursor: default; }
+  .rank-badge.readonly:hover { border-color: transparent; }
   .status-progress .rank-badge { background: rgba(242,166,61,0.15); color: var(--warn); }
+  .status-progress .rank-badge:hover { border-color: transparent; }
   .status-done .rank-badge { background: rgba(34,197,138,0.15); color: var(--success); }
+  .status-done .rank-badge:hover { border-color: transparent; }
+
+  .rank-edit {
+    flex-shrink: 0;
+    width: 44px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-family: inherit;
+    padding: 0 4px;
+  }
+  .rank-edit:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+
   .task-title {
     flex: 1;
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 600;
-    line-height: 1.35;
+    line-height: 1.25;
     word-break: break-word;
     color: var(--text);
-    letter-spacing: -0.005em;
+    letter-spacing: -0.01em;
   }
   .task input.title-edit {
     flex: 1;
-    padding: 6px 10px;
+    padding: 6px 12px;
     background: var(--panel-2);
     border: 1px solid var(--accent);
-    border-radius: 8px;
+    border-radius: 10px;
     color: var(--text);
     font-family: inherit;
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 600;
   }
   .task input.title-edit:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
 
-  .task-meta {
-    font-size: 12px;
+  .task-meta-inline {
+    font-size: 11.5px;
     color: var(--muted);
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    padding-left: 36px;
-    margin-top: -6px;
+    flex-shrink: 0;
+    text-align: right;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
-  .task-meta .dot { opacity: 0.5; }
+  .task-meta-inline .dot { opacity: 0.5; margin: 0 4px; }
 
-  /* Notes — inline, no card-in-card */
-  .notes { display: flex; flex-direction: column; gap: 10px; padding-left: 36px; }
-  .note-block { display: flex; flex-direction: column; gap: 5px; position: relative; }
+  /* Notes — small, subtle, sit under title */
+  .notes { display: flex; flex-direction: column; gap: 8px; padding-left: 46px; }
+  .note-block { display: flex; flex-direction: column; gap: 3px; position: relative; }
   .note-label {
     font-size: 10px;
     color: var(--muted);
@@ -319,27 +367,26 @@
   .note-label .saved-indicator.saving { color: var(--muted); }
 
   .note-view {
-    background: var(--panel-2);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 14px;
+    padding: 2px 0 2px 10px;
+    font-size: 13px;
     color: var(--text-2);
     white-space: pre-wrap;
     border-left: 2px solid var(--accent);
+    line-height: 1.45;
   }
   .note-view.tech { border-left-color: var(--warn); }
 
   .note-input {
     background: transparent;
     border: 1px solid var(--border-soft);
-    border-radius: 8px;
-    padding: 8px 12px;
+    border-radius: 6px;
+    padding: 5px 9px;
     font-family: inherit;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--text);
     resize: vertical;
-    min-height: 36px;
-    line-height: 1.5;
+    min-height: 28px;
+    line-height: 1.45;
     transition: border-color 0.15s, background 0.15s;
     width: 100%;
   }
@@ -358,7 +405,7 @@
     gap: 6px;
     flex-wrap: wrap;
     align-items: center;
-    padding-left: 36px;
+    padding-left: 46px;
     padding-top: 2px;
   }
   .task-actions .spacer { flex: 1; }
@@ -414,7 +461,9 @@
     header .who { display: none; }
     main { padding: 18px 14px 60px; }
     .task { padding: 12px 14px 10px; }
-    .task-meta, .notes, .task-actions { padding-left: 34px; }
+    .notes, .task-actions { padding-left: 44px; }
+    .task-title { font-size: 18px; }
+    .task-meta-inline { font-size: 11px; }
     .btn { padding: 8px 14px; }
     .btn.icon { width: 34px; height: 34px; }
   }
@@ -468,9 +517,12 @@
 
     <!-- Owner: add task -->
     <div class="add-card" id="addCard" style="display:none;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      <input id="newTitle" type="text" placeholder="Assign a new task…" />
-      <button id="addBtn">Add</button>
+      <div class="add-row">
+        <svg class="plus" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <input id="newTitle" type="text" placeholder="Assign a new task…" />
+        <button id="addBtn">Add</button>
+      </div>
+      <textarea id="newNote" placeholder="Add details or instructions (optional)…"></textarea>
     </div>
 
     <div class="toolbar-row">
@@ -580,7 +632,8 @@
     let tasksUnsub = null;
     let tasks = [];
     let filter = "open";
-    const editingIds = new Set(); // task ids currently in inline-edit mode
+    const editingIds = new Set();     // task ids in title-edit mode
+    const editingRankIds = new Set(); // task ids in rank-edit mode
 
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
@@ -632,18 +685,19 @@
     // ---------- Add task ----------
     $("addBtn").addEventListener("click", addTask);
     $("newTitle").addEventListener("keydown", (e) => { if (e.key === "Enter") addTask(); });
+    $("newNote").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) addTask(); });
 
     async function addTask() {
       const title = $("newTitle").value.trim();
       if (!title) return;
-      // New task goes to the bottom of the open list.
+      const ownerNote = $("newNote").value.trim();
       const openTasks = tasks.filter(t => t.status === "open");
       const maxOrder = openTasks.reduce((m, t) => Math.max(m, t.order ?? 0), 0);
       try {
         await addDoc(collection(db, "tasks"), {
           title,
           status: "open",
-          ownerNote: "",  // owner-editable: instructions / details
+          ownerNote,      // owner-editable: instructions / details
           note: "",       // tech-editable: status / reply
           order: maxOrder + 1000,
           createdAt: serverTimestamp(),
@@ -652,6 +706,7 @@
           completedAt: null
         });
         $("newTitle").value = "";
+        $("newNote").value = "";
         $("newTitle").focus();
       } catch (e) {
         alert("Could not add task: " + e.message);
@@ -725,16 +780,19 @@
       const openSorted = sorted.filter(t => t.status === "open");
       const openIdx = new Map(openSorted.map((t, i) => [t.id, i]));
 
-      // Preserve focus & selection across re-render (so autosave doesn't yank the user out of a textarea)
+      // Preserve focus & selection across re-render
       const active = document.activeElement;
       let focusKey = null, selStart = 0, selEnd = 0, scrollTop = 0;
-      if (active && active.tagName === "TEXTAREA") {
-        if (active.dataset.ownerNoteId) focusKey = ["owner", active.dataset.ownerNoteId];
-        else if (active.dataset.noteId) focusKey = ["tech", active.dataset.noteId];
+      if (active) {
+        if (active.tagName === "TEXTAREA" && active.dataset.ownerNoteId) focusKey = ["owner", active.dataset.ownerNoteId];
+        else if (active.tagName === "TEXTAREA" && active.dataset.noteId) focusKey = ["tech", active.dataset.noteId];
+        else if (active.tagName === "INPUT" && active.dataset.rankId) focusKey = ["rank", active.dataset.rankId];
         if (focusKey) {
-          selStart = active.selectionStart;
-          selEnd = active.selectionEnd;
-          scrollTop = active.scrollTop;
+          try {
+            selStart = active.selectionStart ?? 0;
+            selEnd = active.selectionEnd ?? 0;
+          } catch (_) {}
+          scrollTop = active.scrollTop || 0;
         }
       }
 
@@ -742,8 +800,11 @@
       wireTaskActions();
 
       if (focusKey) {
-        const attr = focusKey[0] === "owner" ? "data-owner-note-id" : "data-note-id";
-        const restored = document.querySelector(`textarea[${attr}="${focusKey[1]}"]`);
+        let sel;
+        if (focusKey[0] === "owner") sel = `textarea[data-owner-note-id="${focusKey[1]}"]`;
+        else if (focusKey[0] === "tech") sel = `textarea[data-note-id="${focusKey[1]}"]`;
+        else if (focusKey[0] === "rank") sel = `input.rank-edit[data-rank-id="${focusKey[1]}"]`;
+        const restored = sel && document.querySelector(sel);
         if (restored) {
           restored.focus();
           try { restored.setSelectionRange(selStart, selEnd); } catch (_) {}
@@ -765,13 +826,23 @@
       const canDown = isOpen && idx !== undefined && idx < openCount - 1;
 
       const editing = editingIds.has(t.id);
+      const editingRank = editingRankIds.has(t.id);
 
-      // Rank badge on left of card — number for open, dot for other states
-      let badgeText = "•";
-      if (isOpen && idx !== undefined) badgeText = String(idx + 1);
-      else if (t.status === "progress") badgeText = "▶";
-      else if (t.status === "done") badgeText = "✓";
-      const badgeHtml = `<span class="rank-badge">${badgeText}</span>`;
+      // Rank badge on left of card — number for open (editable by owner), symbol for other states
+      let badgeHtml;
+      if (isOpen && idx !== undefined) {
+        if (editingRank && isOwner) {
+          badgeHtml = `<input class="rank-edit" data-rank-id="${t.id}" type="number" min="1" max="${openCount}" value="${idx + 1}" />`;
+        } else {
+          const badgeText = String(idx + 1);
+          const clickable = isOwner ? "" : "readonly";
+          const dataAct = isOwner ? `data-act="edit-rank" data-id="${t.id}"` : "";
+          badgeHtml = `<button class="rank-badge ${clickable}" ${dataAct} title="${isOwner ? "Click to change position" : ""}">${badgeText}</button>`;
+        }
+      } else {
+        const symbol = t.status === "progress" ? "▶" : t.status === "done" ? "✓" : "•";
+        badgeHtml = `<span class="rank-badge readonly">${symbol}</span>`;
+      }
 
       // Primary + secondary actions
       let primary = "", secondary = "";
@@ -844,11 +915,15 @@
         ? `<div class="notes">${ownerNoteHtml}${techNoteHtml}</div>`
         : "";
 
+      // Meta on the right side of the header — compact, muted
       const metaBits = [
         created ? `Added ${created}` : "",
-        started ? started : "",
-        done ? done : ""
-      ].filter(Boolean).map((s, i) => (i > 0 ? `<span class="dot">•</span>` : "") + `<span>${s}</span>`).join(" ");
+        started || "",
+        done || ""
+      ].filter(Boolean);
+      const metaHtml = metaBits.length
+        ? `<div class="task-meta-inline">${metaBits.map((s, i) => (i > 0 ? `<span class="dot">·</span>` : "") + `<span>${s}</span>`).join("")}</div>`
+        : "";
 
       const titleHtml = editing
         ? `<input class="title-edit" data-edit-id="${t.id}" type="text" value="${escapeHtml(t.title)}" />`
@@ -863,8 +938,8 @@
           <div class="task-header">
             ${badgeHtml}
             ${titleHtml}
+            ${metaHtml}
           </div>
-          ${metaBits ? `<div class="task-meta">${metaBits}</div>` : ""}
           ${notesHtml}
           ${actionsHtml}
         </div>
@@ -918,6 +993,25 @@
         });
       });
 
+      // Rank-edit input: Enter/blur commits, Escape cancels
+      document.querySelectorAll("input.rank-edit").forEach(inp => {
+        const id = inp.dataset.rankId;
+        const commit = async () => {
+          const newPos = parseInt(inp.value, 10);
+          editingRankIds.delete(id);
+          if (Number.isFinite(newPos) && newPos >= 1) {
+            await moveToPosition(id, newPos);
+          } else {
+            render();
+          }
+        };
+        inp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); inp.blur(); }
+          else if (e.key === "Escape") { editingRankIds.delete(id); render(); }
+        });
+        inp.addEventListener("blur", commit);
+      });
+
       // Autosave owner-notes
       document.querySelectorAll("textarea[data-owner-note-id]").forEach(ta => {
         ta.addEventListener("input", () => scheduleSave(ta.dataset.ownerNoteId, "ownerNote", ta.value, "owner"));
@@ -943,6 +1037,12 @@
               if (confirm("Delete this task?")) await deleteDoc(ref);
             } else if (act === "up" || act === "down") {
               await moveTask(id, act === "up" ? -1 : 1);
+            } else if (act === "edit-rank") {
+              editingRankIds.add(id);
+              render();
+              const input = document.querySelector(`input.rank-edit[data-rank-id="${id}"]`);
+              if (input) { input.focus(); input.select(); }
+              return;
             } else if (act === "edit") {
               editingIds.add(id);
               render();
@@ -976,6 +1076,35 @@
           }
         });
       });
+    }
+
+    async function moveToPosition(id, newPos) {
+      // Reorder: put task `id` at 1-based position `newPos` among open tasks.
+      const openSorted = tasks
+        .filter(t => t.status === "open")
+        .slice()
+        .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
+      const currentIdx = openSorted.findIndex(t => t.id === id);
+      if (currentIdx < 0) return;
+      const targetIdx = Math.min(Math.max(0, newPos - 1), openSorted.length - 1);
+      if (targetIdx === currentIdx) { render(); return; }
+      // Move in memory
+      const [moved] = openSorted.splice(currentIdx, 1);
+      openSorted.splice(targetIdx, 0, moved);
+      // Reassign clean orders: 1000, 2000, 3000...
+      // Only write the ones whose order actually needs to change.
+      const updates = [];
+      openSorted.forEach((t, i) => {
+        const desired = (i + 1) * 1000;
+        if ((t.order ?? null) !== desired) {
+          updates.push(updateDoc(doc(db, "tasks", t.id), { order: desired }));
+        }
+      });
+      try {
+        await Promise.all(updates);
+      } catch (e) {
+        alert("Could not move: " + e.message);
+      }
     }
 
     async function moveTask(id, direction) {
