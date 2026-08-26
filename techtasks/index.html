@@ -202,6 +202,18 @@
   .task.status-progress { border-left-color: var(--warn); }
   .task.status-done { opacity: 0.6; border-left-color: var(--success); }
   .task.status-done .task-title { text-decoration: line-through; }
+  .task input.title-edit {
+    flex: 1;
+    padding: 8px 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 15px;
+    width: 100%;
+  }
+  .task input.title-edit:focus { outline: none; border-color: var(--accent-hover); }
   .task .rank {
     display: inline-block;
     min-width: 22px;
@@ -461,6 +473,7 @@
     let tasksUnsub = null;
     let tasks = [];
     let filter = "open";
+    const editingIds = new Set(); // task ids currently in inline-edit mode
 
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
@@ -622,19 +635,27 @@
       const canDown = isOpen && idx !== undefined && idx < openCount - 1;
       const rank = isOpen && idx !== undefined ? `<span class="rank">${idx + 1}.</span>` : "";
 
+      const editing = editingIds.has(t.id);
+
       let actions = "";
-      if (isOpen) {
+      if (editing) {
+        actions += `<button class="primary" data-act="save-title" data-id="${t.id}">Save</button>`;
+        actions += `<button data-act="cancel-edit" data-id="${t.id}">Cancel</button>`;
+      } else if (isOpen) {
         if (isOwner) actions += `<button data-act="up" data-id="${t.id}" ${canUp ? "" : "disabled"}>↑</button>`;
         if (isOwner) actions += `<button data-act="down" data-id="${t.id}" ${canDown ? "" : "disabled"}>↓</button>`;
         if (isTech) actions += `<button class="primary" data-act="start" data-id="${t.id}">Start</button>`;
         if (isTech) actions += `<button class="success" data-act="done" data-id="${t.id}">Done</button>`;
+        if (isOwner) actions += `<button data-act="edit" data-id="${t.id}">Edit</button>`;
         if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
       } else if (t.status === "progress") {
         if (isTech) actions += `<button class="success" data-act="done" data-id="${t.id}">Mark done</button>`;
         if (isTech) actions += `<button data-act="reopen" data-id="${t.id}">Back to open</button>`;
+        if (isOwner) actions += `<button data-act="edit" data-id="${t.id}">Edit</button>`;
         if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
       } else if (t.status === "done") {
         if (isTech || isOwner) actions += `<button data-act="reopen" data-id="${t.id}">Reopen</button>`;
+        if (isOwner) actions += `<button data-act="edit" data-id="${t.id}">Edit</button>`;
         if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
       }
 
@@ -651,10 +672,14 @@
         done ? `<span>${done}</span>` : ""
       ].filter(Boolean).join("");
 
+      const titleHtml = editing
+        ? `<input class="title-edit" data-edit-id="${t.id}" type="text" value="${escapeHtml(t.title)}" />`
+        : `<div class="task-title">${rank}${escapeHtml(t.title)}</div>`;
+
       return `
         <div class="task status-${t.status}">
           <div class="task-top">
-            <div class="task-title">${rank}${escapeHtml(t.title)}</div>
+            ${titleHtml}
           </div>
           ${metaBits ? `<div class="task-meta">${metaBits}</div>` : ""}
           ${noteHtml}
@@ -664,6 +689,17 @@
     }
 
     function wireTaskActions() {
+      // Enter = save, Escape = cancel while editing a title
+      document.querySelectorAll("input.title-edit").forEach(inp => {
+        inp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            document.querySelector(`button[data-act="save-title"][data-id="${inp.dataset.editId}"]`)?.click();
+          } else if (e.key === "Escape") {
+            document.querySelector(`button[data-act="cancel-edit"][data-id="${inp.dataset.editId}"]`)?.click();
+          }
+        });
+      });
       document.querySelectorAll("[data-act]").forEach(btn => {
         btn.addEventListener("click", async () => {
           const id = btn.dataset.id;
@@ -680,6 +716,23 @@
               if (confirm("Delete this task?")) await deleteDoc(ref);
             } else if (act === "up" || act === "down") {
               await moveTask(id, act === "up" ? -1 : 1);
+            } else if (act === "edit") {
+              editingIds.add(id);
+              render();
+              const input = document.querySelector(`input.title-edit[data-edit-id="${id}"]`);
+              if (input) { input.focus(); input.select(); }
+              return;
+            } else if (act === "cancel-edit") {
+              editingIds.delete(id);
+              render();
+              return;
+            } else if (act === "save-title") {
+              const input = document.querySelector(`input.title-edit[data-edit-id="${id}"]`);
+              const newTitle = (input?.value || "").trim();
+              if (!newTitle) { alert("Title can't be empty."); return; }
+              await updateDoc(ref, { title: newTitle });
+              editingIds.delete(id);
+              // render() will run automatically via the Firestore snapshot listener
             } else if (act === "save-note") {
               const ta = document.querySelector(`textarea[data-note-id="${id}"]`);
               await updateDoc(ref, { note: ta.value });
