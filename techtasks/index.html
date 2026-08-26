@@ -265,15 +265,25 @@
   .task-actions button.danger { color: var(--danger); }
   .task-actions button.danger:hover { background: rgba(239,68,68,0.15); }
 
+  .note-block { display: flex; flex-direction: column; gap: 4px; }
+  .note-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
   .note-box {
     background: var(--panel-2);
     border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
     border-radius: 6px;
     padding: 8px 10px;
     font-size: 13px;
     color: var(--muted);
     white-space: pre-wrap;
   }
+  .note-box.tech { border-left-color: var(--warn); }
   .note-box.editable {
     display: flex;
     gap: 6px;
@@ -536,7 +546,8 @@
         await addDoc(collection(db, "tasks"), {
           title,
           status: "open",
-          note: "",
+          ownerNote: "",  // owner-editable: instructions / details
+          note: "",       // tech-editable: status / reply
           order: maxOrder + 1000,
           createdAt: serverTimestamp(),
           createdBy: currentUser.uid,
@@ -659,15 +670,45 @@
         if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
       }
 
-      const notePlaceholder = isOwner
-        ? "Details, instructions, or a comment..."
-        : "Add a note or reply...";
-      const noteHtml = (isTech || isOwner)
-        ? `<div class="note-box editable">
-             <textarea data-note-id="${t.id}" placeholder="${notePlaceholder}">${escapeHtml(t.note || "")}</textarea>
-             <button data-act="save-note" data-id="${t.id}">Save</button>
-           </div>`
-        : (t.note ? `<div class="note-box">${escapeHtml(t.note)}</div>` : "");
+      // Owner-notes = instructions/details from owner. Tech reads them, owner edits them.
+      // Tech-notes  = status/comments from tech. Owner reads them, tech edits them.
+      let ownerNoteHtml = "";
+      if (isOwner) {
+        ownerNoteHtml = `
+          <div class="note-block">
+            <div class="note-label">Details / Instructions</div>
+            <div class="note-box editable">
+              <textarea data-owner-note-id="${t.id}" placeholder="Kit them first. Should be 3 lefts and 3 rights.">${escapeHtml(t.ownerNote || "")}</textarea>
+              <button data-act="save-owner-note" data-id="${t.id}">Save</button>
+            </div>
+          </div>`;
+      } else if (t.ownerNote) {
+        ownerNoteHtml = `
+          <div class="note-block">
+            <div class="note-label">From owner</div>
+            <div class="note-box">${escapeHtml(t.ownerNote)}</div>
+          </div>`;
+      }
+
+      let techNoteHtml = "";
+      if (isTech) {
+        techNoteHtml = `
+          <div class="note-block">
+            <div class="note-label">Your notes</div>
+            <div class="note-box editable tech">
+              <textarea data-note-id="${t.id}" placeholder="On hold for parts, waiting on Bob, etc.">${escapeHtml(t.note || "")}</textarea>
+              <button data-act="save-note" data-id="${t.id}">Save</button>
+            </div>
+          </div>`;
+      } else if (t.note) {
+        techNoteHtml = `
+          <div class="note-block">
+            <div class="note-label">From tech</div>
+            <div class="note-box tech">${escapeHtml(t.note)}</div>
+          </div>`;
+      }
+
+      const noteHtml = ownerNoteHtml + techNoteHtml;
 
       const metaBits = [
         created ? `<span>Added ${created}</span>` : "",
@@ -739,6 +780,11 @@
             } else if (act === "save-note") {
               const ta = document.querySelector(`textarea[data-note-id="${id}"]`);
               await updateDoc(ref, { note: ta.value });
+              btn.textContent = "Saved";
+              setTimeout(() => { btn.textContent = "Save"; }, 1200);
+            } else if (act === "save-owner-note") {
+              const ta = document.querySelector(`textarea[data-owner-note-id="${id}"]`);
+              await updateDoc(ref, { ownerNote: ta.value });
               btn.textContent = "Saved";
               setTimeout(() => { btn.textContent = "Save"; }, 1200);
             }
