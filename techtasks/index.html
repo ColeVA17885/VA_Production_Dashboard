@@ -3,35 +3,37 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<meta name="theme-color" content="#1f2937" />
+<meta name="theme-color" content="#0b1220" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <title>Tech Tasks</title>
 <style>
   :root {
-    --bg: #0f172a;
-    --panel: #1e293b;
-    --panel-2: #273449;
-    --border: #334155;
-    --text: #e2e8f0;
-    --muted: #94a3b8;
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
-    --success: #10b981;
-    --warn: #f59e0b;
-    --danger: #ef4444;
-    --high: #ef4444;
-    --med: #f59e0b;
-    --low: #64748b;
+    --bg: #0b1220;
+    --panel: #151d2e;
+    --panel-2: #1d2740;
+    --border: #2a3557;
+    --border-soft: #212c48;
+    --text: #e8edf7;
+    --text-2: #b9c3d6;
+    --muted: #7a8399;
+    --accent: #5b8def;
+    --accent-hover: #4573dc;
+    --accent-soft: rgba(91,141,239,0.14);
+    --success: #22c58a;
+    --warn: #f2a63d;
+    --danger: #ef5a5a;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; height: 100%; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     background: var(--bg);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
+    font-size: 15px;
+    line-height: 1.5;
   }
   button { font-family: inherit; cursor: pointer; }
 
@@ -82,9 +84,11 @@
   /* App */
   #app { display: none; min-height: 100vh; flex-direction: column; }
   header {
-    padding: 12px 20px;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
+    padding: 14px 22px;
+    background: rgba(21,29,46,0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-soft);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -92,33 +96,35 @@
     top: 0;
     z-index: 10;
   }
-  header h1 { margin: 0; font-size: 18px; }
+  header h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
   header .role-badge {
-    font-size: 11px;
-    padding: 3px 8px;
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    color: var(--muted);
+    font-size: 10px;
+    padding: 3px 9px;
+    background: var(--accent-soft);
+    border: 1px solid rgba(91,141,239,0.3);
+    border-radius: 999px;
+    color: var(--accent);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
+    font-weight: 600;
   }
   header .spacer { flex: 1; }
   header .who { font-size: 13px; color: var(--muted); }
   header .logout {
     background: transparent;
     border: 1px solid var(--border);
-    color: var(--text);
+    color: var(--text-2);
     padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 13px;
+    transition: background 0.15s, color 0.15s;
   }
-  header .logout:hover { background: var(--panel-2); }
+  header .logout:hover { background: var(--panel-2); color: var(--text); }
 
   main {
     flex: 1;
-    padding: 20px;
-    max-width: 900px;
+    padding: 24px 22px 60px;
+    max-width: 820px;
     width: 100%;
     margin: 0 auto;
   }
@@ -126,196 +132,291 @@
   /* Owner: add form */
   .add-card {
     background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 20px;
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 6px 6px 6px 14px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .add-card h2 { margin: 0 0 12px; font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .add-card .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .add-card svg { flex-shrink: 0; color: var(--muted); }
   .add-card input[type=text] {
     flex: 1;
-    min-width: 200px;
-    padding: 10px 12px;
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    padding: 12px 4px;
+    background: transparent;
+    border: none;
     color: var(--text);
     font-size: 15px;
   }
-  .add-card select {
-    padding: 10px 12px;
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-size: 15px;
-  }
-  .add-card input:focus, .add-card select:focus { outline: none; border-color: var(--accent); }
+  .add-card input:focus { outline: none; }
+  .add-card input::placeholder { color: var(--muted); }
   .add-card button {
-    padding: 10px 18px;
+    padding: 9px 18px;
     background: var(--accent);
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 15px;
+    border-radius: 10px;
+    font-size: 14px;
     font-weight: 600;
+    transition: background 0.15s, transform 0.05s;
   }
   .add-card button:hover { background: var(--accent-hover); }
+  .add-card button:active { transform: scale(0.97); }
 
-  /* Filter tabs */
+  .toolbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+
+  /* Filter tabs — underline style */
   .tabs {
     display: flex;
     gap: 4px;
-    margin-bottom: 16px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 4px;
-  }
-  .tab {
+    border-bottom: 1px solid var(--border-soft);
     flex: 1;
-    padding: 8px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    padding: 10px 14px;
     background: transparent;
     color: var(--muted);
     border: none;
-    border-radius: 6px;
+    border-bottom: 2px solid transparent;
     font-size: 14px;
     font-weight: 500;
-    text-align: center;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+    margin-bottom: -1px;
   }
-  .tab.active { background: var(--panel-2); color: var(--text); }
-  .tab .count { opacity: 0.6; font-size: 12px; margin-left: 4px; }
+  .tab:hover { color: var(--text-2); }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .tab .count {
+    opacity: 0.7;
+    font-size: 12px;
+    margin-left: 6px;
+    padding: 1px 7px;
+    background: var(--panel-2);
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tab.active .count { background: var(--accent-soft); color: var(--accent); opacity: 1; }
+
+  #clearDoneBtn {
+    padding: 7px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  #clearDoneBtn:hover { color: var(--danger); border-color: rgba(239,90,90,0.4); }
 
   /* Task list */
-  .task-list { display: flex; flex-direction: column; gap: 8px; }
+  .task-list { display: flex; flex-direction: column; gap: 10px; }
   .task {
     background: var(--panel);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 10px;
-    padding: 14px 16px;
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 14px 16px 12px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    transition: border-color 0.15s, transform 0.15s;
   }
-  .task.status-progress { border-left-color: var(--warn); }
-  .task.status-done { opacity: 0.6; border-left-color: var(--success); }
-  .task.status-done .task-title { text-decoration: line-through; }
-  .task input.title-edit {
-    flex: 1;
-    padding: 8px 10px;
-    background: var(--panel-2);
-    border: 1px solid var(--accent);
-    border-radius: 6px;
-    color: var(--text);
-    font-family: inherit;
-    font-size: 15px;
-    width: 100%;
-  }
-  .task input.title-edit:focus { outline: none; border-color: var(--accent-hover); }
-  .task .rank {
-    display: inline-block;
-    min-width: 22px;
-    text-align: right;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-    margin-right: 6px;
-  }
+  .task:hover { border-color: var(--border); }
+  .task.status-progress { border-left: 3px solid var(--warn); padding-left: 13px; }
+  .task.status-done { opacity: 0.55; }
+  .task.status-done:hover { opacity: 0.85; }
+  .task.status-done .task-title { text-decoration: line-through; text-decoration-color: var(--muted); }
 
-  .task-top { display: flex; align-items: flex-start; gap: 10px; }
+  .task-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .rank-badge {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+    margin-top: 1px;
+  }
+  .status-progress .rank-badge { background: rgba(242,166,61,0.15); color: var(--warn); }
+  .status-done .rank-badge { background: rgba(34,197,138,0.15); color: var(--success); }
   .task-title {
     flex: 1;
-    font-size: 15px;
-    line-height: 1.4;
-    word-break: break-word;
-  }
-  .task-meta {
-    display: flex;
-    gap: 10px;
-    font-size: 12px;
-    color: var(--muted);
-    flex-wrap: wrap;
-  }
-  .task-meta .chip {
-    padding: 2px 8px;
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-  }
-  .task-meta .chip.high { color: var(--high); border-color: rgba(239,68,68,0.4); }
-  .task-meta .chip.med { color: var(--med); border-color: rgba(245,158,11,0.4); }
-  .task-meta .chip.low { color: var(--muted); }
-
-  .task-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-  .task-actions button {
-    padding: 6px 12px;
-    background: var(--panel-2);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 13px;
-  }
-  .task-actions button:hover { background: var(--border); }
-  .task-actions button:disabled { opacity: 0.35; cursor: not-allowed; }
-  .task-actions button:disabled:hover { background: var(--panel-2); }
-  .task-actions button.primary { background: var(--accent); border-color: var(--accent); }
-  .task-actions button.primary:hover { background: var(--accent-hover); }
-  .task-actions button.success { background: var(--success); border-color: var(--success); }
-  .task-actions button.danger { color: var(--danger); }
-  .task-actions button.danger:hover { background: rgba(239,68,68,0.15); }
-
-  .note-block { display: flex; flex-direction: column; gap: 4px; }
-  .note-label {
-    font-size: 11px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 16px;
     font-weight: 600;
+    line-height: 1.35;
+    word-break: break-word;
+    color: var(--text);
+    letter-spacing: -0.005em;
   }
-  .note-box {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 6px;
-    padding: 8px 10px;
-    font-size: 13px;
-    color: var(--muted);
-    white-space: pre-wrap;
-  }
-  .note-box.tech { border-left-color: var(--warn); }
-  .note-box.editable {
-    display: flex;
-    gap: 6px;
-    align-items: stretch;
-    padding: 6px;
-  }
-  .note-box textarea {
+  .task input.title-edit {
     flex: 1;
-    background: transparent;
-    border: none;
+    padding: 6px 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
     color: var(--text);
     font-family: inherit;
-    font-size: 13px;
-    resize: vertical;
-    min-height: 32px;
-    padding: 4px 6px;
+    font-size: 16px;
+    font-weight: 600;
   }
-  .note-box textarea:focus { outline: none; }
-  .note-box button {
-    padding: 4px 10px;
-    background: var(--accent);
-    color: white;
-    border: none;
-    border-radius: 4px;
+  .task input.title-edit:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  .task-meta {
     font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-left: 36px;
+    margin-top: -6px;
   }
+  .task-meta .dot { opacity: 0.5; }
+
+  /* Notes — inline, no card-in-card */
+  .notes { display: flex; flex-direction: column; gap: 10px; padding-left: 36px; }
+  .note-block { display: flex; flex-direction: column; gap: 5px; position: relative; }
+  .note-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .note-label .saved-indicator {
+    font-size: 10px;
+    color: var(--success);
+    opacity: 0;
+    transition: opacity 0.2s;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+  }
+  .note-label .saved-indicator.visible { opacity: 1; }
+  .note-label .saved-indicator.saving { color: var(--muted); }
+
+  .note-view {
+    background: var(--panel-2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: var(--text-2);
+    white-space: pre-wrap;
+    border-left: 2px solid var(--accent);
+  }
+  .note-view.tech { border-left-color: var(--warn); }
+
+  .note-input {
+    background: transparent;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    resize: vertical;
+    min-height: 36px;
+    line-height: 1.5;
+    transition: border-color 0.15s, background 0.15s;
+    width: 100%;
+  }
+  .note-input:hover { border-color: var(--border); }
+  .note-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--panel-2);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .note-input::placeholder { color: var(--muted); opacity: 0.7; }
+
+  /* Actions row */
+  .task-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-left: 36px;
+    padding-top: 2px;
+  }
+  .task-actions .spacer { flex: 1; }
+
+  .btn {
+    padding: 7px 14px;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.05s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn:hover { background: var(--border-soft); border-color: var(--border); }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn:disabled:hover { background: var(--panel-2); border-color: var(--border-soft); }
+
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn.success { background: var(--success); border-color: var(--success); color: white; }
+  .btn.success:hover { filter: brightness(1.1); }
+
+  .btn.icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+    color: var(--muted);
+  }
+  .btn.icon:hover { color: var(--text); }
+  .btn.icon.danger:hover { color: var(--danger); border-color: rgba(239,90,90,0.4); }
+
+  .btn.icon svg { width: 16px; height: 16px; }
 
   .empty {
     text-align: center;
     color: var(--muted);
-    padding: 40px 20px;
+    padding: 48px 20px;
     font-size: 14px;
+    background: var(--panel);
+    border: 1px dashed var(--border-soft);
+    border-radius: 14px;
+  }
+
+  /* Mobile tweaks */
+  @media (max-width: 640px) {
+    header { padding: 12px 14px; }
+    header .who { display: none; }
+    main { padding: 18px 14px 60px; }
+    .task { padding: 12px 14px 10px; }
+    .task-meta, .notes, .task-actions { padding-left: 34px; }
+    .btn { padding: 8px 14px; }
+    .btn.icon { width: 34px; height: 34px; }
   }
 
   .setup-notice {
@@ -367,23 +468,19 @@
 
     <!-- Owner: add task -->
     <div class="add-card" id="addCard" style="display:none;">
-      <h2>Assign a task</h2>
-      <div class="row">
-        <input id="newTitle" type="text" placeholder="What needs doing?" />
-        <button id="addBtn">Add</button>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <input id="newTitle" type="text" placeholder="Assign a new task…" />
+      <button id="addBtn">Add</button>
+    </div>
+
+    <div class="toolbar-row">
+      <div class="tabs">
+        <button class="tab active" data-filter="open">Open<span class="count" id="cntOpen">0</span></button>
+        <button class="tab" data-filter="progress">In Progress<span class="count" id="cntProgress">0</span></button>
+        <button class="tab" data-filter="done">Done<span class="count" id="cntDone">0</span></button>
+        <button class="tab" data-filter="all">All<span class="count" id="cntAll">0</span></button>
       </div>
-      <p style="margin:10px 0 0;font-size:12px;color:var(--muted);">New tasks go to the bottom. Use the up/down arrows to reorder — whatever's on top is highest priority.</p>
-    </div>
-
-    <div id="clearDoneWrap" style="display:none; margin-bottom: 12px; text-align: right;">
-      <button id="clearDoneBtn" style="padding:8px 14px;background:transparent;border:1px solid var(--border);color:var(--danger);border-radius:6px;font-size:13px;cursor:pointer;">Clear all done</button>
-    </div>
-
-    <div class="tabs">
-      <button class="tab active" data-filter="open">Open <span class="count" id="cntOpen">0</span></button>
-      <button class="tab" data-filter="progress">In Progress <span class="count" id="cntProgress">0</span></button>
-      <button class="tab" data-filter="done">Done <span class="count" id="cntDone">0</span></button>
-      <button class="tab" data-filter="all">All <span class="count" id="cntAll">0</span></button>
+      <button id="clearDoneBtn" style="display:none;">Clear done</button>
     </div>
 
     <div class="task-list" id="taskList"></div>
@@ -593,9 +690,9 @@
       $("cntDone").textContent = cntDone;
       $("cntAll").textContent = tasks.length;
 
-      // Show "Clear all done" only on Done tab, for owner, when there are done tasks
-      $("clearDoneWrap").style.display =
-        (filter === "done" && currentRole === "owner" && cntDone > 0) ? "block" : "none";
+      // Show "Clear done" only on Done tab, for owner, when there are done tasks
+      $("clearDoneBtn").style.display =
+        (filter === "done" && currentRole === "owner" && cntDone > 0) ? "inline-flex" : "none";
 
       const filtered = filter === "all" ? tasks : tasks.filter(t => t.status === filter);
       const list = $("taskList");
@@ -628,8 +725,31 @@
       const openSorted = sorted.filter(t => t.status === "open");
       const openIdx = new Map(openSorted.map((t, i) => [t.id, i]));
 
+      // Preserve focus & selection across re-render (so autosave doesn't yank the user out of a textarea)
+      const active = document.activeElement;
+      let focusKey = null, selStart = 0, selEnd = 0, scrollTop = 0;
+      if (active && active.tagName === "TEXTAREA") {
+        if (active.dataset.ownerNoteId) focusKey = ["owner", active.dataset.ownerNoteId];
+        else if (active.dataset.noteId) focusKey = ["tech", active.dataset.noteId];
+        if (focusKey) {
+          selStart = active.selectionStart;
+          selEnd = active.selectionEnd;
+          scrollTop = active.scrollTop;
+        }
+      }
+
       list.innerHTML = sorted.map(t => renderTask(t, openIdx, openSorted.length)).join("");
       wireTaskActions();
+
+      if (focusKey) {
+        const attr = focusKey[0] === "owner" ? "data-owner-note-id" : "data-note-id";
+        const restored = document.querySelector(`textarea[${attr}="${focusKey[1]}"]`);
+        if (restored) {
+          restored.focus();
+          try { restored.setSelectionRange(selStart, selEnd); } catch (_) {}
+          restored.scrollTop = scrollTop;
+        }
+      }
     }
 
     function renderTask(t, openIdx, openCount) {
@@ -639,54 +759,69 @@
       const isOwner = currentRole === "owner";
       const isTech = currentRole === "tech";
 
-      // Owner reorder controls for open tasks
       const idx = openIdx.get(t.id);
       const isOpen = t.status === "open";
       const canUp = isOpen && idx !== undefined && idx > 0;
       const canDown = isOpen && idx !== undefined && idx < openCount - 1;
-      const rank = isOpen && idx !== undefined ? `<span class="rank">${idx + 1}.</span>` : "";
 
       const editing = editingIds.has(t.id);
 
-      let actions = "";
+      // Rank badge on left of card — number for open, dot for other states
+      let badgeText = "•";
+      if (isOpen && idx !== undefined) badgeText = String(idx + 1);
+      else if (t.status === "progress") badgeText = "▶";
+      else if (t.status === "done") badgeText = "✓";
+      const badgeHtml = `<span class="rank-badge">${badgeText}</span>`;
+
+      // Primary + secondary actions
+      let primary = "", secondary = "";
       if (editing) {
-        actions += `<button class="primary" data-act="save-title" data-id="${t.id}">Save</button>`;
-        actions += `<button data-act="cancel-edit" data-id="${t.id}">Cancel</button>`;
+        primary = `<button class="btn primary" data-act="save-title" data-id="${t.id}">Save</button>
+                   <button class="btn" data-act="cancel-edit" data-id="${t.id}">Cancel</button>`;
       } else if (isOpen) {
-        if (isOwner) actions += `<button data-act="up" data-id="${t.id}" ${canUp ? "" : "disabled"}>↑</button>`;
-        if (isOwner) actions += `<button data-act="down" data-id="${t.id}" ${canDown ? "" : "disabled"}>↓</button>`;
-        if (isTech) actions += `<button class="primary" data-act="start" data-id="${t.id}">Start</button>`;
-        if (isTech) actions += `<button class="success" data-act="done" data-id="${t.id}">Done</button>`;
-        if (isOwner) actions += `<button data-act="edit" data-id="${t.id}">Edit</button>`;
-        if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
+        if (isTech) {
+          primary = `<button class="btn primary" data-act="start" data-id="${t.id}">Start</button>
+                     <button class="btn" data-act="done" data-id="${t.id}">Mark done</button>`;
+        }
+        if (isOwner) {
+          secondary =
+            `<button class="btn icon" title="Move up" data-act="up" data-id="${t.id}" ${canUp ? "" : "disabled"}>${icoUp()}</button>` +
+            `<button class="btn icon" title="Move down" data-act="down" data-id="${t.id}" ${canDown ? "" : "disabled"}>${icoDown()}</button>` +
+            `<button class="btn icon" title="Edit" data-act="edit" data-id="${t.id}">${icoPencil()}</button>` +
+            `<button class="btn icon danger" title="Delete" data-act="delete" data-id="${t.id}">${icoTrash()}</button>`;
+        }
       } else if (t.status === "progress") {
-        if (isTech) actions += `<button class="success" data-act="done" data-id="${t.id}">Mark done</button>`;
-        if (isTech) actions += `<button data-act="reopen" data-id="${t.id}">Back to open</button>`;
-        if (isOwner) actions += `<button data-act="edit" data-id="${t.id}">Edit</button>`;
-        if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
+        if (isTech) {
+          primary = `<button class="btn success" data-act="done" data-id="${t.id}">Mark done</button>
+                     <button class="btn" data-act="reopen" data-id="${t.id}">Back to open</button>`;
+        }
+        if (isOwner) {
+          secondary =
+            `<button class="btn icon" title="Edit" data-act="edit" data-id="${t.id}">${icoPencil()}</button>` +
+            `<button class="btn icon danger" title="Delete" data-act="delete" data-id="${t.id}">${icoTrash()}</button>`;
+        }
       } else if (t.status === "done") {
-        if (isTech || isOwner) actions += `<button data-act="reopen" data-id="${t.id}">Reopen</button>`;
-        if (isOwner) actions += `<button data-act="edit" data-id="${t.id}">Edit</button>`;
-        if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
+        primary = `<button class="btn" data-act="reopen" data-id="${t.id}">Reopen</button>`;
+        if (isOwner) {
+          secondary =
+            `<button class="btn icon" title="Edit" data-act="edit" data-id="${t.id}">${icoPencil()}</button>` +
+            `<button class="btn icon danger" title="Delete" data-act="delete" data-id="${t.id}">${icoTrash()}</button>`;
+        }
       }
 
-      // Owner-notes = instructions/details from owner. Tech reads them, owner edits them.
-      // Tech-notes  = status/comments from tech. Owner reads them, tech edits them.
+      // Notes — inline, no card-in-card, autosaved
       let ownerNoteHtml = "";
       if (isOwner) {
         ownerNoteHtml = `
           <div class="note-block">
-            <div class="note-label">Details / Instructions</div>
-            <div class="note-box editable">
-              <textarea data-owner-note-id="${t.id}" placeholder="Kit them first. Should be 3 lefts and 3 rights.">${escapeHtml(t.ownerNote || "")}</textarea>
-              <button data-act="save-owner-note" data-id="${t.id}">Save</button>
-            </div>
+            <div class="note-label">Details <span class="saved-indicator" data-saved-for="owner-${t.id}"></span></div>
+            <textarea class="note-input" data-owner-note-id="${t.id}" placeholder="Kit them first. Should be 3 lefts and 3 rights…">${escapeHtml(t.ownerNote || "")}</textarea>
           </div>`;
       } else if (t.ownerNote) {
         ownerNoteHtml = `
           <div class="note-block">
-            <div class="note-label">From owner</div>
-            <div class="note-box">${escapeHtml(t.ownerNote)}</div>
+            <div class="note-label">Instructions</div>
+            <div class="note-view">${escapeHtml(t.ownerNote)}</div>
           </div>`;
       }
 
@@ -694,42 +829,80 @@
       if (isTech) {
         techNoteHtml = `
           <div class="note-block">
-            <div class="note-label">Your notes</div>
-            <div class="note-box editable tech">
-              <textarea data-note-id="${t.id}" placeholder="On hold for parts, waiting on Bob, etc.">${escapeHtml(t.note || "")}</textarea>
-              <button data-act="save-note" data-id="${t.id}">Save</button>
-            </div>
+            <div class="note-label">Your notes <span class="saved-indicator" data-saved-for="tech-${t.id}"></span></div>
+            <textarea class="note-input" data-note-id="${t.id}" placeholder="On hold, waiting on Bob…">${escapeHtml(t.note || "")}</textarea>
           </div>`;
       } else if (t.note) {
         techNoteHtml = `
           <div class="note-block">
-            <div class="note-label">From tech</div>
-            <div class="note-box tech">${escapeHtml(t.note)}</div>
+            <div class="note-label">Tech notes</div>
+            <div class="note-view tech">${escapeHtml(t.note)}</div>
           </div>`;
       }
 
-      const noteHtml = ownerNoteHtml + techNoteHtml;
+      const notesHtml = (ownerNoteHtml || techNoteHtml)
+        ? `<div class="notes">${ownerNoteHtml}${techNoteHtml}</div>`
+        : "";
 
       const metaBits = [
-        created ? `<span>Added ${created}</span>` : "",
-        started ? `<span>${started}</span>` : "",
-        done ? `<span>${done}</span>` : ""
-      ].filter(Boolean).join("");
+        created ? `Added ${created}` : "",
+        started ? started : "",
+        done ? done : ""
+      ].filter(Boolean).map((s, i) => (i > 0 ? `<span class="dot">•</span>` : "") + `<span>${s}</span>`).join(" ");
 
       const titleHtml = editing
         ? `<input class="title-edit" data-edit-id="${t.id}" type="text" value="${escapeHtml(t.title)}" />`
-        : `<div class="task-title">${rank}${escapeHtml(t.title)}</div>`;
+        : `<div class="task-title">${escapeHtml(t.title)}</div>`;
+
+      const actionsHtml = (primary || secondary)
+        ? `<div class="task-actions">${primary}<span class="spacer"></span>${secondary}</div>`
+        : "";
 
       return `
         <div class="task status-${t.status}">
-          <div class="task-top">
+          <div class="task-header">
+            ${badgeHtml}
             ${titleHtml}
           </div>
           ${metaBits ? `<div class="task-meta">${metaBits}</div>` : ""}
-          ${noteHtml}
-          <div class="task-actions">${actions}</div>
+          ${notesHtml}
+          ${actionsHtml}
         </div>
       `;
+    }
+
+    // Icon helpers — small inline SVGs
+    function icoUp()     { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`; }
+    function icoDown()   { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`; }
+    function icoPencil() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`; }
+    function icoTrash()  { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2"/></svg>`; }
+
+    // Debounced autosave for notes
+    const saveTimers = new Map();
+    function scheduleSave(taskId, field, value, kind) {
+      const key = `${kind}-${taskId}`;
+      const indicator = document.querySelector(`[data-saved-for="${key}"]`);
+      if (indicator) {
+        indicator.textContent = "saving…";
+        indicator.classList.add("visible", "saving");
+      }
+      clearTimeout(saveTimers.get(key));
+      saveTimers.set(key, setTimeout(async () => {
+        try {
+          await updateDoc(doc(db, "tasks", taskId), { [field]: value });
+          if (indicator) {
+            indicator.textContent = "✓ saved";
+            indicator.classList.remove("saving");
+            indicator.classList.add("visible");
+            setTimeout(() => indicator.classList.remove("visible"), 1200);
+          }
+        } catch (e) {
+          if (indicator) {
+            indicator.textContent = "save failed";
+            indicator.classList.remove("saving");
+          }
+        }
+      }, 700));
     }
 
     function wireTaskActions() {
@@ -744,6 +917,16 @@
           }
         });
       });
+
+      // Autosave owner-notes
+      document.querySelectorAll("textarea[data-owner-note-id]").forEach(ta => {
+        ta.addEventListener("input", () => scheduleSave(ta.dataset.ownerNoteId, "ownerNote", ta.value, "owner"));
+      });
+      // Autosave tech-notes
+      document.querySelectorAll("textarea[data-note-id]").forEach(ta => {
+        ta.addEventListener("input", () => scheduleSave(ta.dataset.noteId, "note", ta.value, "tech"));
+      });
+
       document.querySelectorAll("[data-act]").forEach(btn => {
         btn.addEventListener("click", async () => {
           const id = btn.dataset.id;
