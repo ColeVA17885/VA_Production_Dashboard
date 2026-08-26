@@ -659,9 +659,12 @@
         if (isOwner) actions += `<button class="danger" data-act="delete" data-id="${t.id}">Delete</button>`;
       }
 
-      const noteHtml = isTech
+      const notePlaceholder = isOwner
+        ? "Details, instructions, or a comment..."
+        : "Add a note or reply...";
+      const noteHtml = (isTech || isOwner)
         ? `<div class="note-box editable">
-             <textarea data-note-id="${t.id}" placeholder="Add a note...">${escapeHtml(t.note || "")}</textarea>
+             <textarea data-note-id="${t.id}" placeholder="${notePlaceholder}">${escapeHtml(t.note || "")}</textarea>
              <button data-act="save-note" data-id="${t.id}">Save</button>
            </div>`
         : (t.note ? `<div class="note-box">${escapeHtml(t.note)}</div>` : "");
