@@ -209,6 +209,16 @@
   .mp-popup a { color: var(--accent); text-decoration: none; font-size: 12px; }
   .mp-popup a:hover { text-decoration: underline; }
   .leaflet-popup-content-wrapper { border-radius: var(--radius-sm) !important; }
+  .mp-fp-ctrl a {
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    line-height: 26px;
+  }
+  .mp-fp-ctrl a.active {
+    background: #1a1612;
+    color: #f5f0e8;
+  }
 
   /* Status */
   .status {
@@ -678,20 +688,187 @@ var cluster = null;
 var mapVisible = false;
 var mapMarkerById = {};
 var lastFitBoundsKey = '';
+var footprintLayer = null;
+var showFootprints = false;
+var footprintById = {};
+
+// ---------- photo footprint math ----------
+// Returns {hFOV, vFOV} in radians, or null if we can't compute.
+function computeFOV(meta) {
+  if (!meta) return null;
+  var fl = toNum(meta.FocalLength);
+  var fl35 = toNum(meta.FocalLengthIn35mmFormat);
+  var w = toNum(meta.ExifImageWidth || meta.ImageWidth);
+  var h = toNum(meta.ExifImageHeight || meta.ImageHeight);
+  var sensorW, sensorH, focal;
+  if (fl && fl35 && w && h && fl > 0 && fl35 > 0) {
+    // Derive real sensor size via crop factor and image aspect
+    var crop = fl35 / fl;
+    var diag = 43.267 / crop; // 24×36 diagonal
+    var aspect = w / h;
+    var norm = Math.sqrt(aspect * aspect + 1);
+    sensorW = diag * aspect / norm;
+    sensorH = diag / norm;
+    focal = fl;
+  } else if (fl35 && fl35 > 0) {
+    // Fall back: treat FL35 as if on a 36×24 sensor
+    sensorW = 36; sensorH = 24; focal = fl35;
+  } else {
+    return null;
+  }
+  return {
+    hFOV: 2 * Math.atan(sensorW / (2 * focal)),
+    vFOV: 2 * Math.atan(sensorH / (2 * focal)),
+  };
+}
+
+// Compute the projected polygon on the ground for one photo.
+// Returns array of [lat, lon] corners (TL, TR, BR, BL) or null.
+function computeFootprint(r) {
+  var meta = r.meta || {};
+  var lat = meta.latitude, lon = meta.longitude;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+  // Altitude AGL: prefer DJI RelativeAltitude, else nothing sensible
+  var alt = gimbal(r, 'relAlt');
+  if (!Number.isFinite(alt) || alt < 1) return null;
+
+  var yaw = gimbal(r, 'gimbalYaw');
+  if (!Number.isFinite(yaw)) return null;
+  var pitch = gimbal(r, 'gimbalPitch');
+  if (!Number.isFinite(pitch)) pitch = -90; // assume nadir if unspecified
+
+  var fov = computeFOV(meta);
+  if (!fov) return null;
+
+  var yawR = yaw * Math.PI / 180;
+  var pitchR = pitch * Math.PI / 180;
+  var tanH = Math.tan(fov.hFOV / 2);
+  var tanV = Math.tan(fov.vFOV / 2);
+
+  // World frame: X = east, Y = north, Z = up
+  // Camera forward:
+  var fwd = [
+    Math.sin(yawR) * Math.cos(pitchR),
+    Math.cos(yawR) * Math.cos(pitchR),
+    Math.sin(pitchR),
+  ];
+  // Camera right (horizontal, perpendicular to yaw dir)
+  var right = [ Math.cos(yawR), -Math.sin(yawR), 0 ];
+  // Camera up = right × forward
+  var up = [
+    right[1]*fwd[2] - right[2]*fwd[1],
+    right[2]*fwd[0] - right[0]*fwd[2],
+    right[0]*fwd[1] - right[1]*fwd[0],
+  ];
+
+  var corners = [ [-1, 1], [1, 1], [1, -1], [-1, -1] ]; // TL, TR, BR, BL
+  var mPerDegLat = 111320;
+  var mPerDegLon = 111320 * Math.cos(lat * Math.PI / 180);
+  var out = [];
+  var MAX_RANGE_M = 20000; // clip absurdly-far horizon corners
+  for (var i = 0; i < corners.length; i++) {
+    var ci = corners[i][0], cj = corners[i][1];
+    var u = ci * tanH, v = cj * tanV;
+    var ray = [
+      fwd[0] + u*right[0] + v*up[0],
+      fwd[1] + u*right[1] + v*up[1],
+      fwd[2] + u*right[2] + v*up[2],
+    ];
+    if (ray[2] >= -0.02) return null; // ray goes up or horizontal
+    var t = -alt / ray[2];
+    var eastM = t * ray[0];
+    var northM = t * ray[1];
+    if (Math.abs(eastM) > MAX_RANGE_M || Math.abs(northM) > MAX_RANGE_M) return null;
+    out.push([ lat + northM / mPerDegLat, lon + eastM / mPerDegLon ]);
+  }
+  return out;
+}
+
+function refreshFootprints() {
+  if (!footprintLayer) return;
+  footprintLayer.clearLayers();
+  footprintById = {};
+  if (!showFootprints) return;
+  geoRows().forEach(function(r){
+    var poly = computeFootprint(r);
+    if (!poly) return;
+    var p = L.polygon(poly, {
+      color: '#b5895a',
+      weight: 1.5,
+      opacity: 0.9,
+      fillColor: '#b5895a',
+      fillOpacity: 0.15,
+      interactive: true,
+    });
+    p.bindTooltip(r.name, { sticky: true, direction: 'top' });
+    p.on('click', function(){ openDetail(r.id); });
+    p.on('mouseover', function(){ p.setStyle({ fillOpacity: 0.32, weight: 2 }); });
+    p.on('mouseout',  function(){ p.setStyle({ fillOpacity: 0.15, weight: 1.5 }); });
+    footprintById[r.id] = p;
+    footprintLayer.addLayer(p);
+  });
+}
+
+function addFootprintControl() {
+  var FootprintCtrl = L.Control.extend({
+    options: { position: 'topright' },
+    onAdd: function() {
+      var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control mp-fp-ctrl');
+      var a = L.DomUtil.create('a', '', div);
+      a.href = '#'; a.title = 'Toggle photo footprints';
+      a.innerHTML = '⬡';
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.on(a, 'click', function(e){
+        L.DomEvent.preventDefault(e);
+        showFootprints = !showFootprints;
+        a.classList.toggle('active', showFootprints);
+        refreshFootprints();
+      });
+      return div;
+    },
+  });
+  new FootprintCtrl().addTo(map);
+}
 
 function initMap() {
   if (map || typeof L === 'undefined') return;
-  map = L.map('map', { zoomControl: true, worldCopyJump: true }).setView([20, 0], 2);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
+  var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 22, maxNativeZoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
-  }).addTo(map);
+  });
+  var esri = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {
+      maxZoom: 22, maxNativeZoom: 19,
+      attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
+    }
+  );
+  var esriLabels = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 22, maxNativeZoom: 19, opacity: 0.85 }
+  );
+  var satellite = L.layerGroup([esri, esriLabels]);
+
+  map = L.map('map', {
+    zoomControl: true,
+    worldCopyJump: true,
+    maxZoom: 22,
+    layers: [satellite],
+  }).setView([20, 0], 2);
+
+  L.control.layers({ 'Satellite': satellite, 'Streets': osm }, null, { position: 'topright' }).addTo(map);
+
   cluster = L.markerClusterGroup({
     showCoverageOnHover: false,
     maxClusterRadius: 40,
     spiderfyOnMaxZoom: true,
+    disableClusteringAtZoom: 19,
   });
   map.addLayer(cluster);
+
+  footprintLayer = L.layerGroup().addTo(map);
+  addFootprintControl();
 }
 
 function geoRows() {
@@ -755,6 +932,8 @@ function refreshMap(fit) {
     cluster.addLayer(marker);
     latlngs.push([lat, lon]);
   });
+
+  refreshFootprints();
 
   $('mapEmpty').style.display = geo.length ? 'none' : '';
   // Only fit bounds if the set of visible points changed AND caller asked
