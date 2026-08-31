@@ -111,6 +111,53 @@
   .drop strong { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
   .drop small { display: block; margin-top: 8px; font-size: 12px; }
 
+  /* Gimbal filter bar */
+  .gimbal-bar {
+    display: flex; flex-wrap: wrap; gap: 12px 16px;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .gimbal-row {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .gimbal-row label {
+    font-size: 12px; color: var(--muted);
+    min-width: 58px;
+  }
+  .gimbal-row input {
+    font: inherit; width: 76px;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    color: var(--ink);
+    -moz-appearance: textfield;
+  }
+  .gimbal-row input::-webkit-outer-spin-button,
+  .gimbal-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .gimbal-row input:focus { outline: none; border-color: var(--ink-2); }
+  .gimbal-row .dash { color: var(--muted); }
+  .gimbal-actions {
+    display: flex; align-items: center; gap: 12px;
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .gimbal-actions .chk {
+    display: flex; align-items: center; gap: 6px; cursor: pointer;
+  }
+  button.ghost {
+    background: transparent; border: 1px solid var(--line);
+    padding: 5px 10px; font-size: 12px;
+  }
+  #gimbalToggle.active {
+    background: var(--ink); color: var(--bg); border-color: var(--ink);
+  }
+
   /* Status */
   .status {
     display: flex; gap: 16px; align-items: center;
@@ -274,9 +321,11 @@
       <option value="camera">Camera + lens</option>
       <option value="shoot">Shoot settings</option>
       <option value="gps">GPS + time</option>
+      <option value="gimbal">Gimbal / drone</option>
       <option value="rights">Rights + keywords</option>
       <option value="all">All (wide)</option>
     </select>
+    <button id="gimbalToggle" title="Filter by gimbal pitch / roll / yaw">Gimbal filter</button>
     <button id="pick">Pick files</button>
     <button id="pickdir">Pick folder</button>
     <button id="export" disabled>Export CSV</button>
@@ -290,6 +339,31 @@
     <strong>Drop a folder or images here</strong>
     Reads EXIF, XMP, IPTC, ICC — all local, nothing uploaded.
     <small>Supports JPG, HEIC, TIFF, PNG, WEBP, AVIF, DNG, CR2/CR3, NEF, ARW, RAF, ORF, and more.</small>
+  </div>
+
+  <div class="gimbal-bar" id="gimbalBar" hidden>
+    <div class="gimbal-row">
+      <label>Pitch (°)</label>
+      <input type="number" id="pitchMin" step="0.1" placeholder="min">
+      <span class="dash">–</span>
+      <input type="number" id="pitchMax" step="0.1" placeholder="max">
+    </div>
+    <div class="gimbal-row">
+      <label>Roll (°)</label>
+      <input type="number" id="rollMin" step="0.1" placeholder="min">
+      <span class="dash">–</span>
+      <input type="number" id="rollMax" step="0.1" placeholder="max">
+    </div>
+    <div class="gimbal-row">
+      <label>Yaw (°)</label>
+      <input type="number" id="yawMin" step="0.1" placeholder="min">
+      <span class="dash">–</span>
+      <input type="number" id="yawMax" step="0.1" placeholder="max">
+    </div>
+    <div class="gimbal-actions">
+      <label class="chk"><input type="checkbox" id="excludeNoGimbal"> Hide files without gimbal data</label>
+      <button id="gimbalReset" class="ghost">Reset</button>
+    </div>
   </div>
 
   <div class="status">
@@ -396,8 +470,57 @@ var COLUMNS = {
     ['Keywords', 'Keywords'],
     ['Rating', 'Rating'],
   ],
+  gimbal: [
+    ['name', 'File'],
+    ['_gimbalPitch', 'Pitch °'],
+    ['_gimbalRoll', 'Roll °'],
+    ['_gimbalYaw', 'Yaw °'],
+    ['_flightPitch', 'Flt pitch °'],
+    ['_flightRoll', 'Flt roll °'],
+    ['_flightYaw', 'Flt yaw °'],
+    ['_relAlt', 'Rel alt m'],
+    ['_absAlt', 'Abs alt m'],
+    ['Model', 'Camera'],
+    ['DateTimeOriginal', 'Taken'],
+  ],
   all: null // built dynamically from union of keys
 };
+
+// Read a possibly-string-prefixed number ("+45.00", "-10.5", 45.0) → number or null
+function toNum(v) {
+  if (v == null) return null;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  var s = String(v).trim();
+  if (!s) return null;
+  var n = parseFloat(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Look up a DJI XMP field across common key variants
+function pickField(meta, names) {
+  if (!meta) return null;
+  for (var i = 0; i < names.length; i++) {
+    var v = meta[names[i]];
+    if (v != null && v !== '') return v;
+  }
+  return null;
+}
+
+var GIMBAL_KEYS = {
+  gimbalPitch: ['GimbalPitchDegree', 'gimbalPitchDegree', 'GimbalPitch'],
+  gimbalRoll:  ['GimbalRollDegree',  'gimbalRollDegree',  'GimbalRoll'],
+  gimbalYaw:   ['GimbalYawDegree',   'gimbalYawDegree',   'GimbalYaw'],
+  flightPitch: ['FlightPitchDegree', 'flightPitchDegree'],
+  flightRoll:  ['FlightRollDegree',  'flightRollDegree'],
+  flightYaw:   ['FlightYawDegree',   'flightYawDegree'],
+  relAlt:      ['RelativeAltitude',  'relativeAltitude'],
+  absAlt:      ['AbsoluteAltitude',  'absoluteAltitude'],
+};
+
+function gimbal(row, which) {
+  if (!row.meta) return null;
+  return toNum(pickField(row.meta, GIMBAL_KEYS[which]));
+}
 
 // friendly formatters for common fields
 function formatValue(key, val) {
@@ -454,7 +577,39 @@ $('clear').addEventListener('click', function(){
 $('export').addEventListener('click', function(){ exportCSV(); });
 $('exportjson').addEventListener('click', function(){ exportJSON(); });
 $('cols').addEventListener('change', function(e){ colsMode = e.target.value; render(); });
-q.addEventListener('input', render);
+q.addEventListener('input', function(){ render(); updateStatus(); });
+
+// Gimbal filter wiring
+var gimbalBar = $('gimbalBar');
+$('gimbalToggle').addEventListener('click', function(){
+  var open = gimbalBar.hidden;
+  gimbalBar.hidden = !open;
+  $('gimbalToggle').classList.toggle('active', open || anyGimbalFilterActive());
+});
+function bindNum(inputId, prop) {
+  var el = $(inputId);
+  el.addEventListener('input', function(){
+    var v = el.value.trim();
+    gimbalFilter[prop] = (v === '' || isNaN(parseFloat(v))) ? null : parseFloat(v);
+    $('gimbalToggle').classList.toggle('active', anyGimbalFilterActive());
+    render(); updateStatus();
+  });
+}
+bindNum('pitchMin', 'pitchMin'); bindNum('pitchMax', 'pitchMax');
+bindNum('rollMin',  'rollMin');  bindNum('rollMax',  'rollMax');
+bindNum('yawMin',   'yawMin');   bindNum('yawMax',   'yawMax');
+$('excludeNoGimbal').addEventListener('change', function(e){
+  gimbalFilter.excludeMissing = e.target.checked;
+  $('gimbalToggle').classList.toggle('active', anyGimbalFilterActive());
+  render(); updateStatus();
+});
+$('gimbalReset').addEventListener('click', function(){
+  gimbalFilter = { pitchMin:null, pitchMax:null, rollMin:null, rollMax:null, yawMin:null, yawMax:null, excludeMissing:false };
+  ['pitchMin','pitchMax','rollMin','rollMax','yawMin','yawMax'].forEach(function(id){ $(id).value=''; });
+  $('excludeNoGimbal').checked = false;
+  $('gimbalToggle').classList.remove('active');
+  render(); updateStatus();
+});
 
 // ---------- drag / drop ----------
 drop.addEventListener('click', function(){ $('pick').click(); });
@@ -604,8 +759,53 @@ function getCell(row, key) {
   if (key === 'name') return row.name;
   if (key === 'path') return row.path;
   if (key === 'sizeKB') return row.sizeKB;
+  if (key === '_gimbalPitch') return gimbal(row, 'gimbalPitch');
+  if (key === '_gimbalRoll')  return gimbal(row, 'gimbalRoll');
+  if (key === '_gimbalYaw')   return gimbal(row, 'gimbalYaw');
+  if (key === '_flightPitch') return gimbal(row, 'flightPitch');
+  if (key === '_flightRoll')  return gimbal(row, 'flightRoll');
+  if (key === '_flightYaw')   return gimbal(row, 'flightYaw');
+  if (key === '_relAlt')      return gimbal(row, 'relAlt');
+  if (key === '_absAlt')      return gimbal(row, 'absAlt');
   if (!row.meta) return '';
   return row.meta[key];
+}
+
+// Gimbal range filter state
+var gimbalFilter = {
+  pitchMin: null, pitchMax: null,
+  rollMin: null, rollMax: null,
+  yawMin: null, yawMax: null,
+  excludeMissing: false,
+};
+
+function anyGimbalFilterActive() {
+  var g = gimbalFilter;
+  return g.pitchMin != null || g.pitchMax != null
+      || g.rollMin != null  || g.rollMax != null
+      || g.yawMin != null   || g.yawMax != null
+      || g.excludeMissing;
+}
+
+function matchesGimbal(row) {
+  var g = gimbalFilter;
+  if (!anyGimbalFilterActive()) return true;
+  var p = gimbal(row, 'gimbalPitch');
+  var r = gimbal(row, 'gimbalRoll');
+  var y = gimbal(row, 'gimbalYaw');
+  if (g.excludeMissing && p == null && r == null && y == null) return false;
+  // per-axis: if a bound is set, require the value to be present AND within
+  function check(val, min, max) {
+    if (min == null && max == null) return true;
+    if (val == null) return false;
+    if (min != null && val < min) return false;
+    if (max != null && val > max) return false;
+    return true;
+  }
+  if (!check(p, g.pitchMin, g.pitchMax)) return false;
+  if (!check(r, g.rollMin, g.rollMax)) return false;
+  if (!check(y, g.yawMin, g.yawMax)) return false;
+  return true;
 }
 
 function matchesFilter(row, term) {
@@ -643,7 +843,7 @@ function render() {
     thead.appendChild(th);
   });
 
-  var filtered = rows.filter(function(r){ return matchesFilter(r, term); });
+  var filtered = rows.filter(function(r){ return matchesFilter(r, term) && matchesGimbal(r); });
   filtered.sort(function(a, b){
     var av = getCell(a, sortKey), bv = getCell(b, sortKey);
     if (av == null && bv == null) return 0;
@@ -702,7 +902,11 @@ function updateStatus() {
   var errs = rows.filter(function(r){ return r.err; }).length;
   if (!n) { statText.textContent = 'No files yet.'; }
   else {
-    var s = n + ' file' + (n===1?'':'s');
+    var term = q.value.trim();
+    var shown = rows.filter(function(r){ return matchesFilter(r, term) && matchesGimbal(r); }).length;
+    var s = shown === n
+      ? n + ' file' + (n===1?'':'s')
+      : shown + ' of ' + n + ' shown';
     if (errs) s += ' · ' + errs + ' with errors';
     statText.textContent = s;
   }
@@ -806,6 +1010,23 @@ function renderDetail(r) {
         ['Color space', meta.ColorSpace],
         ['Bits/sample', meta.BitsPerSample],
       ]],
+      ['Drone / Gimbal', (function(){
+        var gp = gimbal(r, 'gimbalPitch'), gr = gimbal(r, 'gimbalRoll'), gy = gimbal(r, 'gimbalYaw');
+        var fp = gimbal(r, 'flightPitch'), fr = gimbal(r, 'flightRoll'), fy = gimbal(r, 'flightYaw');
+        var ra = gimbal(r, 'relAlt'), aa = gimbal(r, 'absAlt');
+        return [
+          ['Gimbal pitch', gp != null ? gp.toFixed(2) + '°' : null],
+          ['Gimbal roll',  gr != null ? gr.toFixed(2) + '°' : null],
+          ['Gimbal yaw',   gy != null ? gy.toFixed(2) + '°' : null],
+          ['Flight pitch', fp != null ? fp.toFixed(2) + '°' : null],
+          ['Flight roll',  fr != null ? fr.toFixed(2) + '°' : null],
+          ['Flight yaw',   fy != null ? fy.toFixed(2) + '°' : null],
+          ['Relative alt', ra != null ? ra.toFixed(1) + ' m' : null],
+          ['Absolute alt', aa != null ? aa.toFixed(1) + ' m' : null],
+          ['Drone model',  meta.DroneModel || meta.droneModel],
+          ['Drone S/N',    meta.DroneSerialNumber || meta.droneSerialNumber],
+        ];
+      })()],
       ['Rights / XMP', [
         ['Artist', meta.Artist || meta.Creator],
         ['Copyright', meta.Copyright || meta.Rights],
