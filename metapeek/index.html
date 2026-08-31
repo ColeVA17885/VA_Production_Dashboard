@@ -643,6 +643,7 @@ $('pickdir').addEventListener('click', function(){
 $('clear').addEventListener('click', function(){
   rows = []; selectedId = null; drawer.classList.remove('open');
   lastFitBoundsKey = '';
+  _groundRef = null;
   render(); updateStatus();
 });
 $('export').addEventListener('click', function(){ exportCSV(); });
@@ -722,6 +723,38 @@ function computeFOV(meta) {
   };
 }
 
+// Cached ground-elevation reference (used when RelativeAltitude is missing)
+var _groundRef = null;
+
+// Take min GPSAltitude across all geotagged rows as a proxy for takeoff/ground.
+// Uses 5th-percentile to shrug off a bogus low reading.
+function groundReferenceAlt() {
+  if (_groundRef != null) return _groundRef;
+  var vals = [];
+  rows.forEach(function(r){
+    if (!r.meta) return;
+    var lat = r.meta.latitude, lon = r.meta.longitude, alt = toNum(r.meta.GPSAltitude);
+    if (Number.isFinite(lat) && Number.isFinite(lon) && Number.isFinite(alt)) vals.push(alt);
+  });
+  if (!vals.length) return null;
+  vals.sort(function(a,b){ return a - b; });
+  var idx = Math.max(0, Math.floor(vals.length * 0.05));
+  _groundRef = vals[idx];
+  return _groundRef;
+}
+
+// Best AGL estimate for a row.
+function estimatedAGL(r) {
+  var rel = gimbal(r, 'relAlt');
+  if (Number.isFinite(rel) && rel > 0) return rel;
+  var gps = toNum(r.meta && r.meta.GPSAltitude);
+  if (!Number.isFinite(gps)) return null;
+  var ref = groundReferenceAlt();
+  if (!Number.isFinite(ref)) return null;
+  var agl = gps - ref;
+  return agl > 1 ? agl : null;
+}
+
 // Compute the projected polygon on the ground for one photo.
 // Returns array of [lat, lon] corners (TL, TR, BR, BL) or null.
 function computeFootprint(r) {
@@ -729,14 +762,18 @@ function computeFootprint(r) {
   var lat = meta.latitude, lon = meta.longitude;
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
-  // Altitude AGL: prefer DJI RelativeAltitude, else nothing sensible
-  var alt = gimbal(r, 'relAlt');
+  var alt = estimatedAGL(r);
   if (!Number.isFinite(alt) || alt < 1) return null;
 
+  // Yaw: gimbal yaw → GPS image direction → default 0 (north)
   var yaw = gimbal(r, 'gimbalYaw');
-  if (!Number.isFinite(yaw)) return null;
+  if (!Number.isFinite(yaw)) {
+    var dir = toNum(meta.GPSImgDirection);
+    yaw = Number.isFinite(dir) ? dir : 0;
+  }
+  // Pitch: gimbal pitch → default -90 (nadir) when unknown
   var pitch = gimbal(r, 'gimbalPitch');
-  if (!Number.isFinite(pitch)) pitch = -90; // assume nadir if unspecified
+  if (!Number.isFinite(pitch)) pitch = -90;
 
   var fov = computeFOV(meta);
   if (!fov) return null;
@@ -1032,6 +1069,7 @@ var IMG_EXT = /\.(jpe?g|png|gif|webp|avif|heic|heif|tiff?|dng|cr2|cr3|nef|arw|ra
 async function ingestFiles(files) {
   files = files.filter(function(f){ return IMG_EXT.test(f.name); });
   if (!files.length) { statText.textContent = 'No image files found in that drop.'; return; }
+  _groundRef = null;
   progWrap.style.display = '';
   var total = files.length, done = 0;
   prog.style.width = '0%';
