@@ -928,7 +928,47 @@ function refreshFootprints() {
   });
 }
 
-// Decode + downscale a File to a JPEG blob at max `maxDim` on the long edge.
+// Fade each edge of a canvas to transparent. Inner (1 - 2*fraction) of
+// each axis stays fully opaque; outer band fades linearly to zero.
+// Corners are the intersection of the two adjacent bands.
+function applyEdgeFeather(ctx, w, h, fraction) {
+  var bx = Math.max(1, Math.floor(w * fraction));
+  var by = Math.max(1, Math.floor(h * fraction));
+  // Build the mask on a separate canvas: fully opaque, then punch each
+  // edge band with destination-out (outside a fillRect is untouched).
+  var mask = document.createElement('canvas');
+  mask.width = w; mask.height = h;
+  var m = mask.getContext('2d');
+  m.fillStyle = 'rgba(0,0,0,1)';
+  m.fillRect(0, 0, w, h);
+  m.globalCompositeOperation = 'destination-out';
+  var g;
+  // Left: alpha 1 at x=0 → 0 at x=bx
+  g = m.createLinearGradient(0, 0, bx, 0);
+  g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  m.fillStyle = g; m.fillRect(0, 0, bx, h);
+  // Right: alpha 0 at x=w-bx → 1 at x=w
+  g = m.createLinearGradient(w - bx, 0, w, 0);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,1)');
+  m.fillStyle = g; m.fillRect(w - bx, 0, bx, h);
+  // Top
+  g = m.createLinearGradient(0, 0, 0, by);
+  g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  m.fillStyle = g; m.fillRect(0, 0, w, by);
+  // Bottom
+  g = m.createLinearGradient(0, h - by, 0, h);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,1)');
+  m.fillStyle = g; m.fillRect(0, h - by, w, by);
+
+  // Apply mask to source
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.drawImage(mask, 0, 0);
+  ctx.restore();
+}
+
+// Decode + downscale a File to a PNG blob at max `maxDim` on the long edge.
+// Applies edge feathering so tiles blend where they overlap on the map.
 async function downscaleToBlob(file, maxDim) {
   var bmp;
   try { bmp = await createImageBitmap(file); }
@@ -942,7 +982,9 @@ async function downscaleToBlob(file, maxDim) {
   var ctx = canvas.getContext('2d');
   ctx.drawImage(bmp, 0, 0, dw, dh);
   bmp.close && bmp.close();
-  return await new Promise(function(res){ canvas.toBlob(res, 'image/jpeg', 0.85); });
+  applyEdgeFeather(ctx, dw, dh, 0.18);
+  // PNG so transparent edges survive; JPEG would flatten alpha.
+  return await new Promise(function(res){ canvas.toBlob(res, 'image/png'); });
 }
 
 function clearMosaic() {
