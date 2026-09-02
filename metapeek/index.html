@@ -250,6 +250,16 @@
     background: #1a1612;
     color: #f5f0e8;
   }
+  .mp-mos-ctrl a {
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    line-height: 26px;
+  }
+  .mp-mos-ctrl a.active {
+    background: #1a1612;
+    color: #f5f0e8;
+  }
   .mp-fs-ctrl a {
     font-size: 18px; font-weight: 600;
     color: #333;
@@ -509,6 +519,7 @@
 <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet-imageoverlay-rotated@0.2.1/Leaflet.ImageOverlay.Rotated.js"></script>
 <script>
 'use strict';
 
@@ -703,6 +714,8 @@ $('clear').addEventListener('click', function(){
   rows = []; selectedId = null; drawer.classList.remove('open');
   lastFitBoundsKey = '';
   _groundRef = null;
+  if (mosaicJob) mosaicJob.cancelled = true;
+  clearMosaic();
   render(); updateStatus();
 });
 $('export').addEventListener('click', function(){ exportCSV(); });
@@ -751,6 +764,11 @@ var lastFitBoundsKey = '';
 var footprintLayer = null;
 var showFootprints = false;
 var footprintById = {};
+var mosaicLayer = null;
+var showMosaic = false;
+var mosaicOverlayById = {}; // rowId -> L.imageOverlay.rotated
+var mosaicUrlById = {};     // rowId -> object URL for downscaled image
+var mosaicJob = null;       // { cancelled: bool }
 
 // ---------- photo footprint math ----------
 // Returns {hFOV, vFOV} in radians, or null if we can't compute.
@@ -910,6 +928,124 @@ function refreshFootprints() {
   });
 }
 
+// Decode + downscale a File to a JPEG blob at max `maxDim` on the long edge.
+async function downscaleToBlob(file, maxDim) {
+  var bmp;
+  try { bmp = await createImageBitmap(file); }
+  catch (e) { return null; }
+  var w = bmp.width, h = bmp.height;
+  var scale = Math.min(1, maxDim / Math.max(w, h));
+  var dw = Math.max(1, Math.round(w * scale));
+  var dh = Math.max(1, Math.round(h * scale));
+  var canvas = document.createElement('canvas');
+  canvas.width = dw; canvas.height = dh;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(bmp, 0, 0, dw, dh);
+  bmp.close && bmp.close();
+  return await new Promise(function(res){ canvas.toBlob(res, 'image/jpeg', 0.85); });
+}
+
+function clearMosaic() {
+  if (mosaicLayer) mosaicLayer.clearLayers();
+  Object.keys(mosaicUrlById).forEach(function(k){
+    try { URL.revokeObjectURL(mosaicUrlById[k]); } catch(_){}
+  });
+  mosaicUrlById = {};
+  mosaicOverlayById = {};
+}
+
+function mosaicCandidates() {
+  return geoRows().filter(function(r){
+    // Need a real File object (not just metadata) and a computable footprint
+    if (!r.file || typeof r.file.slice !== 'function') return null;
+    return !!computeFootprint(r);
+  });
+}
+
+async function buildMosaic() {
+  if (!mosaicLayer) return;
+  clearMosaic();
+  if (!showMosaic) return;
+
+  var candidates = mosaicCandidates();
+  if (!candidates.length) {
+    statText.textContent = 'Mosaic: no photos with both a file loaded and a computable footprint.';
+    return;
+  }
+
+  var job = { cancelled: false };
+  if (mosaicJob) mosaicJob.cancelled = true;
+  mosaicJob = job;
+
+  var total = candidates.length, done = 0;
+  progWrap.style.display = '';
+  prog.style.width = '0%';
+  statText.textContent = 'Building mosaic: 0 / ' + total + '…';
+
+  var CONC = 3;
+  var idx = 0;
+  var workers = [];
+  for (var w = 0; w < Math.min(CONC, total); w++) {
+    workers.push((async function loop() {
+      while (!job.cancelled) {
+        var my = idx++;
+        if (my >= total) return;
+        var r = candidates[my];
+        try {
+          var blob = await downscaleToBlob(r.file, 1024);
+          if (job.cancelled) return;
+          if (!blob) { done++; continue; }
+          var url = URL.createObjectURL(blob);
+          mosaicUrlById[r.id] = url;
+          var poly = computeFootprint(r);
+          if (!poly) { done++; continue; }
+          // TL, TR, BR, BL → ImageOverlay.Rotated wants TL, TR, BL (affine)
+          var overlay = L.imageOverlay.rotated(url, poly[0], poly[1], poly[3], {
+            opacity: 1.0,
+            interactive: true,
+          });
+          overlay.on('click', function(rid){ return function(){ openDetail(rid); }; }(r.id));
+          mosaicLayer.addLayer(overlay);
+          mosaicOverlayById[r.id] = overlay;
+        } catch (e) {
+          console.warn('mosaic tile failed', r.name, e);
+        }
+        done++;
+        if (!job.cancelled) {
+          prog.style.width = (done/total*100) + '%';
+          statText.textContent = 'Building mosaic: ' + done + ' / ' + total + '…';
+        }
+      }
+    })());
+  }
+  await Promise.all(workers);
+  if (job.cancelled) return;
+  progWrap.style.display = 'none';
+  statText.textContent = done + ' image' + (done===1?'':'s') + ' placed';
+}
+
+function addMosaicControl() {
+  var MosCtrl = L.Control.extend({
+    options: { position: 'topright' },
+    onAdd: function() {
+      var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control mp-mos-ctrl');
+      var a = L.DomUtil.create('a', '', div);
+      a.href = '#'; a.title = 'Toggle photo overlay mosaic (preview quality)';
+      a.innerHTML = '▦';
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.on(a, 'click', function(e){
+        L.DomEvent.preventDefault(e);
+        showMosaic = !showMosaic;
+        a.classList.toggle('active', showMosaic);
+        if (showMosaic) buildMosaic();
+        else { if (mosaicJob) mosaicJob.cancelled = true; clearMosaic(); progWrap.style.display = 'none'; }
+      });
+      return div;
+    },
+  });
+  new MosCtrl().addTo(map);
+}
+
 function addFootprintControl() {
   var FootprintCtrl = L.Control.extend({
     options: { position: 'topright' },
@@ -967,8 +1103,10 @@ function initMap() {
   });
   map.addLayer(cluster);
 
+  mosaicLayer = L.layerGroup().addTo(map);
   footprintLayer = L.layerGroup().addTo(map);
   addFootprintControl();
+  addMosaicControl();
   addFullscreenControl();
 }
 
@@ -1079,7 +1217,10 @@ function refreshMap(fit) {
 $('aglOverride').addEventListener('input', function(e){
   var v = e.target.value.trim();
   aglOverrideM = (v === '' || isNaN(parseFloat(v))) ? null : parseFloat(v);
-  if (mapVisible && map) refreshFootprints();
+  if (mapVisible && map) {
+    refreshFootprints();
+    if (showMosaic) buildMosaic();
+  }
 });
 
 $('mapToggle').addEventListener('click', function(){
