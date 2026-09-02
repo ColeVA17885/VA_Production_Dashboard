@@ -260,6 +260,26 @@
     background: #1a1612;
     color: #f5f0e8;
   }
+  .mp-mark-ctrl a {
+    font-size: 16px; font-weight: 700;
+    color: #333;
+    text-align: center;
+    line-height: 26px;
+  }
+  .mp-mark-ctrl a.active {
+    background: #1a1612;
+    color: #f5f0e8;
+  }
+  .mp-heat-ctrl a {
+    font-size: 20px; font-weight: 700;
+    color: #333;
+    text-align: center;
+    line-height: 26px;
+  }
+  .mp-heat-ctrl a.active {
+    background: #1a1612;
+    color: #f5f0e8;
+  }
   .mp-fs-ctrl a {
     font-size: 18px; font-weight: 600;
     color: #333;
@@ -440,10 +460,16 @@
     </select>
     <button id="gimbalToggle" title="Filter by gimbal pitch / roll / yaw">Gimbal filter</button>
     <button id="mapToggle" title="Show/hide map of geotagged photos">Map</button>
-    <label class="agl-input" title="Override flight altitude AGL (used for footprints when RelativeAltitude is missing)">
+    <label class="agl-input" title="Forward overlap % — auto-computes AGL from photo spacing">
+      <span>Overlap %</span>
+      <input type="number" id="overlapPct" step="1" min="0" max="95" value="70">
+    </label>
+    <label class="agl-input" title="Flight altitude AGL. Auto-set from Overlap % + GPS spacing; edit to override.">
       <span>AGL m</span>
       <input type="number" id="aglOverride" step="1" min="1" placeholder="auto">
     </label>
+    <button id="exportPDF" disabled title="Export the mosaic as a georeferenced PDF">Mosaic PDF</button>
+    <button id="exportGeoTIFF" disabled title="Export the mosaic as a GeoTIFF (WGS84)">Mosaic GeoTIFF</button>
     <button id="pick">Pick files</button>
     <button id="pickdir">Pick folder</button>
     <button id="export" disabled>Export CSV</button>
@@ -520,6 +546,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/leaflet-imageoverlay-rotated@0.2.1/Leaflet.ImageOverlay.Rotated.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 'use strict';
 
@@ -823,6 +850,50 @@ function groundReferenceAlt() {
 // Manual override (from toolbar input); when set, takes priority.
 var aglOverrideM = null;
 
+// Haversine distance in meters between two lat/lon points.
+function haversineM(a, b) {
+  var R = 6371000;
+  var lat1 = a[0] * Math.PI / 180, lat2 = b[0] * Math.PI / 180;
+  var dLat = (b[0] - a[0]) * Math.PI / 180;
+  var dLon = (b[1] - a[1]) * Math.PI / 180;
+  var A = Math.sin(dLat/2)**2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(A), Math.sqrt(1 - A));
+}
+
+// Compute AGL that would produce a given forward-overlap fraction,
+// based on the median spacing between consecutive time-ordered geotagged
+// photos and each photo's horizontal FOV.
+function aglFromOverlap(overlapFrac) {
+  if (!(overlapFrac > 0 && overlapFrac < 1)) return null;
+  var withTime = rows
+    .filter(function(r){
+      return r.meta && Number.isFinite(r.meta.latitude) && Number.isFinite(r.meta.longitude)
+          && r.meta.DateTimeOriginal instanceof Date;
+    })
+    .sort(function(a,b){ return a.meta.DateTimeOriginal - b.meta.DateTimeOriginal; });
+  if (withTime.length < 2) return null;
+  var spacings = [];
+  for (var i = 1; i < withTime.length; i++) {
+    var d = haversineM(
+      [withTime[i-1].meta.latitude, withTime[i-1].meta.longitude],
+      [withTime[i].meta.latitude, withTime[i].meta.longitude]
+    );
+    if (d > 0.5 && d < 200) spacings.push(d); // ignore near-zero and cross-line jumps
+  }
+  if (!spacings.length) return null;
+  spacings.sort(function(a,b){ return a - b; });
+  var medianSpacing = spacings[Math.floor(spacings.length / 2)];
+  var fov = null;
+  for (var j = 0; j < withTime.length; j++) {
+    fov = computeFOV(withTime[j].meta);
+    if (fov) break;
+  }
+  if (!fov) return null;
+  // hFOV = flight direction (long axis, typical landscape mapping orientation)
+  var footprintForward = medianSpacing / (1 - overlapFrac);
+  return footprintForward / (2 * Math.tan(fov.hFOV / 2));
+}
+
 // Best AGL estimate for a row.
 function estimatedAGL(r) {
   var rel = gimbal(r, 'relAlt');
@@ -994,6 +1065,8 @@ function clearMosaic() {
   });
   mosaicUrlById = {};
   mosaicOverlayById = {};
+  if ($('exportPDF')) $('exportPDF').disabled = true;
+  if ($('exportGeoTIFF')) $('exportGeoTIFF').disabled = true;
 }
 
 function mosaicCandidates() {
@@ -1064,6 +1137,324 @@ async function buildMosaic() {
   if (job.cancelled) return;
   progWrap.style.display = 'none';
   statText.textContent = done + ' image' + (done===1?'':'s') + ' placed';
+  $('exportPDF').disabled = false;
+  $('exportGeoTIFF').disabled = false;
+}
+
+// Render the current mosaic (feathered tiles) onto a single canvas covering
+// the mosaic's geographic bounds. Uses a local ENU meters plane centered on
+// the mosaic — this keeps pixels roughly square at any latitude.
+// Returns {canvas, bounds:{minLat,maxLat,minLon,maxLon}, mPerPx}
+async function renderMosaicCanvas(cmPerPx) {
+  var candidates = mosaicCandidates();
+  if (!candidates.length) return null;
+
+  // Collect all footprint corners and figure the bounding box
+  var polys = [];
+  candidates.forEach(function(r){
+    var fp = computeFootprint(r);
+    if (fp) polys.push({ row: r, fp: fp });
+  });
+  if (!polys.length) return null;
+
+  var minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+  polys.forEach(function(p){
+    p.fp.forEach(function(c){
+      if (c[0] < minLat) minLat = c[0]; if (c[0] > maxLat) maxLat = c[0];
+      if (c[1] < minLon) minLon = c[1]; if (c[1] > maxLon) maxLon = c[1];
+    });
+  });
+
+  var centerLat = (minLat + maxLat) / 2;
+  var mPerDegLat = 111320;
+  var mPerDegLon = 111320 * Math.cos(centerLat * Math.PI / 180);
+  var widthM = (maxLon - minLon) * mPerDegLon;
+  var heightM = (maxLat - minLat) * mPerDegLat;
+
+  var mPerPx = cmPerPx / 100;
+  var canvasW = Math.max(1, Math.ceil(widthM / mPerPx));
+  var canvasH = Math.max(1, Math.ceil(heightM / mPerPx));
+
+  // Cap to something browsers can reliably allocate
+  var MAX_DIM = 16384;
+  if (canvasW > MAX_DIM || canvasH > MAX_DIM) {
+    var s = MAX_DIM / Math.max(canvasW, canvasH);
+    canvasW = Math.floor(canvasW * s);
+    canvasH = Math.floor(canvasH * s);
+    mPerPx = widthM / canvasW;
+  }
+
+  var canvas = document.createElement('canvas');
+  canvas.width = canvasW; canvas.height = canvasH;
+  var ctx = canvas.getContext('2d');
+
+  function llToPx(lat, lon) {
+    return {
+      x: (lon - minLon) * mPerDegLon / mPerPx,
+      y: (maxLat - lat) * mPerDegLat / mPerPx, // y flipped: 0=north
+    };
+  }
+
+  // Draw each tile with an affine warp defined by three of its footprint corners.
+  for (var i = 0; i < polys.length; i++) {
+    var r = polys[i].row;
+    var url = mosaicUrlById[r.id];
+    if (!url) continue;
+    var img = await new Promise(function(res, rej){
+      var im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = function(){ res(im); };
+      im.onerror = rej;
+      im.src = url;
+    });
+    var fp = polys[i].fp;
+    var TL = llToPx(fp[0][0], fp[0][1]);
+    var TR = llToPx(fp[1][0], fp[1][1]);
+    var BL = llToPx(fp[3][0], fp[3][1]);
+    var w = img.naturalWidth, h = img.naturalHeight;
+    var a = (TR.x - TL.x) / w;
+    var b = (TR.y - TL.y) / w;
+    var c = (BL.x - TL.x) / h;
+    var d = (BL.y - TL.y) / h;
+    var e = TL.x, f = TL.y;
+    ctx.save();
+    ctx.setTransform(a, b, c, d, e, f);
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
+  }
+
+  return { canvas: canvas, bounds: {minLat:minLat, maxLat:maxLat, minLon:minLon, maxLon:maxLon}, mPerPx: mPerPx };
+}
+
+// Build a GeoTIFF (uncompressed RGB with GeoKey tags for WGS84 lat/lon) from a canvas.
+// Returns an ArrayBuffer.
+function encodeGeoTIFF(canvas, bounds) {
+  var w = canvas.width, h = canvas.height;
+  var ctx = canvas.getContext('2d');
+  var imgData = ctx.getImageData(0, 0, w, h).data; // RGBA
+
+  // Convert RGBA to RGB
+  var rgbLen = w * h * 3;
+  var rgb = new Uint8Array(rgbLen);
+  for (var i = 0, j = 0; i < imgData.length; i += 4) {
+    rgb[j++] = imgData[i]; rgb[j++] = imgData[i+1]; rgb[j++] = imgData[i+2];
+  }
+
+  var pixelScaleX = (bounds.maxLon - bounds.minLon) / w;
+  var pixelScaleY = (bounds.maxLat - bounds.minLat) / h;
+
+  // We are building a little-endian TIFF ('II', magic 42).
+  // Structure: header(8) + IFD(2 + n*12 + 4) + externals + strip data
+  //
+  // Tag layout (uint16 tag, uint16 type, uint32 count, uint32 valueOrOffset)
+  // We must sort tags by tag id (ascending) per the TIFF spec.
+  //
+  // Types: 1=BYTE 2=ASCII 3=SHORT 4=LONG 12=DOUBLE
+  //
+  // Externals collect variable-length data (short arrays >2 entries, doubles, ascii, strip bytes).
+
+  // Prepare externals: doubles for pixel scale + tiepoint, geokey directory, BitsPerSample shorts, strip bytes.
+  var bitsPerSample = new Uint8Array([8,0,8,0,8,0]); // three SHORT values [8,8,8]
+
+  var pixelScaleBytes = new ArrayBuffer(3 * 8);
+  var psView = new DataView(pixelScaleBytes);
+  psView.setFloat64(0,  pixelScaleX, true);
+  psView.setFloat64(8,  pixelScaleY, true);
+  psView.setFloat64(16, 0, true);
+
+  var tiepointBytes = new ArrayBuffer(6 * 8);
+  var tpView = new DataView(tiepointBytes);
+  // I,J,K,X,Y,Z: pixel (0,0) → (minLon, maxLat, 0)
+  tpView.setFloat64(0, 0, true);
+  tpView.setFloat64(8, 0, true);
+  tpView.setFloat64(16, 0, true);
+  tpView.setFloat64(24, bounds.minLon, true);
+  tpView.setFloat64(32, bounds.maxLat, true);
+  tpView.setFloat64(40, 0, true);
+
+  // GeoKeyDirectory: [ver=1, revMajor=1, revMinor=0, numKeys=3,
+  //                   1024,0,1, 2,    (GTModelTypeGeoKey = ModelTypeGeographic)
+  //                   1025,0,1, 1,    (GTRasterTypeGeoKey = RasterPixelIsArea)
+  //                   2048,0,1, 4326] (GeographicTypeGeoKey = WGS84)
+  var geoKeyDirBytes = new Uint8Array(16 * 2);
+  var gk = new DataView(geoKeyDirBytes.buffer);
+  var keys = [1,1,0,3,  1024,0,1,2,  1025,0,1,1,  2048,0,1,4326];
+  for (var k = 0; k < keys.length; k++) gk.setUint16(k * 2, keys[k], true);
+
+  // Strip data offset will be placed after externals + IFD.
+  // Layout in file:
+  //   [0..8) header
+  //   [8..?) IFD (size known once we know tag count)
+  //   externals: bitsPerSample(6), pixelScale(24), tiepoint(48), geoKeyDir(32)
+  //   strip bytes (rgb)
+
+  // Compute offsets deterministically:
+  var extBps = 6;
+  var extPixelScale = 3 * 8;
+  var extTiepoint = 6 * 8;
+  var extGeoKeyDir = 32;
+
+  // Tags we're going to write (sorted by tag id):
+  //   ImageWidth (256) LONG 1
+  //   ImageLength (257) LONG 1
+  //   BitsPerSample (258) SHORT 3 → external (6 bytes)
+  //   Compression (259) SHORT 1 = 1 (none)
+  //   PhotometricInterpretation (262) SHORT 1 = 2 (RGB)
+  //   StripOffsets (273) LONG 1 → strip start
+  //   SamplesPerPixel (277) SHORT 1 = 3
+  //   RowsPerStrip (278) LONG 1 = h
+  //   StripByteCounts (279) LONG 1 = rgbLen
+  //   XResolution (282) RATIONAL 1 — SKIP (optional)
+  //   YResolution (283) RATIONAL 1 — SKIP
+  //   PlanarConfiguration (284) SHORT 1 = 1
+  //   ModelPixelScaleTag (33550) DOUBLE 3 → external
+  //   ModelTiepointTag (33922) DOUBLE 6 → external
+  //   GeoKeyDirectoryTag (34735) SHORT 16 → external
+
+  var numTags = 12;
+  var ifdSize = 2 + numTags * 12 + 4;
+  var ifdOffset = 8;
+  var extStart = ifdOffset + ifdSize;
+  var bpsOffset = extStart;
+  var psOffset = bpsOffset + extBps;
+  var tpOffset = psOffset + extPixelScale;
+  var gkOffset = tpOffset + extTiepoint;
+  var stripOffset = gkOffset + extGeoKeyDir;
+  var fileSize = stripOffset + rgbLen;
+
+  var out = new Uint8Array(fileSize);
+  var v = new DataView(out.buffer);
+
+  // Header
+  out[0] = 0x49; out[1] = 0x49; // II
+  v.setUint16(2, 42, true);
+  v.setUint32(4, ifdOffset, true);
+
+  // IFD
+  v.setUint16(ifdOffset, numTags, true);
+  var p = ifdOffset + 2;
+  function writeTag(tag, type, count, val) {
+    v.setUint16(p, tag, true);
+    v.setUint16(p + 2, type, true);
+    v.setUint32(p + 4, count, true);
+    // If value fits in 4 bytes, store inline (right-aligned for shorts).
+    if (type === 3 && count === 1) v.setUint32(p + 8, val, true);
+    else if (type === 4 && count === 1) v.setUint32(p + 8, val, true);
+    else if (type === 1 && count <= 4) v.setUint32(p + 8, val, true);
+    else v.setUint32(p + 8, val, true); // offset otherwise
+    p += 12;
+  }
+  writeTag(256, 4, 1, w);         // ImageWidth
+  writeTag(257, 4, 1, h);         // ImageLength
+  writeTag(258, 3, 3, bpsOffset); // BitsPerSample
+  writeTag(259, 3, 1, 1);         // Compression = none
+  writeTag(262, 3, 1, 2);         // PhotometricInterpretation = RGB
+  writeTag(273, 4, 1, stripOffset); // StripOffsets
+  writeTag(277, 3, 1, 3);         // SamplesPerPixel
+  writeTag(278, 4, 1, h);         // RowsPerStrip
+  writeTag(279, 4, 1, rgbLen);    // StripByteCounts
+  writeTag(284, 3, 1, 1);         // PlanarConfiguration
+  writeTag(33550, 12, 3, psOffset); // ModelPixelScaleTag
+  writeTag(33922, 12, 6, tpOffset); // ModelTiepointTag
+  // Note: 34735 GeoKeyDirectoryTag is tag 34735 — must come after 33922 in sorted order. Wait — 33922 < 34735, OK.
+  // But we only have 12 tags declared; add GeoKeyDirectoryTag as the 13th? Recount.
+  // Actually I declared 12 tags above; the geokey is #13. Adjust.
+  v.setUint32(p, 0, true); // next IFD offset = 0 (last)
+
+  // Recount: we wrote 12 tags already. Need to also write 34735. Redo properly.
+  // Instead of hacking after the fact, restart the IFD write with 13 tags.
+
+  // -- Restart write with 13 tags --
+  numTags = 13;
+  ifdSize = 2 + numTags * 12 + 4;
+  extStart = ifdOffset + ifdSize;
+  bpsOffset = extStart;
+  psOffset = bpsOffset + extBps;
+  tpOffset = psOffset + extPixelScale;
+  gkOffset = tpOffset + extTiepoint;
+  stripOffset = gkOffset + extGeoKeyDir;
+  fileSize = stripOffset + rgbLen;
+
+  out = new Uint8Array(fileSize);
+  v = new DataView(out.buffer);
+  out[0] = 0x49; out[1] = 0x49;
+  v.setUint16(2, 42, true);
+  v.setUint32(4, ifdOffset, true);
+  v.setUint16(ifdOffset, numTags, true);
+  p = ifdOffset + 2;
+  function writeTag2(tag, type, count, val) {
+    v.setUint16(p, tag, true);
+    v.setUint16(p + 2, type, true);
+    v.setUint32(p + 4, count, true);
+    v.setUint32(p + 8, val, true);
+    p += 12;
+  }
+  writeTag2(256, 4, 1, w);
+  writeTag2(257, 4, 1, h);
+  writeTag2(258, 3, 3, bpsOffset);
+  writeTag2(259, 3, 1, 1);
+  writeTag2(262, 3, 1, 2);
+  writeTag2(273, 4, 1, stripOffset);
+  writeTag2(277, 3, 1, 3);
+  writeTag2(278, 4, 1, h);
+  writeTag2(279, 4, 1, rgbLen);
+  writeTag2(284, 3, 1, 1);
+  writeTag2(33550, 12, 3, psOffset);
+  writeTag2(33922, 12, 6, tpOffset);
+  writeTag2(34735, 3, 16, gkOffset);
+  v.setUint32(p, 0, true);
+
+  // Copy externals
+  out.set(bitsPerSample, bpsOffset);
+  out.set(new Uint8Array(pixelScaleBytes), psOffset);
+  out.set(new Uint8Array(tiepointBytes), tpOffset);
+  out.set(geoKeyDirBytes, gkOffset);
+  out.set(rgb, stripOffset);
+
+  return out.buffer;
+}
+
+async function exportMosaicPDF() {
+  if (!showMosaic || !mosaicLayer || mosaicLayer.getLayers().length === 0) {
+    alert('Toggle the mosaic on first.'); return;
+  }
+  statText.textContent = 'Rendering mosaic for PDF…';
+  var result = await renderMosaicCanvas(10); // 10 cm/pixel
+  if (!result) { statText.textContent = 'Nothing to export.'; return; }
+  var jsPDF = window.jspdf && window.jspdf.jsPDF;
+  if (!jsPDF) { alert('PDF library failed to load.'); return; }
+  var canvas = result.canvas;
+  var b = result.bounds;
+  var landscape = canvas.width >= canvas.height;
+  var pageW = 1000, pageH = 1000 * (canvas.height / canvas.width);
+  var pdf = new jsPDF({ orientation: landscape ? 'l' : 'p', unit: 'pt', format: [pageW, pageH] });
+  var dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+  pdf.addImage(dataUrl, 'JPEG', 0, 0, pageW, pageH);
+  // Footer text with georeference
+  pdf.setFontSize(9);
+  pdf.setTextColor(80);
+  pdf.text(
+    'MetaPeek preview mosaic — WGS84 bounds: '
+      + b.minLat.toFixed(6) + ', ' + b.minLon.toFixed(6) + '  to  '
+      + b.maxLat.toFixed(6) + ', ' + b.maxLon.toFixed(6)
+      + '  ·  ~' + (result.mPerPx * 100).toFixed(1) + ' cm/px',
+    10, pageH - 8
+  );
+  pdf.save('metapeek-mosaic.pdf');
+  statText.textContent = 'PDF exported.';
+}
+
+async function exportMosaicGeoTIFF() {
+  if (!showMosaic || !mosaicLayer || mosaicLayer.getLayers().length === 0) {
+    alert('Toggle the mosaic on first.'); return;
+  }
+  statText.textContent = 'Rendering mosaic for GeoTIFF…';
+  var result = await renderMosaicCanvas(10); // 10 cm/pixel
+  if (!result) { statText.textContent = 'Nothing to export.'; return; }
+  var buf = encodeGeoTIFF(result.canvas, result.bounds);
+  var blob = new Blob([buf], { type: 'image/tiff' });
+  downloadBlob(blob, 'metapeek-mosaic.tif');
+  statText.textContent = 'GeoTIFF exported (' + Math.round(buf.byteLength / 1e6) + ' MB).';
 }
 
 function addMosaicControl() {
@@ -1149,7 +1540,180 @@ function initMap() {
   footprintLayer = L.layerGroup().addTo(map);
   addFootprintControl();
   addMosaicControl();
+  addHeatmapControl();
+  addMarkerToggleControl();
   addFullscreenControl();
+}
+
+var markersVisible = true;
+var heatmapOverlay = null;
+var showHeatmap = false;
+var heatmapCanvasCache = null;
+
+// Rasterize footprint polygons onto a count grid, then colorize.
+// Returns { overlay, canvas, bounds, maxCount } or null if nothing to draw.
+function buildHeatmap() {
+  var candidates = geoRows().filter(function(r){ return !!computeFootprint(r); });
+  if (!candidates.length) return null;
+
+  var polys = candidates.map(function(r){ return computeFootprint(r); });
+  var minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+  polys.forEach(function(fp){ fp.forEach(function(c){
+    if (c[0] < minLat) minLat = c[0]; if (c[0] > maxLat) maxLat = c[0];
+    if (c[1] < minLon) minLon = c[1]; if (c[1] > maxLon) maxLon = c[1];
+  }); });
+  // Pad a hair so edges aren't clipped
+  var dLat = (maxLat - minLat) * 0.03, dLon = (maxLon - minLon) * 0.03;
+  minLat -= dLat; maxLat += dLat; minLon -= dLon; maxLon += dLon;
+
+  // Grid resolution: aim for ~800 px on the long edge
+  var aspect = (maxLon - minLon) / (maxLat - minLat);
+  var W, H;
+  if (aspect >= 1) { W = 800; H = Math.max(10, Math.round(800 / aspect)); }
+  else             { H = 800; W = Math.max(10, Math.round(800 * aspect)); }
+
+  var counts = new Uint16Array(W * H);
+  // Fill each polygon into the count grid
+  polys.forEach(function(fp){
+    // Convert lat/lon corners to grid pixels
+    var pts = fp.map(function(c){
+      return [
+        (c[1] - minLon) / (maxLon - minLon) * W,
+        (maxLat - c[0]) / (maxLat - minLat) * H,
+      ];
+    });
+    // Bounding rect of the poly in pixel space
+    var xs = pts.map(function(p){ return p[0]; });
+    var ys = pts.map(function(p){ return p[1]; });
+    var x0 = Math.max(0, Math.floor(Math.min.apply(null, xs)));
+    var x1 = Math.min(W - 1, Math.ceil(Math.max.apply(null, xs)));
+    var y0 = Math.max(0, Math.floor(Math.min.apply(null, ys)));
+    var y1 = Math.min(H - 1, Math.ceil(Math.max.apply(null, ys)));
+    for (var y = y0; y <= y1; y++) {
+      for (var x = x0; x <= x1; x++) {
+        if (pointInPoly(x + 0.5, y + 0.5, pts)) counts[y * W + x]++;
+      }
+    }
+  });
+
+  var maxCount = 0;
+  for (var i = 0; i < counts.length; i++) if (counts[i] > maxCount) maxCount = counts[i];
+  if (maxCount === 0) return null;
+
+  var canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  var ctx = canvas.getContext('2d');
+  var imgData = ctx.createImageData(W, H);
+  var d = imgData.data;
+  for (var j = 0; j < counts.length; j++) {
+    var c = counts[j];
+    if (c === 0) { d[j*4+3] = 0; continue; }
+    var t = Math.log(1 + c) / Math.log(1 + maxCount); // log so 1-vs-10 stays legible
+    var rgb = viridis(t);
+    d[j*4]   = rgb[0];
+    d[j*4+1] = rgb[1];
+    d[j*4+2] = rgb[2];
+    d[j*4+3] = 180; // 70% opacity
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  return {
+    canvas: canvas,
+    bounds: [[minLat, minLon], [maxLat, maxLon]],
+    maxCount: maxCount,
+  };
+}
+
+// point-in-polygon (ray-cast)
+function pointInPoly(x, y, poly) {
+  var inside = false;
+  for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    var xi = poly[i][0], yi = poly[i][1];
+    var xj = poly[j][0], yj = poly[j][1];
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+
+// Viridis-like colormap, input t in [0,1] → [r,g,b] in [0,255]
+function viridis(t) {
+  t = Math.max(0, Math.min(1, t));
+  // 6-stop approximation of viridis
+  var stops = [
+    [0.00, [ 68,   1,  84]],
+    [0.20, [ 65,  68, 135]],
+    [0.40, [ 42, 120, 142]],
+    [0.60, [ 34, 168, 132]],
+    [0.80, [122, 209,  81]],
+    [1.00, [253, 231,  37]],
+  ];
+  for (var i = 1; i < stops.length; i++) {
+    if (t <= stops[i][0]) {
+      var s0 = stops[i-1], s1 = stops[i];
+      var f = (t - s0[0]) / (s1[0] - s0[0]);
+      return [
+        Math.round(s0[1][0] + (s1[1][0] - s0[1][0]) * f),
+        Math.round(s0[1][1] + (s1[1][1] - s0[1][1]) * f),
+        Math.round(s0[1][2] + (s1[1][2] - s0[1][2]) * f),
+      ];
+    }
+  }
+  return stops[stops.length - 1][1];
+}
+
+function refreshHeatmap() {
+  if (!map) return;
+  if (heatmapOverlay) { map.removeLayer(heatmapOverlay); heatmapOverlay = null; }
+  if (!showHeatmap) return;
+  var hm = buildHeatmap();
+  if (!hm) return;
+  var url = hm.canvas.toDataURL('image/png');
+  heatmapOverlay = L.imageOverlay(url, hm.bounds, { opacity: 0.75 }).addTo(map);
+  statText.textContent = 'Coverage heatmap: max ' + hm.maxCount + ' overlapping photos';
+}
+
+function addHeatmapControl() {
+  var HCtrl = L.Control.extend({
+    options: { position: 'topright' },
+    onAdd: function() {
+      var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control mp-heat-ctrl');
+      var a = L.DomUtil.create('a', '', div);
+      a.href = '#'; a.title = 'Toggle coverage heatmap';
+      a.innerHTML = '≋';
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.on(a, 'click', function(e){
+        L.DomEvent.preventDefault(e);
+        showHeatmap = !showHeatmap;
+        a.classList.toggle('active', showHeatmap);
+        refreshHeatmap();
+      });
+      return div;
+    },
+  });
+  new HCtrl().addTo(map);
+}
+
+function addMarkerToggleControl() {
+  var MarkCtrl = L.Control.extend({
+    options: { position: 'topright' },
+    onAdd: function() {
+      var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control mp-mark-ctrl');
+      var a = L.DomUtil.create('a', '', div);
+      a.href = '#'; a.title = 'Toggle geotag dots';
+      a.innerHTML = '●';
+      a.classList.add('active');
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.on(a, 'click', function(e){
+        L.DomEvent.preventDefault(e);
+        markersVisible = !markersVisible;
+        a.classList.toggle('active', markersVisible);
+        if (markersVisible) map.addLayer(cluster);
+        else map.removeLayer(cluster);
+      });
+      return div;
+    },
+  });
+  new MarkCtrl().addTo(map);
 }
 
 function addFullscreenControl() {
@@ -1262,8 +1826,28 @@ $('aglOverride').addEventListener('input', function(e){
   if (mapVisible && map) {
     refreshFootprints();
     if (showMosaic) buildMosaic();
+    if (showHeatmap) refreshHeatmap();
   }
 });
+
+function applyOverlapToAgl() {
+  var pctEl = $('overlapPct');
+  var pct = parseFloat(pctEl.value);
+  if (!(pct > 0 && pct < 100)) return;
+  var agl = aglFromOverlap(pct / 100);
+  if (!Number.isFinite(agl) || agl <= 0) return;
+  var rounded = Math.round(agl);
+  $('aglOverride').value = rounded;
+  aglOverrideM = rounded;
+  if (mapVisible && map) {
+    refreshFootprints();
+    if (showMosaic) buildMosaic();
+    if (showHeatmap) refreshHeatmap();
+  }
+}
+$('overlapPct').addEventListener('input', applyOverlapToAgl);
+$('exportPDF').addEventListener('click', exportMosaicPDF);
+$('exportGeoTIFF').addEventListener('click', exportMosaicGeoTIFF);
 
 $('mapToggle').addEventListener('click', function(){
   mapVisible = !mapVisible;
@@ -1378,6 +1962,8 @@ async function ingestFiles(files) {
   progWrap.style.display = 'none';
   render();
   updateStatus();
+  // Only apply if user hasn't already set an explicit AGL
+  if (!Number.isFinite(aglOverrideM) || aglOverrideM <= 0) applyOverlapToAgl();
 }
 
 async function processOne(file) {
