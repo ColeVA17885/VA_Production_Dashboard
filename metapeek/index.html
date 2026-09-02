@@ -3,8 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f5f0e8">
+<meta name="theme-color" content="#f5f0e8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17140f" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.json">
+<script>
+  // Apply saved theme before styles paint to avoid flash of wrong colors
+  try {
+    var t = localStorage.getItem('metapeek-theme');
+    if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+  } catch(_){}
+</script>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -15,16 +23,60 @@
   :root {
     --bg: #f5f0e8;
     --panel: #ffffff;
+    --panel-hi: #faf6ef;
     --ink: #1a1612;
     --ink-2: #4a4238;
     --muted: #8a7f70;
     --line: #e5ded1;
     --accent: #6b8a5a;
+    --accent-soft: #eef3e8;
     --accent-2: #b5895a;
     --warn: #b85c3c;
     --shadow: 0 1px 2px rgba(26,22,18,.04), 0 4px 12px rgba(26,22,18,.06);
     --radius: 12px;
     --radius-sm: 8px;
+    --map-ctrl-bg: #ffffff;
+    --map-ctrl-ink: #333333;
+    --map-ctrl-active-bg: #1a1612;
+    --map-ctrl-active-ink: #f5f0e8;
+  }
+  :root[data-theme="dark"] {
+    --bg: #17140f;
+    --panel: #24201a;
+    --panel-hi: #2c2721;
+    --ink: #ede6d6;
+    --ink-2: #c4bcac;
+    --muted: #857d70;
+    --line: #3a342b;
+    --accent: #8ba876;
+    --accent-soft: #2b342a;
+    --accent-2: #d4a97d;
+    --warn: #d97961;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 6px 16px rgba(0,0,0,.45);
+    --map-ctrl-bg: #24201a;
+    --map-ctrl-ink: #ede6d6;
+    --map-ctrl-active-bg: #ede6d6;
+    --map-ctrl-active-ink: #17140f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17140f;
+      --panel: #24201a;
+      --panel-hi: #2c2721;
+      --ink: #ede6d6;
+      --ink-2: #c4bcac;
+      --muted: #857d70;
+      --line: #3a342b;
+      --accent: #8ba876;
+      --accent-soft: #2b342a;
+      --accent-2: #d4a97d;
+      --warn: #d97961;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 6px 16px rgba(0,0,0,.45);
+      --map-ctrl-bg: #24201a;
+      --map-ctrl-ink: #ede6d6;
+      --map-ctrl-active-bg: #ede6d6;
+      --map-ctrl-active-ink: #17140f;
+    }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; height: 100%; }
@@ -110,7 +162,7 @@
     cursor: pointer;
   }
   .drop:hover { border-color: var(--ink-2); color: var(--ink-2); }
-  .drop.drag { border-color: var(--accent); background: #eef3e8; color: var(--ink); }
+  .drop.drag { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
   .drop strong { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
   .drop small { display: block; margin-top: 8px; font-size: 12px; }
 
@@ -179,6 +231,10 @@
   .agl-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .agl-input input:focus { outline: none; }
   .agl-input:focus-within { border-color: var(--ink-2); }
+  button.icon-only {
+    width: 32px; padding: 6px 0; text-align: center;
+    font-size: 15px; line-height: 1;
+  }
   #gimbalToggle.active {
     background: var(--ink); color: var(--bg); border-color: var(--ink);
   }
@@ -240,55 +296,80 @@
   .mp-popup a { color: var(--accent); text-decoration: none; font-size: 12px; }
   .mp-popup a:hover { text-decoration: underline; }
   .leaflet-popup-content-wrapper { border-radius: var(--radius-sm) !important; }
+  /* Dark-mode overrides for Leaflet's own controls */
+  :root[data-theme="dark"] .leaflet-bar a,
+  :root[data-theme="dark"] .leaflet-control-layers,
+  :root[data-theme="dark"] .leaflet-control-attribution,
+  :root[data-theme="dark"] .leaflet-popup-content-wrapper,
+  :root[data-theme="dark"] .leaflet-popup-tip {
+    background: var(--panel);
+    color: var(--ink);
+  }
+  :root[data-theme="dark"] .leaflet-bar a { border-bottom-color: var(--line); }
+  :root[data-theme="dark"] .leaflet-bar a:hover { background: var(--panel-hi); }
+  :root[data-theme="dark"] .leaflet-control-attribution a { color: var(--accent); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .leaflet-bar a,
+    :root:not([data-theme="light"]) .leaflet-control-layers,
+    :root:not([data-theme="light"]) .leaflet-control-attribution,
+    :root:not([data-theme="light"]) .leaflet-popup-content-wrapper,
+    :root:not([data-theme="light"]) .leaflet-popup-tip {
+      background: var(--panel);
+      color: var(--ink);
+    }
+    :root:not([data-theme="light"]) .leaflet-bar a { border-bottom-color: var(--line); }
+    :root:not([data-theme="light"]) .leaflet-bar a:hover { background: var(--panel-hi); }
+    :root:not([data-theme="light"]) .leaflet-control-attribution a { color: var(--accent); }
+  }
   .mp-fp-ctrl a {
     font-weight: 700;
-    color: #333;
+    color: var(--map-ctrl-ink);
     text-align: center;
     line-height: 26px;
   }
   .mp-fp-ctrl a.active {
-    background: #1a1612;
-    color: #f5f0e8;
+    background: var(--map-ctrl-active-bg);
+    color: var(--map-ctrl-active-ink);
   }
   .mp-mos-ctrl a {
     font-weight: 700;
-    color: #333;
+    color: var(--map-ctrl-ink);
     text-align: center;
     line-height: 26px;
   }
   .mp-mos-ctrl a.active {
-    background: #1a1612;
-    color: #f5f0e8;
+    background: var(--map-ctrl-active-bg);
+    color: var(--map-ctrl-active-ink);
   }
   .mp-mark-ctrl a {
     font-size: 16px; font-weight: 700;
-    color: #333;
+    color: var(--map-ctrl-ink);
     text-align: center;
     line-height: 26px;
   }
   .mp-mark-ctrl a.active {
-    background: #1a1612;
-    color: #f5f0e8;
+    background: var(--map-ctrl-active-bg);
+    color: var(--map-ctrl-active-ink);
   }
   .mp-heat-ctrl a {
     font-size: 20px; font-weight: 700;
-    color: #333;
+    color: var(--map-ctrl-ink);
     text-align: center;
     line-height: 26px;
   }
   .mp-heat-ctrl a.active {
-    background: #1a1612;
-    color: #f5f0e8;
+    background: var(--map-ctrl-active-bg);
+    color: var(--map-ctrl-active-ink);
   }
   .mp-fs-ctrl a {
     font-size: 18px; font-weight: 600;
-    color: #333;
+    color: var(--map-ctrl-ink);
     text-align: center;
     line-height: 26px;
   }
   .mp-fs-ctrl a.active {
-    background: #1a1612;
-    color: #f5f0e8;
+    background: var(--map-ctrl-active-bg);
+    color: var(--map-ctrl-active-ink);
   }
 
   /* Status */
@@ -340,8 +421,8 @@
     vertical-align: middle;
   }
   tbody tr { cursor: pointer; }
-  tbody tr:hover { background: #faf6ef; }
-  tbody tr.selected { background: #eef3e8; }
+  tbody tr:hover { background: var(--panel-hi); }
+  tbody tr.selected { background: var(--accent-soft); }
   tbody td.thumb { padding: 4px 8px; width: 52px; }
   tbody td.thumb img {
     width: 40px; height: 40px; object-fit: cover;
@@ -412,7 +493,7 @@
   pre.raw {
     font-family: "SF Mono", Menlo, Consolas, monospace;
     font-size: 11.5px;
-    background: #faf6ef;
+    background: var(--panel-hi);
     padding: 10px 12px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--line);
@@ -470,6 +551,7 @@
     </label>
     <button id="exportPDF" disabled title="Export the mosaic as a georeferenced PDF">Mosaic PDF</button>
     <button id="exportGeoTIFF" disabled title="Export the mosaic as a GeoTIFF (WGS84)">Mosaic GeoTIFF</button>
+    <button id="themeToggle" title="Toggle light/dark theme" class="icon-only">☾</button>
     <button id="pick">Pick files</button>
     <button id="pickdir">Pick folder</button>
     <button id="export" disabled>Export CSV</button>
@@ -1848,6 +1930,24 @@ function applyOverlapToAgl() {
 $('overlapPct').addEventListener('input', applyOverlapToAgl);
 $('exportPDF').addEventListener('click', exportMosaicPDF);
 $('exportGeoTIFF').addEventListener('click', exportMosaicGeoTIFF);
+
+// Theme toggle
+function currentTheme() {
+  var explicit = document.documentElement.getAttribute('data-theme');
+  if (explicit === 'dark' || explicit === 'light') return explicit;
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+function updateThemeIcon() {
+  $('themeToggle').textContent = currentTheme() === 'dark' ? '☀' : '☾';
+}
+$('themeToggle').addEventListener('click', function(){
+  var next = currentTheme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('metapeek-theme', next); } catch(_){}
+  updateThemeIcon();
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateThemeIcon);
+updateThemeIcon();
 
 $('mapToggle').addEventListener('click', function(){
   mapVisible = !mapVisible;
