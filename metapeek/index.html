@@ -634,7 +634,21 @@ var GIMBAL_KEYS = {
 
 function gimbal(row, which) {
   if (!row.meta) return null;
-  return toNum(pickField(row.meta, GIMBAL_KEYS[which]));
+  var v = toNum(pickField(row.meta, GIMBAL_KEYS[which]));
+  if (v != null) return v;
+  // Sony ILX-LR1 (and other cameras) write bare Pitch/Yaw/Roll in XMP.
+  // Their convention: Pitch = 90 for nadir (opposite sign from DJI).
+  if (which === 'gimbalPitch') {
+    var p = toNum(row.meta.Pitch);
+    if (Number.isFinite(p)) return -p;
+  } else if (which === 'gimbalYaw') {
+    var y = toNum(row.meta.Yaw);
+    if (Number.isFinite(y)) return y;
+  } else if (which === 'gimbalRoll') {
+    var rr = toNum(row.meta.Roll);
+    if (Number.isFinite(rr)) return rr;
+  }
+  return null;
 }
 
 // friendly formatters for common fields
@@ -1498,6 +1512,8 @@ function renderDetail(r) {
         ['Longitude', Number.isFinite(meta.longitude) ? meta.longitude.toFixed(6) : null],
         ['Altitude', Number.isFinite(meta.GPSAltitude) ? meta.GPSAltitude.toFixed(1) + ' m' : null],
         ['Heading', Number.isFinite(meta.GPSImgDirection) ? meta.GPSImgDirection.toFixed(1) + '°' : null],
+        ['GPS XY accuracy', Number.isFinite(meta.GPSXYAccuracy) ? meta.GPSXYAccuracy.toFixed(3) + ' m' : null],
+        ['GPS Z accuracy',  Number.isFinite(meta.GPSZAccuracy) ? meta.GPSZAccuracy.toFixed(3) + ' m' : null],
       ]],
       ['Image', [
         ['Dimensions', (meta.ImageWidth || meta.ExifImageWidth) && (meta.ImageHeight || meta.ExifImageHeight)
