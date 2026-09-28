@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#14161a"/>
+  <!-- pixel-grid backdrop hint -->
+  <g opacity="0.08" fill="#ffffff">
+    <rect x="96"  y="96"  width="32" height="32"/>
+    <rect x="160" y="96"  width="32" height="32"/>
+    <rect x="224" y="96"  width="32" height="32"/>
+    <rect x="288" y="96"  width="32" height="32"/>
+    <rect x="352" y="96"  width="32" height="32"/>
+    <rect x="96"  y="160" width="32" height="32"/>
+    <rect x="224" y="160" width="32" height="32"/>
+    <rect x="352" y="160" width="32" height="32"/>
+    <rect x="96"  y="224" width="32" height="32"/>
+    <rect x="288" y="224" width="32" height="32"/>
+    <rect x="160" y="288" width="32" height="32"/>
+    <rect x="352" y="288" width="32" height="32"/>
+    <rect x="96"  y="352" width="32" height="32"/>
+    <rect x="224" y="352" width="32" height="32"/>
+    <rect x="352" y="352" width="32" height="32"/>
+  </g>
+  <!-- classic arrow cursor -->
+  <path d="M144 112 L144 368 L216 296 L264 400 L304 380 L256 280 L352 280 Z"
+        fill="#ffffff" stroke="#14161a" stroke-width="16" stroke-linejoin="round"/>
+</svg>
