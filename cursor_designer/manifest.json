@@ -1,24 +1,17 @@
 {
+  "id": "/VA_Production_Dashboard/cursor_designer/",
   "name": "Cursor Designer",
   "short_name": "Cursor",
-  "id": "/cursor-designer/",
-  "start_url": "./",
+  "description": "Design pixel-art cursors and export as .cur files",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#14161a",
   "theme_color": "#14161a",
+  "orientation": "any",
   "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "icon.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    }
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
