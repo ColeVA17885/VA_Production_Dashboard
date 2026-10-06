@@ -170,6 +170,8 @@ body.mars .lock.can { background: linear-gradient(135deg, #8a3a22, #c4574f); }
 .btn.violet:disabled { background: var(--well); box-shadow: inset 0 -4px 0 #d8dae6; color: #9a9eb8; }
 .btn.plain { background: var(--well); box-shadow: inset 0 -4px 0 #d8dae6; }
 .btn.danger { background: var(--red); color: #fff; box-shadow: inset 0 -4px 0 #d8404e; }
+.row.mats { background: linear-gradient(135deg, #fff6d6, #ffe08a); box-shadow: 0 5px 0 rgba(15,20,55,.16), 0 0 0 3px var(--gold); }
+.row.mats .ri { background: #ffc83d; }
 .hired { font-weight: 600; color: var(--violet); white-space: nowrap; }
 
 /* ── Panels ── */
@@ -453,6 +455,8 @@ const MGR = {
     ['Sol Adeyemi', 'Planetary Engineer', 'Plans in centuries.'],
   ],
 };
+// Mats: the final Earth manager. Absurdly expensive, multiplies every dollar on both worlds.
+const MATS = { name: 'Mats', role: 'Chief Everything Officer', quip: 'Runs the whole company. Somehow it makes 100 times more money.', cost: 1e24, mult: 100 };
 // manager cost = business cost × this
 const MGR_MULT = [267, 250, 140, 58, 12, 8, 7.4, 3.1, 4.6, 3.9];
 
@@ -552,7 +556,7 @@ const SHOP = [
   { id: 'e5', icon: '🎆', name: 'Swarm choreography engine', desc: 'Drone Light Shows profit x3', cost: 120 },
   { id: 'night2', icon: '🛰️', name: '24/7 operations center', desc: 'Offline earnings x2 more', cost: 150 },
   { id: 'e6', icon: '💊', name: 'Precision payload drop', desc: 'Medical Delivery profit x3', cost: 250 },
-  { id: 'keep',   icon: '🔒', name: 'Retention bonuses', desc: 'Keep your Earth managers when you restart', cost: 300 },
+  { id: 'keep',   icon: '🔒', name: 'Retention bonuses', desc: 'Keep your Earth managers (and Mats) when you restart', cost: 300 },
   { id: 'e7', icon: '🚨', name: 'Autonomous dock launch', desc: 'Drone as First Responder profit x3', cost: 500 },
   { id: 'seed2',  icon: '🏦', name: 'Venture debt facility', desc: 'Start each run with $1 billion on Earth', cost: 600 },
   { id: 'all1',   icon: '🧠', name: 'Proprietary flight controller', desc: 'All profits x3', cost: 800 },
@@ -598,6 +602,7 @@ const ACH = [];
     .forEach(([v, n, word], k) => ACH.push({ id: `life${k}`, icon: '💰', name: n, desc: `Earn $1 ${word} all-time`, test: s => s.lifetime >= v }));
   ACH.push({ id: 'mgr1', icon: '🧑‍✈️', name: 'Delegation', desc: 'Hire your first manager', test: s => s.w.earth.mgr.some(Boolean) });
   ACH.push({ id: 'mgrE', icon: '👔', name: 'Full leadership team', desc: 'Hire all 10 Earth managers', test: s => s.w.earth.mgr.every(Boolean) });
+  ACH.push({ id: 'mats', icon: '👑', name: 'The Mats era', desc: 'Hire Mats, the final manager', test: s => s.mats });
   ACH.push({ id: 'mgrM', icon: '👩‍🚀', name: 'Mission control', desc: 'Hire all 10 Mars managers', test: s => s.w.mars.mgr.every(Boolean) });
   ACH.push({ id: 'upg1', icon: '🔧', name: 'Gear head', desc: 'Buy your first upgrade', test: s => s.w.earth.upg.length + s.w.mars.upg.length > 0 });
   ACH.push({ id: 'upgE', icon: '⚙️', name: 'Fully kitted', desc: 'Buy every Earth upgrade', test: s => s.w.earth.upg.length >= UPG.earth.length });
@@ -630,7 +635,7 @@ function fresh() {
     lifetime: 0, patents: 0, patentsEarned: 0, pshop: [], ach: [],
     played: 0, runPlayed: 0, golden: 0, clicks: 0, resets: 0, events: 0, wonAt: 0,
     boostUntil: 0, rushUntil: 0, event: null, nextEvent: 0, nextGolden: 0,
-    mute: false, music: false, mode: 0, seenIntro: false, lastSave: Date.now(), lastDaily: '', streak: 0,
+    mats: false, mute: false, music: false, mode: 0, seenIntro: false, lastSave: Date.now(), lastDaily: '', streak: 0,
   };
 }
 let S = fresh();
@@ -701,7 +706,7 @@ function prevMs(o) { if (o < 400) { let p = 0; for (const m of MS) if (o >= m) p
 function fleetSteps(w) { const m = Math.min(...S.w[w].owned); return speedSteps(m) + profitSteps(m); }
 function eventMult(w, i) { const e = S.event; return e && e.w === w && e.i === i && now() < e.until ? e.mult : 1; }
 function globalMult(w) {
-  return (1 + .02 * S.patents) * (1 + .01 * S.ach.length) * C.all[w] * C.psAll * Math.pow(FLEET_MULT, fleetSteps(w)) * (boosted() ? 7 : 1) * offlineFactor;
+  return (1 + .02 * S.patents) * (1 + .01 * S.ach.length) * C.all[w] * C.psAll * Math.pow(FLEET_MULT, fleetSteps(w)) * (S.mats ? MATS.mult : 1) * (boosted() ? 7 : 1) * offlineFactor;
 }
 function cycleTime(w, i) { return DEF[w][i].time / Math.pow(2, speedSteps(S.w[w].owned[i])) / (rushing() ? 2 : 1); }
 function revenue(w, i) {
@@ -746,6 +751,12 @@ function coreHire(w, i) {
   S.w[w].cash -= c; S.w[w].mgr[i] = true;
   return true;
 }
+function matsCost() { return MATS.cost * C.mgrMul; }
+function coreHireMats() {
+  if (S.mats || S.w.earth.cash < matsCost()) return false;
+  S.w.earth.cash -= matsCost(); S.mats = true;
+  return true;
+}
 function coreUpg(w, u) {
   if (C.bought[w].has(u.id) || S.w[w].cash < u.cost) return false;
   S.w[w].cash -= u.cost; S.w[w].upg.push(u.id); recalc();
@@ -763,6 +774,7 @@ function corePrestige() {
   const keepMgr = C.ps.has('keep') ? S.w.earth.mgr.slice() : null;
   S.w = { earth: newWorld(), mars: newWorld() };
   if (keepMgr) S.w.earth.mgr = keepMgr;
+  else S.mats = false;
   if (C.ps.has('seed1')) S.w.earth.cash = 25e4;
   if (C.ps.has('seed2')) S.w.earth.cash = 1e9;
   if (C.ps.has('mars1')) S.w.mars.cash = 1e9;
@@ -1138,6 +1150,7 @@ function updateText() {
 
   // badges
   let m = 0; for (let i = 0; i < 10; i++) if (!W.mgr[i] && W.cash >= mgrCost(w, i)) m++;
+  if (w === 'earth' && !S.mats && W.cash >= matsCost()) m++;
   let u = 0; for (const up of UPG[w]) if (!C.bought[w].has(up.id) && W.cash >= up.cost) u++;
   setBadge('#bMgr', m); setBadge('#bUpg', u);
   setBadge('#bInv', claimable(), true);
@@ -1176,6 +1189,17 @@ function renderLists() {
     ml.appendChild(row);
   });
 
+  if (w === 'earth') {
+    const row = document.createElement('div');
+    row.className = 'row mats' + (S.mats ? ' done' : '');
+    row.innerHTML = `<div class="ri emo">👑</div>
+      <div class="rt"><div class="rn">${MATS.name} · ${MATS.role}</div><div class="rd">${MATS.quip} <b>All earnings x${MATS.mult}</b> on Earth and Mars.</div></div>
+      ${S.mats ? '<span class="hired">✓ Hired</span>' : `<button class="btn" data-cost="${matsCost()}">${fmt(matsCost())}</button>`}`;
+    const btn = row.querySelector('button');
+    if (btn) btn.onclick = hireMats;
+    ml.appendChild(row);
+  }
+
   const ul = $('#upgList');
   ul.innerHTML = '';
   const left = UPG[w].filter(u => !C.bought[w].has(u.id));
@@ -1205,6 +1229,16 @@ function hire(i) {
   if (!coreHire(w, i)) { sfx.nope(); return; }
   sfx.buy();
   toast(`🧑‍✈️ <b>${MGR[w][i][0]}</b> now runs ${DEF[w][i].name}.`, 'violet');
+  progressTick(); renderLists(); updateText();
+}
+function hireMats() {
+  if (!coreHireMats()) { sfx.nope(); return; }
+  sfx.big();
+  confetti(innerWidth / 2, innerHeight / 3, 90);
+  modal(`<div class="mi emo">👑</div><h3>Mats has joined the company</h3>
+    <p>The most expensive hire in aviation history just walked in. Nobody is sure what Mats does, but every dollar you earn is now multiplied.</p>
+    <div class="mbig">All earnings x${MATS.mult}</div>
+    <div class="btnrow"><button class="btn" id="mOk">Welcome aboard, Mats</button></div>`);
   progressTick(); renderLists(); updateText();
 }
 function buyUpg(u) {
@@ -1334,6 +1368,7 @@ function renderStats() {
   rows.push(
     ['Earned this run', fmt(S.w.earth.run + S.w.mars.run)],
     ['Earned all-time', fmt(S.lifetime)],
+    ['Mats', S.mats ? `Hired · earnings x${MATS.mult}` : 'Not hired yet'],
     ['Crews running', fmtInt(S.w.earth.owned.concat(S.w.mars.owned).reduce((a, b) => a + b, 0))],
     ['Patents held / earned', `${fmtInt(S.patents)} / ${fmtInt(S.patentsEarned)}`],
     ['R&D projects', `${S.pshop.length} / ${SHOP.length}`],
