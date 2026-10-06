@@ -1,0 +1,17 @@
+{
+  "id": "/VA_Production_Dashboard/sky_tycoon/",
+  "name": "Sky Tycoon",
+  "short_name": "Sky Tycoon",
+  "description": "Build a drone empire from a toy stand to orbital launches",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1c2459",
+  "theme_color": "#1c2459",
+  "orientation": "any",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
