@@ -1079,11 +1079,10 @@ function renderBars() {
     const fast = active && T < .25;
     r.el.classList.toggle('fast', fast);
     r.el.classList.toggle('flying', active && !fast);
-    if (!fast) {
-      const f = active ? Math.min(1, W.prog[i] / T) : 0;
-      r.fill.style.transform = `scaleX(${f})`;
-      if (active) r.mini.style.left = `calc(${f * 100}% - 26px)`;
-    }
+    // inline style beats the .fast CSS rule, so fill it here rather than leaving the last partial width
+    const f = fast ? 1 : active ? Math.min(1, W.prog[i] / T) : 0;
+    r.fill.style.transform = `scaleX(${f})`;
+    if (active && !fast) r.mini.style.left = `calc(${f * 100}% - 26px)`;
   }
 }
 
