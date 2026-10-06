@@ -1,4 +1,4 @@
-const CACHE = 'sky-tycoon-v1';
+const CACHE = 'sky-tycoon-v2';
 
 self.addEventListener('install', e => {
   self.skipWaiting();

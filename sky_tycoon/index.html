@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Sky Tycoon</title>
-<meta name="description" content="An idle drone-empire tycoon game">
+<meta name="description" content="Grow a drone services company from one Part 107 pilot to an interplanetary air network">
 <meta name="theme-color" content="#1c2459">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
@@ -26,15 +26,18 @@
   --red: #ff5d6c;
   --violet: #8b6cff;
   --violet-d: #6a4de0;
-  --nav: rgba(15, 20, 55, .45);
+  --bg-top: #1c2459;
+  --bg-mid: #3f56b8;
+  --bg-bot: #86bfff;
 }
+body.mars { --bg-top: #2a0f12; --bg-mid: #8a3a22; --bg-bot: #e3965e; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
 body {
   font-family: 'Fredoka', 'Segoe UI', system-ui, sans-serif;
   color: var(--ink);
-  background: linear-gradient(180deg, #1c2459 0%, #3f56b8 48%, #86bfff 100%) fixed;
-  background-color: #3f56b8;
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 48%, var(--bg-bot) 100%) fixed;
+  background-color: var(--bg-mid);
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
@@ -42,6 +45,7 @@ body {
 }
 button { font: inherit; color: inherit; }
 button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.emo { font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; }
 
 /* ── Drifting clouds ── */
 .clouds { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
@@ -49,26 +53,34 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 .cloud::before, .cloud::after { content: ''; position: absolute; background: #fff; border-radius: 50%; }
 .cloud::before { width: 100px; height: 100px; left: 30px; top: -50px; }
 .cloud::after { width: 70px; height: 70px; left: 110px; top: -30px; }
+body.mars .cloud { background: #ffd2a8; opacity: .1; }
+body.mars .cloud::before, body.mars .cloud::after { background: #ffd2a8; }
 @keyframes drift { from { transform: translateX(-300px) scale(var(--s, 1)); } to { transform: translateX(calc(100vw + 300px)) scale(var(--s, 1)); } }
 
 .app { position: relative; z-index: 1; display: grid; grid-template-rows: auto 1fr; height: 100vh; height: 100dvh; }
 
 /* ── Header ── */
 header.top { display: flex; align-items: center; gap: 16px; padding: 10px 20px; background: rgba(12, 16, 48, .55); backdrop-filter: blur(10px); color: #fff; border-bottom: 1px solid rgba(255,255,255,.08); }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.2rem; min-width: 190px; }
-.brand img { width: 36px; height: 36px; }
+body.mars header.top { background: rgba(40, 10, 10, .55); }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 230px; }
+.brand img { width: 38px; height: 38px; }
+.brand-t { font-weight: 700; font-size: 1.15rem; line-height: 1.1; }
+.stage { font-size: .78rem; opacity: .9; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.stage-bar { width: 70px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.18); overflow: hidden; }
+.stage-fill { height: 100%; background: var(--gold); width: 0; }
 .cashbox { flex: 1; text-align: center; min-width: 0; }
 .cash { font-size: 2.1rem; font-weight: 700; color: var(--gold); text-shadow: 0 3px 0 rgba(0,0,0,.25); font-variant-numeric: tabular-nums; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cash.bump { animation: bump .25s ease-out; }
-@keyframes bump { 50% { transform: scale(1.06); } }
 .ips { font-size: .9rem; opacity: .85; font-variant-numeric: tabular-nums; }
-.chips { display: flex; gap: 8px; align-items: center; justify-content: flex-end; min-width: 190px; }
-.chip { background: rgba(255,255,255,.12); border-radius: 999px; padding: 6px 12px; font-size: .85rem; display: flex; gap: 6px; align-items: center; white-space: nowrap; }
-.chip.boost { background: linear-gradient(90deg, #ff9f43, #ffc83d); color: var(--ink); font-weight: 600; display: none; animation: glow 1s ease-in-out infinite alternate; }
-.chip.boost.on { display: flex; }
+.chips { display: flex; gap: 8px; align-items: center; justify-content: flex-end; min-width: 230px; flex-wrap: wrap; }
+.chip { background: rgba(255,255,255,.12); border-radius: 999px; padding: 6px 12px; font-size: .82rem; display: none; gap: 6px; align-items: center; white-space: nowrap; }
+.chip.on { display: flex; }
+.chip.boost { background: linear-gradient(90deg, #ff9f43, #ffc83d); color: var(--ink); font-weight: 600; animation: glow 1s ease-in-out infinite alternate; }
+.chip.rush { background: linear-gradient(90deg, #34cf94, #4aa8ff); color: #06213a; font-weight: 600; }
+.chip.event { background: linear-gradient(90deg, #8b6cff, #c36cff); font-weight: 600; cursor: pointer; }
 @keyframes glow { to { box-shadow: 0 0 16px rgba(255, 200, 61, .8); } }
-.iconbtn { width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); cursor: pointer; font-size: 1.1rem; display: grid; place-items: center; }
+.iconbtn { width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); cursor: pointer; font-size: 1.05rem; display: grid; place-items: center; flex: none; }
 .iconbtn:hover { background: rgba(255,255,255,.22); }
+.iconbtn.off { opacity: .45; }
 
 /* ── Layout ── */
 .body { display: grid; grid-template-columns: 210px 1fr; min-height: 0; }
@@ -76,7 +88,7 @@ nav.side { padding: 16px 12px; display: flex; flex-direction: column; gap: 6px; 
 nav.side button { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 0; border-radius: 14px; background: rgba(255,255,255,.1); color: #fff; font-size: 1rem; font-weight: 500; cursor: pointer; position: relative; text-align: left; transition: background .15s; }
 nav.side button:hover { background: rgba(255,255,255,.18); }
 nav.side button.active { background: #fff; color: var(--ink); box-shadow: 0 4px 0 rgba(15,20,55,.2); }
-nav.side .ni { font-size: 1.25rem; width: 26px; text-align: center; }
+nav.side .ni { font-size: 1.2rem; width: 26px; text-align: center; }
 .badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--red); color: #fff; border-radius: 999px; font-size: .72rem; min-width: 22px; height: 22px; padding: 0 7px; display: none; align-items: center; justify-content: center; font-weight: 600; }
 .badge.on { display: inline-flex; }
 main { overflow-y: auto; padding: 16px 20px 48px 8px; min-height: 0; }
@@ -87,28 +99,39 @@ main { overflow-y: auto; padding: 16px 20px 48px 8px; min-height: 0; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; color: #fff; gap: 12px; flex-wrap: wrap; }
 .toolbar h2 { font-size: 1.35rem; font-weight: 600; }
 .toolbar .sub { font-size: .88rem; opacity: .85; }
+.tb-left { display: flex; flex-direction: column; gap: 8px; }
 .seg { display: flex; background: rgba(12,16,48,.4); border-radius: 12px; padding: 4px; }
-.seg button { border: 0; background: transparent; color: #fff; font-weight: 600; padding: 6px 13px; border-radius: 9px; cursor: pointer; }
+.seg button { border: 0; background: transparent; color: #fff; font-weight: 600; padding: 6px 13px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
 .seg button.on { background: var(--gold); color: var(--ink); }
+.seg button:disabled { opacity: .5; cursor: default; }
+.fleet { color: #fff; font-size: .88rem; opacity: .9; }
 
 /* ── Business cards ── */
-#bizList { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 14px; }
+#bizList { display: grid; grid-template-columns: repeat(auto-fill, minmax(410px, 1fr)); gap: 14px; }
 .biz { position: relative; background: var(--card); border-radius: 20px; padding: 14px; display: flex; gap: 16px; align-items: center; box-shadow: 0 6px 0 rgba(15,20,55,.18), 0 12px 26px rgba(15,20,55,.18); }
-.biz-icon { flex: none; width: 86px; height: 86px; border-radius: 50%; border: 0; cursor: pointer; font-size: 2.7rem; background: hsl(var(--h) 90% 89%); box-shadow: inset 0 -6px 0 hsl(var(--h) 55% 76%); position: relative; transition: transform .08s; font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; }
+.biz.celebrate { animation: celebrate .7s cubic-bezier(.2,1.5,.5,1); }
+@keyframes celebrate { 0% { transform: scale(.9); box-shadow: 0 0 0 0 rgba(255,200,61,.9); } 60% { transform: scale(1.03); box-shadow: 0 0 0 14px rgba(255,200,61,0); } }
+.biz.evt { box-shadow: 0 6px 0 rgba(15,20,55,.18), 0 0 0 3px var(--violet), 0 12px 26px rgba(139,108,255,.4); }
+.biz-icon { flex: none; width: 86px; height: 86px; border-radius: 50%; border: 0; cursor: pointer; font-size: 2.6rem; background: hsl(var(--h) 90% 89%); box-shadow: inset 0 -6px 0 hsl(var(--h) 55% 76%); position: relative; transition: transform .08s; }
 .biz-icon:active { transform: scale(.92); }
 .biz.idle .biz-icon { animation: nudge 1.6s ease-in-out infinite; }
-@keyframes nudge { 0%, 100% { box-shadow: inset 0 -6px 0 hsl(var(--h) 55% 76%), 0 0 0 0 rgba(255,200,61,.0); } 50% { box-shadow: inset 0 -6px 0 hsl(var(--h) 55% 76%), 0 0 0 7px rgba(255,200,61,.55); } }
+@keyframes nudge { 0%, 100% { box-shadow: inset 0 -6px 0 hsl(var(--h) 55% 76%), 0 0 0 0 rgba(255,200,61,0); } 50% { box-shadow: inset 0 -6px 0 hsl(var(--h) 55% 76%), 0 0 0 7px rgba(255,200,61,.55); } }
 .biz-icon .lvl { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; font-family: 'Fredoka', sans-serif; font-size: .8rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; min-width: 36px; }
 .biz-icon .auto { position: absolute; top: -3px; right: -6px; background: var(--violet); color: #fff; font-family: 'Fredoka', sans-serif; font-size: .62rem; font-weight: 700; padding: 3px 7px; border-radius: 999px; display: none; letter-spacing: .05em; }
 .biz.managed .auto { display: block; }
-.biz-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.biz-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
 .biz-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.biz-name { font-weight: 600; font-size: 1.08rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.biz-name { font-weight: 600; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.biz-job { font-size: .78rem; color: var(--muted); margin-top: -6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ms-txt { font-size: .75rem; color: var(--muted); white-space: nowrap; }
 .bar { position: relative; height: 32px; border-radius: 10px; background: var(--well); overflow: hidden; cursor: pointer; }
 .fill { position: absolute; inset: 0; background: linear-gradient(180deg, #4fe0a8, #22b07a); transform-origin: left; transform: scaleX(0); }
 .biz.fast .fill { transform: scaleX(1); background: repeating-linear-gradient(45deg, rgba(255,255,255,.25) 0 10px, transparent 10px 20px), linear-gradient(180deg, #4fe0a8, #22b07a); background-size: 28.28px 28.28px, auto; animation: stripes .6s linear infinite; }
 @keyframes stripes { to { background-position: 28.28px 0, 0 0; } }
+.mini { position: absolute; top: 50%; width: 26px; height: 16px; margin-top: -8px; left: -30px; z-index: 2; fill: #fff; filter: drop-shadow(0 1px 1px rgba(0,0,0,.3)); display: none; }
+.mini .r { transform-box: fill-box; transform-origin: center; animation: spin .12s linear infinite; }
+.biz.flying .mini { display: block; }
+.biz.fast .mini { display: none; }
 .bar-txt { position: relative; z-index: 1; display: flex; height: 100%; align-items: center; justify-content: center; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .biz-row { display: flex; gap: 8px; align-items: stretch; }
 .buy { flex: 1; min-width: 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 0; border-radius: 12px; padding: 8px 12px; font-weight: 600; cursor: pointer; background: var(--gold); box-shadow: inset 0 -4px 0 var(--gold-d); }
@@ -119,22 +142,23 @@ main { overflow-y: auto; padding: 16px 20px 48px 8px; min-height: 0; }
 .timer { flex: none; width: 88px; display: flex; align-items: center; justify-content: center; background: var(--well); border-radius: 12px; font-variant-numeric: tabular-nums; font-weight: 500; color: var(--muted); font-size: .9rem; }
 .ms { height: 5px; background: var(--well); border-radius: 4px; overflow: hidden; }
 .ms-fill { height: 100%; background: var(--sky); width: 0; transition: width .2s; }
-.lock { position: absolute; inset: 0; border-radius: 20px; background: #2a3160; display: none; flex-direction: column; align-items: center; justify-content: center; color: #fff; gap: 4px; cursor: pointer; border: 0; z-index: 3; }
+.lock { position: absolute; inset: 0; border-radius: 20px; background: #2a3160; display: none; flex-direction: column; align-items: center; justify-content: center; color: #fff; gap: 3px; cursor: pointer; border: 0; z-index: 3; padding: 10px; text-align: center; }
+body.mars .lock { background: #4a2420; }
 .biz.locked .lock { display: flex; }
 .lock .ln { font-size: 1.1rem; font-weight: 600; }
+.lock .lr { font-size: .78rem; opacity: .75; }
 .lock .lc { color: #9aa0c0; font-weight: 700; font-size: 1.15rem; }
 .lock.can { background: linear-gradient(135deg, #3a3f8f, #5b4fc4); }
+body.mars .lock.can { background: linear-gradient(135deg, #8a3a22, #c4574f); }
 .lock.can .lc { color: var(--gold); }
 .lock.can::after { content: 'Tap to unlock'; font-size: .78rem; opacity: .8; }
 .pop { position: absolute; pointer-events: none; font-weight: 700; color: var(--green-d); text-shadow: 0 1px 0 #fff, 0 0 6px #fff; animation: pop .9s ease-out forwards; white-space: nowrap; z-index: 5; font-size: 1.05rem; }
 @keyframes pop { from { opacity: 1; transform: translate(-50%, 0) scale(1.1); } to { opacity: 0; transform: translate(-50%, -52px) scale(1); } }
 
-.fleet { color: #fff; font-size: .88rem; opacity: .9; }
-
-/* ── Lists (managers, upgrades) ── */
+/* ── Lists ── */
 .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
 .row { background: var(--card); border-radius: 18px; padding: 12px 14px; display: flex; align-items: center; gap: 14px; box-shadow: 0 5px 0 rgba(15,20,55,.16); }
-.row .ri { flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 1.8rem; background: hsl(var(--h, 230) 90% 90%); font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; }
+.row .ri { flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 1.7rem; background: hsl(var(--h, 230) 90% 90%); }
 .row .rt { flex: 1; min-width: 0; }
 .row .rn { font-weight: 600; }
 .row .rd { font-size: .85rem; color: var(--muted); }
@@ -143,16 +167,18 @@ main { overflow-y: auto; padding: 16px 20px 48px 8px; min-height: 0; }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 .btn:disabled { background: var(--well); box-shadow: inset 0 -4px 0 #d8dae6; color: #9a9eb8; cursor: default; }
 .btn.violet { background: var(--violet); color: #fff; box-shadow: inset 0 -4px 0 var(--violet-d); }
-.btn.ghost { background: rgba(255,255,255,.15); color: #fff; box-shadow: none; }
+.btn.violet:disabled { background: var(--well); box-shadow: inset 0 -4px 0 #d8dae6; color: #9a9eb8; }
+.btn.plain { background: var(--well); box-shadow: inset 0 -4px 0 #d8dae6; }
 .btn.danger { background: var(--red); color: #fff; box-shadow: inset 0 -4px 0 #d8404e; }
 .hired { font-weight: 600; color: var(--violet); white-space: nowrap; }
 
 /* ── Panels ── */
-.panel { background: var(--card); border-radius: 22px; padding: 22px; box-shadow: 0 6px 0 rgba(15,20,55,.18); max-width: 720px; }
-.panel + .panel { margin-top: 14px; }
+.panel { background: var(--card); border-radius: 22px; padding: 22px; box-shadow: 0 6px 0 rgba(15,20,55,.18); max-width: 760px; }
+.panel + .panel, .panel + .list, .list + .panel { margin-top: 14px; }
 .panel h3 { font-size: 1.2rem; margin-bottom: 6px; }
 .panel p { color: var(--muted); line-height: 1.45; }
-.bigstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+.sec-title { color: #fff; font-size: 1.1rem; font-weight: 600; margin: 22px 0 10px; }
+.bigstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 16px 0; }
 .bs { background: var(--well); border-radius: 14px; padding: 12px 14px; }
 .bs .k { font-size: .8rem; color: var(--muted); }
 .bs .v { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; word-break: break-word; }
@@ -161,7 +187,28 @@ main { overflow-y: auto; padding: 16px 20px 48px 8px; min-height: 0; }
 .stat-table td:last-child { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 .btnrow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
 
-/* ── Golden drone ── */
+/* stages */
+.stages { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; }
+.st { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px; }
+.st .sd { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--well); font-size: .8rem; flex: none; color: var(--muted); font-weight: 700; }
+.st.done .sd { background: var(--green); color: #fff; }
+.st.cur { background: #fff7de; }
+.st.cur .sd { background: var(--gold); color: var(--ink); }
+.st .sn { flex: 1; font-weight: 600; }
+.st:not(.done):not(.cur) .sn { color: var(--muted); font-weight: 500; }
+.st .sv { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.st .sx { font-size: .75rem; color: var(--violet); font-weight: 600; }
+
+/* achievements */
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.ach { background: var(--card); border-radius: 16px; padding: 12px; display: flex; gap: 10px; align-items: center; box-shadow: 0 4px 0 rgba(15,20,55,.14); }
+.ach .ai { font-size: 1.6rem; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: #fff1c2; flex: none; }
+.ach .an { font-weight: 600; font-size: .92rem; }
+.ach .ad { font-size: .76rem; color: var(--muted); }
+.ach.no { opacity: .55; }
+.ach.no .ai { background: var(--well); filter: grayscale(1); }
+
+/* ── Golden drone & effects ── */
 .golden { position: fixed; left: 0; z-index: 40; width: 96px; height: 76px; border: 0; background: none; cursor: pointer; padding: 0; filter: drop-shadow(0 0 14px rgba(255,214,90,.95)); }
 .golden.ltr { animation: flyL 12s linear forwards; }
 .golden.rtl { animation: flyR 12s linear forwards; }
@@ -173,12 +220,15 @@ main { overflow-y: auto; padding: 16px 20px 48px 8px; min-height: 0; }
 @keyframes spin { 50% { transform: scaleX(.25); } }
 .spark { position: fixed; pointer-events: none; z-index: 45; font-size: 1.5rem; animation: spark .8s ease-out forwards; }
 @keyframes spark { to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.5); } }
+.conf { position: fixed; pointer-events: none; z-index: 45; width: 9px; height: 13px; border-radius: 2px; animation: conf 1.1s cubic-bezier(.2,.7,.4,1) forwards; }
+@keyframes conf { to { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)); } }
 
 /* ── Toasts ── */
 .toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 60; pointer-events: none; align-items: flex-end; }
-.toast { background: var(--ink); color: #fff; padding: 11px 16px; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.25); font-weight: 500; max-width: 340px; animation: tin .25s ease-out; }
+.toast { background: var(--ink); color: #fff; padding: 11px 16px; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.25); font-weight: 500; max-width: 360px; animation: tin .25s ease-out; }
 .toast.gold { background: linear-gradient(90deg, #ffb52e, #ffd45e); color: var(--ink); }
 .toast.violet { background: var(--violet); }
+.toast.green { background: var(--green-d); }
 .toast.out { animation: tout .3s ease-in forwards; }
 @keyframes tin { from { opacity: 0; transform: translateY(12px); } }
 @keyframes tout { to { opacity: 0; transform: translateX(30px); } }
@@ -186,37 +236,43 @@ main { overflow-y: auto; padding: 16px 20px 48px 8px; min-height: 0; }
 /* ── Modal ── */
 .modal-bg { position: fixed; inset: 0; background: rgba(10,12,35,.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 80; padding: 16px; }
 .modal-bg.on { display: flex; }
-.modal { background: var(--card); border-radius: 24px; padding: 26px; max-width: 460px; width: 100%; text-align: center; box-shadow: 0 10px 0 rgba(15,20,55,.25); animation: mpop .25s cubic-bezier(.2,1.4,.5,1); }
+.modal { background: var(--card); border-radius: 24px; padding: 26px; max-width: 480px; width: 100%; text-align: center; box-shadow: 0 10px 0 rgba(15,20,55,.25); animation: mpop .25s cubic-bezier(.2,1.4,.5,1); max-height: 90vh; overflow-y: auto; }
 @keyframes mpop { from { transform: scale(.85); opacity: 0; } }
-.modal .mi { font-size: 3.2rem; font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; }
+.modal .mi { font-size: 3.2rem; }
 .modal h3 { font-size: 1.45rem; margin: 6px 0 8px; }
 .modal p { color: var(--muted); line-height: 1.5; }
+.modal p + p { margin-top: 8px; }
 .modal .mbig { font-size: 1.7rem; font-weight: 700; color: var(--green-d); margin: 10px 0; word-break: break-word; }
 .modal textarea { width: 100%; height: 110px; margin-top: 12px; border-radius: 12px; border: 2px solid var(--well); padding: 10px; font-family: ui-monospace, Consolas, monospace; font-size: .75rem; resize: none; user-select: text; -webkit-user-select: text; }
 .modal .btnrow { justify-content: center; }
 
 /* ── Phone layout ── */
-@media (max-width: 780px) {
-  header.top { padding: 8px 16px; gap: 8px; }
+@media (max-width: 800px) {
+  header.top { padding: 8px 14px; gap: 8px; }
   .brand { min-width: 0; }
-  .brand span { display: none; }
-  .chips { min-width: 0; }
-  .chip.pat { display: none; }
+  .brand-t, .stage { display: none; }
+  .chips { min-width: 0; flex-wrap: nowrap; }
+  .chip { display: none !important; }
   .cash { font-size: 1.45rem; }
-  .ips { font-size: .78rem; }
+  .ips { font-size: .76rem; }
   .body { grid-template-columns: 1fr; }
-  nav.side { position: fixed; left: 0; right: 0; bottom: 0; flex-direction: row; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); background: rgba(12,16,48,.85); backdrop-filter: blur(10px); z-index: 30; gap: 4px; }
-  nav.side button { flex: 1; flex-direction: column; gap: 2px; padding: 6px 2px; font-size: .68rem; text-align: center; }
+  nav.side { position: fixed; left: 0; right: 0; bottom: 0; flex-direction: row; padding: 8px 6px calc(8px + env(safe-area-inset-bottom)); background: rgba(12,16,48,.88); backdrop-filter: blur(10px); z-index: 30; gap: 3px; }
+  nav.side button { flex: 1; flex-direction: column; gap: 2px; padding: 6px 1px; font-size: .62rem; text-align: center; }
   nav.side .ni { width: auto; }
-  .badge { top: 2px; right: 50%; transform: translateX(26px); min-width: 18px; height: 18px; font-size: .62rem; padding: 0 5px; }
-  main { padding: 14px 16px 100px; }
+  .badge { top: 2px; right: 50%; transform: translateX(24px); min-width: 18px; height: 18px; font-size: .62rem; padding: 0 5px; }
+  main { padding: 14px 14px 100px; }
   #bizList, .list { grid-template-columns: minmax(0, 1fr); }
   .biz { gap: 12px; padding: 12px; }
-  .biz-icon { width: 66px; height: 66px; font-size: 2rem; }
-  .timer { width: 70px; font-size: .8rem; }
-  .toasts { left: 16px; right: 16px; bottom: 90px; align-items: stretch; }
+  .biz-icon { width: 64px; height: 64px; font-size: 1.9rem; }
+  .timer { width: 66px; font-size: .8rem; }
+  .ms-txt { display: none; }
+  .toasts { left: 14px; right: 14px; bottom: 90px; align-items: stretch; }
   .toast { max-width: none; }
+  .mchips { display: flex !important; }
 }
+.mchips { display: none; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.mchips .chip { display: none; }
+.mchips .chip.on { display: flex !important; }
 </style>
 </head>
 <body>
@@ -224,69 +280,95 @@ main { overflow-y: auto; padding: 16px 20px 48px 8px; min-height: 0; }
 
 <div class="app">
   <header class="top">
-    <div class="brand"><img src="icon.svg" alt=""><span>Sky Tycoon</span></div>
+    <div class="brand">
+      <img src="icon.svg" alt="">
+      <div>
+        <div class="brand-t">Sky Tycoon</div>
+        <div class="stage" id="stageBox" title="Company stage"><span id="stageName">Garage Startup</span><div class="stage-bar"><div class="stage-fill" id="stageFill"></div></div></div>
+      </div>
+    </div>
     <div class="cashbox">
-      <div class="cash" id="cash">$0.00</div>
-      <div class="ips" id="ips">Hire a manager to earn while you're away</div>
+      <div class="cash" id="cash">$0</div>
+      <div class="ips" id="ips"></div>
     </div>
     <div class="chips">
-      <div class="chip boost" id="boostChip">🌬️ x7 <span id="boostT">30s</span></div>
-      <div class="chip pat" id="patChip" title="Patents boost all profits">📜 <span id="patN">0</span></div>
-      <button class="iconbtn" id="muteBtn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+      <div class="chip event" id="evChip"></div>
+      <div class="chip boost" id="boostChip"></div>
+      <div class="chip rush" id="rushChip"></div>
+      <button class="iconbtn" id="musicBtn" title="Background music" aria-label="Toggle music">🎵</button>
+      <button class="iconbtn" id="muteBtn" title="Sound effects" aria-label="Toggle sound effects">🔊</button>
     </div>
   </header>
 
   <div class="body">
     <nav class="side" id="nav">
-      <button data-view="biz" class="active"><span class="ni">🏭</span>Businesses</button>
-      <button data-view="mgr"><span class="ni">🧑‍✈️</span>Managers<span class="badge" id="bMgr"></span></button>
-      <button data-view="upg"><span class="ni">⚙️</span>Upgrades<span class="badge" id="bUpg"></span></button>
-      <button data-view="inv"><span class="ni">📜</span>Patents<span class="badge" id="bInv"></span></button>
-      <button data-view="stats"><span class="ni">📊</span>Stats</button>
+      <button data-view="biz" class="active"><span class="ni emo">🏭</span>Businesses</button>
+      <button data-view="mgr"><span class="ni emo">🧑‍✈️</span>Managers<span class="badge" id="bMgr"></span></button>
+      <button data-view="upg"><span class="ni emo">⚙️</span>Upgrades<span class="badge" id="bUpg"></span></button>
+      <button data-view="inv"><span class="ni emo">📜</span>Patents<span class="badge" id="bInv"></span></button>
+      <button data-view="goals"><span class="ni emo">🏆</span>Goals<span class="badge" id="bGoal"></span></button>
+      <button data-view="stats"><span class="ni emo">📊</span>Stats</button>
     </nav>
 
     <main id="main">
       <section class="view active" id="view-biz">
+        <div class="mchips"><div class="chip event" id="evChipM"></div><div class="chip boost" id="boostChipM"></div><div class="chip rush" id="rushChipM"></div></div>
         <div class="toolbar">
-          <div class="fleet" id="fleetTxt"></div>
+          <div class="tb-left">
+            <div class="seg" id="worldSeg"></div>
+            <div class="fleet" id="fleetTxt"></div>
+          </div>
           <div class="seg" id="modeSeg"></div>
         </div>
         <div id="bizList"></div>
       </section>
 
       <section class="view" id="view-mgr">
-        <div class="toolbar"><div><h2>Managers</h2><div class="sub">They run a business on repeat, even while the game is closed.</div></div></div>
+        <div class="toolbar"><div><h2 id="mgrTitle">Managers</h2><div class="sub">A manager runs a business on repeat, even while the game is closed.</div></div></div>
         <div class="list" id="mgrList"></div>
       </section>
 
       <section class="view" id="view-upg">
         <div class="toolbar">
-          <div><h2>Upgrades</h2><div class="sub" id="upgSub"></div></div>
+          <div><h2 id="upgTitle">Upgrades</h2><div class="sub" id="upgSub"></div></div>
           <button class="btn" id="buyAllUpg">Buy all affordable</button>
         </div>
         <div class="list" id="upgList"></div>
       </section>
 
       <section class="view" id="view-inv">
-        <div class="toolbar"><div><h2>Patent Office</h2><div class="sub">Restart with a permanent profit boost.</div></div></div>
+        <div class="toolbar"><div><h2>Patent Office</h2><div class="sub">Restart with a permanent edge. Spend patents or keep them. Your call.</div></div></div>
         <div class="panel">
           <h3>📜 Your patents</h3>
-          <p>Every patent adds <b>+2%</b> to all profits, forever. You earn patents from your all-time earnings, but filing them restarts your businesses, managers, upgrades and cash.</p>
+          <p>Every patent you <b>hold</b> adds <b>+2%</b> to all profits. Patents come from all-time earnings. Filing them restarts your businesses, managers, upgrades and cash on both worlds. You can also <b>spend</b> patents on R&amp;D below. Spent patents stop giving the +2%, but R&amp;D is often worth more.</p>
           <div class="bigstats">
             <div class="bs"><div class="k">Patents held</div><div class="v" id="invHeld">0</div></div>
-            <div class="bs"><div class="k">Current bonus</div><div class="v" id="invBonus">+0%</div></div>
+            <div class="bs"><div class="k">Bonus from held</div><div class="v" id="invBonus">+0%</div></div>
             <div class="bs"><div class="k">Earned if you file now</div><div class="v" id="invClaim">0</div></div>
             <div class="bs"><div class="k">Bonus after filing</div><div class="v" id="invAfter">+0%</div></div>
           </div>
           <p id="invNext"></p>
           <div class="btnrow"><button class="btn violet" id="prestigeBtn">File patents &amp; restart</button></div>
         </div>
+        <div class="sec-title">🔬 R&amp;D lab · permanent, survives restarts</div>
+        <div class="list" id="shopList"></div>
+      </section>
+
+      <section class="view" id="view-goals">
+        <div class="toolbar"><div><h2>Goals</h2><div class="sub">Grow from a garage startup to owning the skies.</div></div></div>
+        <div class="panel">
+          <h3>🏢 Company stage</h3>
+          <p id="goalIntro"></p>
+          <div class="stages" id="stageList"></div>
+        </div>
+        <div class="sec-title" id="achTitle">🏅 Achievements</div>
+        <div class="ach-grid" id="achList"></div>
       </section>
 
       <section class="view" id="view-stats">
         <div class="toolbar"><div><h2>Stats &amp; settings</h2></div></div>
         <div class="panel">
-          <h3>📊 Your empire</h3>
+          <h3>📊 Your company</h3>
           <table class="stat-table" id="statTable"></table>
         </div>
         <div class="panel">
@@ -300,7 +382,7 @@ main { overflow-y: auto; padding: 16px 20px 48px 8px; min-height: 0; }
         </div>
         <div class="panel">
           <h3>⌨️ Shortcuts</h3>
-          <p><b>1</b>–<b>0</b> run a business &nbsp;·&nbsp; <b>B</b> change buy amount &nbsp;·&nbsp; <b>M</b> mute</p>
+          <p><b>1</b>–<b>0</b> run a business &nbsp;·&nbsp; <b>B</b> change buy amount &nbsp;·&nbsp; <b>W</b> switch world &nbsp;·&nbsp; <b>M</b> mute</p>
         </div>
       </section>
     </main>
@@ -311,131 +393,434 @@ main { overflow-y: auto; padding: 16px 20px 48px 8px; min-height: 0; }
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 
 <script>
-// ───────────────────────── Game data ─────────────────────────
-const BIZ = [
-  { name: 'Toy Drone Stand',  icon: '🪁', cost: 3.738,       coef: 1.07, time: 0.6,   rev: 1,           hue: 200 },
-  { name: 'Aerial Photos',    icon: '📸', cost: 60,          coef: 1.15, time: 3,     rev: 60,          hue: 280 },
-  { name: 'Pizza Delivery',   icon: '🍕', cost: 720,         coef: 1.14, time: 6,     rev: 540,         hue: 20  },
-  { name: 'Crop Dusting',     icon: '🌾', cost: 8640,        coef: 1.13, time: 12,    rev: 4320,        hue: 45  },
-  { name: 'Roof Inspections', icon: '🏠', cost: 103680,      coef: 1.12, time: 24,    rev: 51840,       hue: 0   },
-  { name: 'Light Shows',      icon: '🎆', cost: 1244160,     coef: 1.11, time: 96,    rev: 622080,      hue: 260 },
-  { name: 'Mapping & Survey', icon: '🗺️', cost: 14929920,    coef: 1.10, time: 384,   rev: 7464960,     hue: 140 },
-  { name: 'Cargo Airlift',    icon: '📦', cost: 179159040,   coef: 1.09, time: 1536,  rev: 89579520,    hue: 30  },
-  { name: 'Air Taxi',         icon: '🚕', cost: 2149908480,  coef: 1.08, time: 6144,  rev: 1074954048,  hue: 55  },
-  { name: 'Orbital Launch',   icon: '🚀', cost: 25798901760, coef: 1.07, time: 36864, rev: 29668737024, hue: 220 },
-];
-const MGR = [
-  { name: 'Hover Hannah',     cost: 1e3,     quip: 'Never lets a kite sit idle.' },
-  { name: 'Shutter Sam',      cost: 15e3,    quip: 'Has a drone for every angle.' },
-  { name: 'Pepperoni Pete',   cost: 1e5,     quip: 'Hot and on time, or it\'s free.' },
-  { name: 'Farmer Fran',      cost: 5e5,     quip: 'Dusts crops before sunrise.' },
-  { name: 'Shingle Shirley',  cost: 1.2e6,   quip: 'Spots a loose tile from 400 ft.' },
-  { name: 'Sparkle Steve',    cost: 1e7,     quip: 'Choreographs 10,000 drones at once.' },
-  { name: 'Grid Greta',       cost: 1.111e8, quip: 'Maps the world, one tile at a time.' },
-  { name: 'Heavy-Lift Hank',  cost: 5.555e8, quip: 'If it fits on a pallet, it flies.' },
-  { name: 'Captain Cabby',    cost: 1e10,    quip: 'Knows every rooftop pad in town.' },
-  { name: 'Rocket Rita',      cost: 1e11,    quip: 'Three, two, one... profit.' },
-];
-const TIERS = [
-  { name: 'Carbon Props',     icon: '🪶' },
-  { name: 'Mega Batteries',   icon: '🔋' },
-  { name: 'AI Autopilot',     icon: '🤖' },
-  { name: 'Fusion Motors',    icon: '⚛️' },
-  { name: 'Antigravity Pods', icon: '🌀' },
-];
-const UPG_BASE = [250e3, 500e3, 1e6, 5e6, 10e6, 25e6, 500e6, 1e9, 5e9, 10e9];
-const UPG = [];
-TIERS.forEach((t, ti) => {
-  const scale = Math.pow(1e5, ti);
-  BIZ.forEach((b, i) => UPG.push({ id: `u${ti}_${i}`, tier: ti, target: i, mult: 3, cost: UPG_BASE[i] * scale }));
-  UPG.push({ id: `u${ti}_all`, tier: ti, target: -1, mult: 3, cost: 25e9 * scale });
-});
-UPG.sort((a, b) => a.cost - b.cost);
+// ═════════════════════════ CONFIG ═════════════════════════
+// Economy is tuned so early jobs pay believable prices; it ramps into tycoon numbers later.
+const DEF = {
+  earth: [
+    { name: 'Real Estate Media',            icon: '🏡', job: 'Listing photo + video shoot',           req: 'FAA Part 107 remote pilot certificate',       cost: 2500,   coef: 1.07, time: 0.6,  rev: 250,    hue: 200 },
+    { name: 'Roof & Insurance Inspections', icon: '🏠', job: 'Insurance claim batch, 40 roofs',       req: 'Commercial liability insurance',              cost: 15000,  coef: 1.15, time: 3,    rev: 15000,  hue: 0   },
+    { name: 'Crop Spraying',                icon: '🌾', job: 'Spray contract, 10,000 acres',          req: 'FAA Part 137 agricultural operator cert',     cost: 250e3,  coef: 1.14, time: 8,    rev: 160e3,  hue: 45  },
+    { name: 'Utility & Thermal Inspections',icon: '⚡', job: 'Transmission corridor survey, 200 mi',  req: 'Utility vendor safety qualification',         cost: 4e6,    coef: 1.13, time: 15,   rev: 1.2e6,  hue: 55  },
+    { name: 'LiDAR Mapping & Survey',       icon: '🗺️', job: 'County-wide LiDAR survey',              req: 'Licensed surveyor of record',                 cost: 70e6,   coef: 1.12, time: 30,   rev: 15e6,   hue: 140 },
+    { name: 'Drone Light Shows',            icon: '🎆', job: 'Stadium tour, 1,500-drone shows',       req: 'FAA waiver for multi-drone operations',       cost: 1.2e9,  coef: 1.11, time: 60,   rev: 90e6,   hue: 270 },
+    { name: 'Medical Delivery',             icon: '💊', job: 'Hospital network delivery contract',    req: 'BVLOS waiver',                                cost: 20e9,   coef: 1.10, time: 150,  rev: 700e6,  hue: 330 },
+    { name: 'Drone as First Responder',     icon: '🚨', job: 'Citywide public safety contract',       req: 'Public safety Certificate of Authorization',  cost: 350e9,  coef: 1.09, time: 300,  rev: 4.2e9,  hue: 220 },
+    { name: 'Drone Manufacturing',          icon: '🏭', job: 'Production run, 10,000 airframes',      req: 'NDAA-compliant supply chain',                 cost: 6e12,   coef: 1.08, time: 600,  rev: 25e9,   hue: 30  },
+    { name: 'eVTOL Air Taxi Network',       icon: '🚁', job: 'Metro route license, one year',         req: 'FAA Part 135 air carrier certificate',        cost: 100e12,  coef: 1.07, time: 1200, rev: 240e9,  hue: 180 },
+  ],
+  mars: [
+    { name: 'Scout Rotorcraft',             icon: '🔭', job: 'Terrain scouting sortie',               req: 'Launch slot on a Mars transfer window',       cost: 2500,   coef: 1.07, time: 0.6,  rev: 250,    hue: 20  },
+    { name: 'Landing Site Surveys',         icon: '🪨', job: 'Landing zone certification',            req: 'Mission control uplink time',                 cost: 15000,  coef: 1.15, time: 3,    rev: 15000,  hue: 10  },
+    { name: 'Dust Storm Recon',             icon: '🌪️', job: 'Weather recon flight',                  req: 'Dust-sealed hangar',                          cost: 250e3,  coef: 1.14, time: 8,    rev: 160e3,  hue: 35  },
+    { name: 'Ice Prospecting',              icon: '🧊', job: 'Subsurface ice radar sweep',            req: 'Ground-penetrating radar payload',            cost: 4e6,    coef: 1.13, time: 15,   rev: 1.2e6,  hue: 195 },
+    { name: 'Rover Escort & Relay',         icon: '🤖', job: 'Rover escort mission',                  req: 'Rover fleet operating agreement',             cost: 70e6,   coef: 1.12, time: 30,   rev: 15e6,   hue: 260 },
+    { name: 'Cargo Hoppers',                icon: '📦', job: 'Supply hop between bases',              req: 'Heavy-lift Mars airframe',                    cost: 1.2e9,  coef: 1.11, time: 60,   rev: 90e6,   hue: 40  },
+    { name: 'Habitat Construction',         icon: '🏗️', job: 'Regolith 3D-printing shift',            req: 'Colony building permit',                      cost: 20e9,   coef: 1.10, time: 150,  rev: 700e6,  hue: 25  },
+    { name: 'Greenhouse Pollination',       icon: '🌱', job: 'Greenhouse pollination cycle',          req: 'Bio-dome lease',                              cost: 350e9,  coef: 1.09, time: 300,  rev: 4.2e9,  hue: 110 },
+    { name: 'Orbital Relay Network',        icon: '📡', job: 'Relay satellite deployment',            req: 'Orbital slot allocation',                     cost: 6e12,   coef: 1.08, time: 600,  rev: 25e9,   hue: 210 },
+    { name: 'Atmosphere Seeding',           icon: '🌍', job: 'Terraforming seeding run',              req: 'Planetary engineering charter',               cost: 100e12,  coef: 1.07, time: 1200, rev: 240e9,  hue: 150 },
+  ],
+};
+const WORLD_INFO = {
+  earth: { name: 'Earth', icon: '🌎', cls: '' },
+  mars:  { name: 'Mars',  icon: '🔴', cls: 'mars' },
+};
+const WIDS = ['earth', 'mars'];
+
+const MGR = {
+  earth: [
+    ['Dana Ruiz', 'Chief Pilot', 'Shoots twilight listings in one battery.'],
+    ['Priya Shah', 'Inspection Lead', 'Can spot hail damage from 120 ft.'],
+    ['Cody Lindqvist', 'Ag Operations Manager', 'Grew up on a 3,000-acre farm.'],
+    ['Marcus Bell', 'Utility Programs Director', 'Ex-lineman. Knows every tower.'],
+    ['Elena Park', 'Geospatial Director', 'Licensed surveyor in 14 states.'],
+    ['Jules Okafor', 'Show Director', 'Choreographed a 5,000-drone finale.'],
+    ['Sam Whitaker', 'BVLOS Program Manager', 'Wrote the waiver the FAA approved.'],
+    ['Tess Moreno', 'Public Safety Liaison', 'Twenty years in 911 dispatch.'],
+    ['Ravi Iyer', 'VP of Manufacturing', 'Scaled two hardware startups.'],
+    ['Avery Kim', 'Chief Operating Officer', 'Ran an airline. Wants a quieter one.'],
+  ],
+  mars: [
+    ['Nova Reyes', 'Flight Controller', 'Flew the first sortie from Jezero.'],
+    ['Idris Haddad', 'Site Surveyor', 'Has never picked a bad landing zone.'],
+    ['Kai Brennan', 'Meteorologist', 'Reads dust storms like tea leaves.'],
+    ['Lena Vogel', 'Prospecting Lead', 'Found ice where the maps said none.'],
+    ['Oren Takahashi', 'Rover Wrangler', 'Talks to rovers. They listen.'],
+    ['Zara Mensah', 'Logistics Chief', 'Keeps four bases supplied.'],
+    ['Felix Duarte', 'Construction Boss', 'Printed the first Martian hab.'],
+    ['Mira Castell', 'Botanist', 'Grew tomatoes in regolith.'],
+    ['Theo Lund', 'Network Architect', 'Zero dropped packets since landing.'],
+    ['Sol Adeyemi', 'Planetary Engineer', 'Plans in centuries.'],
+  ],
+};
+// manager cost = business cost × this
+const MGR_MULT = [267, 250, 140, 58, 12, 8, 7.4, 3.1, 4.6, 3.9];
+
+const UPG_NAMES = {
+  earth: [
+    ['4K gimbal camera', 'Twilight HDR editing', '3D virtual tours', 'FPV fly-through videos', 'MLS syndication deal', 'National brokerage contract'],
+    ['Automated flight plans', 'Hail-damage detection AI', 'Insurer portal integration', 'Catastrophe response team', 'Adjuster-ready reports', 'National carrier partnership'],
+    ['RTK GPS guidance', '40 L spray tanks', 'Variable-rate prescriptions', 'Swarm spraying', 'Night spraying ops', 'Co-op exclusivity deal'],
+    ['Radiometric thermal camera', 'Corona discharge sensor', 'AI defect detection', 'Dock-in-a-box stations', 'Vegetation encroachment AI', 'Grid operator master contract'],
+    ['Survey-grade LiDAR', 'PPK post-processing', 'Cloud point-cloud pipeline', 'Bathymetric LiDAR', 'DOT framework contract', 'Federal mapping program'],
+    ['High-brightness LEDs', 'Show design software', 'Pyro-drone effects', 'Touring show crew', 'Corporate sponsorships', 'Global broadcast rights'],
+    ['Parachute recovery system', 'Cold-chain payload', 'Detect-and-avoid radar', 'Hub-and-spoke network', 'Blood & organ transport', 'Statewide health system'],
+    ['Rooftop dock stations', 'Live stream to dispatch', 'Thermal + 200x zoom payload', 'Real-time crime center link', 'Mutual-aid compacts', 'Federal grant program'],
+    ['Injection-molded airframes', 'In-house flight controller', 'Automated assembly line', 'Blue UAS listing', 'Second factory', 'Global distribution'],
+    ['Vertiport partnerships', 'Battery-swap stations', 'Pilot training academy', 'Autonomous flight approval', 'Airline codeshare', 'Intercity routes'],
+  ],
+  fleet: {
+    earth: ['Fleet management software', 'Part 107 training program', 'Fleet insurance policy', 'Remote ID compliance', 'Nationwide BVLOS rule', 'Type certification'],
+    mars:  ['Deep Space Network time', 'Pressurized hangar', 'Martian GPS constellation', 'Local fuel production', 'Colony charter', 'Planetary air traffic control'],
+  },
+  marsTier: ['Thin-air rotor blades', 'Dust-proof motors', 'Radiation-hardened avionics', 'Autonomous swarm AI', 'Nuclear RTG power', 'In-situ manufacturing'],
+};
+const TIER_ICON = ['🔧', '🪶', '🔋', '🤖', '📈', '🏛️'];
+// tier 0: cheap starter gear (x2). tiers 1-5: x3 each, spaced TIER_GAP apart.
+// Tuned with a greedy-player simulation: ~2 min to business #2, ~4 h to Mars, ~25 h of optimal play to win.
+const UPG_T1 = [1.7e8, 1.2e8, 3.5e8, 2.3e9, 6.7e9, 2.4e10, 6.5e11, 2e12, 1.3e13, 3.9e13];
+const FLEET_T0 = 7e7, FLEET_T1 = 1e14, TIER_GAP = 1e7;
+const STARTER_MULT = 25;   // tier-0 upgrade cost = business cost x this
+const FLEET_MULT = 2;      // profit multiplier each time every business passes a milestone
 
 const MS = [25, 50, 100, 200, 300, 400];
 const MODES = ['x1', 'x10', 'x100', 'Next', 'Max'];
-const PATENT_BASE = 1e13;
-const SAVE_KEY = 'skytycoon_v1';
+const PATENT_BASE = 1e15;
+const MARS_AT = 1e14;
 
-// ───────────────────────── State ─────────────────────────
+const STAGES = [
+  [0, 'Garage Startup', 'One pilot, one drone, big dreams.'],
+  [1e5, 'Small Business', 'You filed an LLC and bought a second battery.'],
+  [1e6, 'Seed Funded', 'Angel investors want in.'],
+  [1e7, 'Series A', 'You have an office. With a hangar.'],
+  [1e8, 'Series B', 'Regional operations in three states.'],
+  [1e9, 'Series C', 'A household name in the drone world.'],
+  [1e10, 'Unicorn', 'Valued at over a billion dollars.'],
+  [1e11, 'IPO', 'You rang the opening bell.'],
+  [1e12, 'Fortune 500', 'Your revenue beats most airlines.'],
+  [1e13, 'Industry Leader', 'Regulators ask you to help write the rules.'],
+  [1e14, 'Aerospace Giant', 'Bigger than the legacy airframers. Unlocks Mars.'],
+  [1e15, 'Global Brand', 'Your drones fly on every continent.'],
+  [1e16, 'Airspace Authority', 'Your traffic system runs national airspace.'],
+  [1e18, 'Global Airspace Leader', 'Half the world\'s flights are yours.'],
+  [1e21, 'Orbital Pioneer', 'Your network reaches low Earth orbit.'],
+  [1e24, 'Interplanetary Operator', 'Two planets, one network.'],
+  [1e27, 'Owner of the Skies', 'You win. Everything that flies, you run.'],
+];
+const WIN_AT = STAGES[STAGES.length - 1][0];
+
+const EVENTS = {
+  earth: [
+    ['Spring housing market', 'Listings are flying off the shelf.', 5],
+    ['Hailstorm season', 'Insurers need roofs inspected yesterday.', 7],
+    ['Planting season', 'Every farm in the county wants a spray date.', 6],
+    ['Summer heat wave', 'Utilities are checking every line for hot spots.', 5],
+    ['Infrastructure bill passed', 'DOT surveys are fully funded.', 5],
+    ['Fourth of July', 'Every city wants a drone show instead of fireworks.', 10],
+    ['Flu season', 'Hospitals are moving lab samples nonstop.', 5],
+    ['Wildfire season', 'Agencies are calling for thermal overwatch.', 6],
+    ['Trade show mega-order', 'A national retailer just ordered your airframes.', 5],
+    ['Airport gridlock', 'Commuters are booking air taxis to skip the terminal.', 8],
+  ],
+  mars: [
+    ['Clear skies', 'A rare calm week for scouting.', 5],
+    ['New landing approved', 'A crew ship is inbound.', 7],
+    ['Storm watch', 'The colony needs storm tracking around the clock.', 6],
+    ['Water shortage', 'Ice prospecting is suddenly priority one.', 5],
+    ['Rover expedition', 'Science teams need escorts.', 5],
+    ['Supply crunch', 'Bases are trading for every cargo hop.', 7],
+    ['Colonist wave', 'Hundreds of new settlers need housing.', 6],
+    ['Harvest push', 'The greenhouses are behind schedule.', 6],
+    ['Bandwidth boom', 'Earth wants live 4K feeds from Mars.', 5],
+    ['Terraforming summit', 'Investors are funding atmosphere work.', 8],
+  ],
+};
+
+// R&D shop (costs in patents, permanent)
+const SHOP = [
+  { id: 'night1', icon: '🌙', name: 'Night-shift crews', desc: 'Offline earnings x2', cost: 3 },
+  { id: 'seed1',  icon: '👼', name: 'Angel investor network', desc: 'Start each run with $250,000 on Earth', cost: 5 },
+  { id: 'e0', icon: '🏡', name: 'Automated listing edits', desc: 'Real Estate Media profit x3', cost: 4 },
+  { id: 'e1', icon: '🏠', name: 'Hail-damage AI model', desc: 'Roof & Insurance Inspections profit x3', cost: 8 },
+  { id: 'mgr',    icon: '🤝', name: 'Recruiting pipeline', desc: 'Managers cost 50% less', cost: 10 },
+  { id: 'e2', icon: '🌾', name: 'Precision nozzle design', desc: 'Crop Spraying profit x3', cost: 15 },
+  { id: 'spot',   icon: '🔭', name: 'Spotter network', desc: 'Golden drones show up twice as often', cost: 20 },
+  { id: 'e3', icon: '⚡', name: 'Thermal anomaly classifier', desc: 'Utility & Thermal Inspections profit x3', cost: 30 },
+  { id: 'tail',   icon: '🌬️', name: 'Weather routing AI', desc: 'Tailwinds last 60s instead of 30s', cost: 40 },
+  { id: 'e4', icon: '🗺️', name: 'LiDAR fusion algorithm', desc: 'LiDAR Mapping & Survey profit x3', cost: 60 },
+  { id: 'bulk',   icon: '🏷️', name: 'Volume purchasing', desc: 'Expanding businesses costs 10% less', cost: 80 },
+  { id: 'e5', icon: '🎆', name: 'Swarm choreography engine', desc: 'Drone Light Shows profit x3', cost: 120 },
+  { id: 'night2', icon: '🛰️', name: '24/7 operations center', desc: 'Offline earnings x2 more', cost: 150 },
+  { id: 'e6', icon: '💊', name: 'Precision payload drop', desc: 'Medical Delivery profit x3', cost: 250 },
+  { id: 'keep',   icon: '🔒', name: 'Retention bonuses', desc: 'Keep your Earth managers when you restart', cost: 300 },
+  { id: 'e7', icon: '🚨', name: 'Autonomous dock launch', desc: 'Drone as First Responder profit x3', cost: 500 },
+  { id: 'seed2',  icon: '🏦', name: 'Venture debt facility', desc: 'Start each run with $1 billion on Earth', cost: 600 },
+  { id: 'all1',   icon: '🧠', name: 'Proprietary flight controller', desc: 'All profits x3', cost: 800 },
+  { id: 'e8', icon: '🏭', name: 'Foldable airframe design', desc: 'Drone Manufacturing profit x3', cost: 1000 },
+  { id: 'e9', icon: '🚁', name: 'Quiet rotor geometry', desc: 'eVTOL Air Taxi Network profit x3', cost: 2000 },
+  { id: 'mars1',  icon: '🔴', name: 'Mars head start', desc: 'Start each run with $1 billion on Mars', cost: 3000 },
+  { id: 'all2',   icon: '🐝', name: 'Swarm autonomy stack', desc: 'All profits x3', cost: 8000 },
+  { id: 'mAll',   icon: '🧪', name: 'Martian materials science', desc: 'All Mars profits x5', cost: 15000 },
+  { id: 'all3',   icon: '🔋', name: 'Solid-state batteries', desc: 'All profits x5', cost: 60000 },
+  { id: 'all4',   icon: '🌌', name: 'Room-temperature superconductors', desc: 'All profits x10', cost: 500000 },
+];
+
+// Build upgrade lists
+const UPG = { earth: [], mars: [] };
+for (const w of WIDS) {
+  for (let t = 0; t < 6; t++) {
+    for (let i = 0; i < 10; i++) {
+      const name = w === 'earth' ? UPG_NAMES.earth[i][t] : UPG_NAMES.marsTier[t];
+      const cost = t === 0 ? DEF[w][i].cost * STARTER_MULT : UPG_T1[i] * Math.pow(TIER_GAP, t - 1);
+      UPG[w].push({ id: `${w[0]}${t}_${i}`, tier: t, target: i, mult: t === 0 ? 2 : 3, cost, name });
+    }
+    const fc = t === 0 ? FLEET_T0 : FLEET_T1 * Math.pow(TIER_GAP, t - 1);
+    UPG[w].push({ id: `${w[0]}${t}_all`, tier: t, target: -1, mult: t === 0 ? 2 : 3, cost: fc, name: UPG_NAMES.fleet[w][t] });
+  }
+  UPG[w].sort((a, b) => a.cost - b.cost);
+}
+
+// Achievements
+const ACH = [];
+(() => {
+  const own = (w, i, n) => s => s.w[w].owned[i] >= n;
+  DEF.earth.forEach((b, i) => {
+    ACH.push({ id: `oe${i}_25`, icon: b.icon, name: `${b.name}: 25`, desc: `Run 25 ${b.name} crews`, test: own('earth', i, 25) });
+    ACH.push({ id: `oe${i}_100`, icon: b.icon, name: `${b.name}: 100`, desc: `Run 100 ${b.name} crews`, test: own('earth', i, 100) });
+    ACH.push({ id: `oe${i}_300`, icon: b.icon, name: `${b.name}: 300`, desc: `Run 300 ${b.name} crews`, test: own('earth', i, 300) });
+  });
+  DEF.mars.forEach((b, i) => {
+    ACH.push({ id: `om${i}_25`, icon: b.icon, name: `${b.name}: 25`, desc: `Run 25 ${b.name} crews on Mars`, test: own('mars', i, 25) });
+    ACH.push({ id: `om${i}_100`, icon: b.icon, name: `${b.name}: 100`, desc: `Run 100 ${b.name} crews on Mars`, test: own('mars', i, 100) });
+  });
+  [[1e6, 'First million', 'million'], [1e9, 'Billionaire', 'billion'], [1e12, 'Trillionaire', 'trillion'], [1e15, 'Quadrillionaire', 'quadrillion'],
+   [1e18, 'Off the charts', 'quintillion'], [1e21, 'Sextillion club', 'sextillion'], [1e24, 'Numbers have names?', 'septillion']]
+    .forEach(([v, n, word], k) => ACH.push({ id: `life${k}`, icon: '💰', name: n, desc: `Earn $1 ${word} all-time`, test: s => s.lifetime >= v }));
+  ACH.push({ id: 'mgr1', icon: '🧑‍✈️', name: 'Delegation', desc: 'Hire your first manager', test: s => s.w.earth.mgr.some(Boolean) });
+  ACH.push({ id: 'mgrE', icon: '👔', name: 'Full leadership team', desc: 'Hire all 10 Earth managers', test: s => s.w.earth.mgr.every(Boolean) });
+  ACH.push({ id: 'mgrM', icon: '👩‍🚀', name: 'Mission control', desc: 'Hire all 10 Mars managers', test: s => s.w.mars.mgr.every(Boolean) });
+  ACH.push({ id: 'upg1', icon: '🔧', name: 'Gear head', desc: 'Buy your first upgrade', test: s => s.w.earth.upg.length + s.w.mars.upg.length > 0 });
+  ACH.push({ id: 'upgE', icon: '⚙️', name: 'Fully kitted', desc: 'Buy every Earth upgrade', test: s => s.w.earth.upg.length >= UPG.earth.length });
+  ACH.push({ id: 'upgM', icon: '🛠️', name: 'Martian engineering', desc: 'Buy every Mars upgrade', test: s => s.w.mars.upg.length >= UPG.mars.length });
+  ACH.push({ id: 'fleet1', icon: '🛩️', name: 'Balanced fleet', desc: 'Get every Earth business to 25', test: s => Math.min(...s.w.earth.owned) >= 25 });
+  ACH.push({ id: 'fleet2', icon: '✈️', name: 'Serious fleet', desc: 'Get every Earth business to 100', test: s => Math.min(...s.w.earth.owned) >= 100 });
+  ACH.push({ id: 'fleet3', icon: '🛫', name: 'Armada', desc: 'Get every Earth business to 400', test: s => Math.min(...s.w.earth.owned) >= 400 });
+  [[1, 'Lucky catch'], [10, 'Drone spotter'], [50, 'Golden touch']].forEach(([n, nm], k) =>
+    ACH.push({ id: `gold${k}`, icon: '🌟', name: nm, desc: `Catch ${n} golden drone${n > 1 ? 's' : ''}`, test: s => s.golden >= n }));
+  [[1, 'Fresh start'], [5, 'Serial founder'], [20, 'Startup machine']].forEach(([n, nm], k) =>
+    ACH.push({ id: `rst${k}`, icon: '📜', name: nm, desc: `File patents ${n} time${n > 1 ? 's' : ''}`, test: s => s.resets >= n }));
+  ACH.push({ id: 'shop1', icon: '🔬', name: 'R&D department', desc: 'Buy your first R&D project', test: s => s.pshop.length > 0 });
+  ACH.push({ id: 'shop2', icon: '🧬', name: 'Research powerhouse', desc: 'Buy 15 R&D projects', test: s => s.pshop.length >= 15 });
+  ACH.push({ id: 'ev3', icon: '📈', name: 'Market timing', desc: 'Ride 3 market events', test: s => s.events >= 3 });
+  ACH.push({ id: 'day7', icon: '📅', name: 'Clocked in', desc: 'Log in 7 days in a row', test: s => s.streak >= 7 });
+  ACH.push({ id: 'mars', icon: '🚀', name: 'Red planet', desc: 'Unlock Mars operations', test: s => s.marsUnlocked });
+  ACH.push({ id: 'win', icon: '👑', name: 'Owner of the Skies', desc: 'Reach the final company stage', test: s => s.lifetime >= WIN_AT });
+})();
+
+const SAVE_KEY = 'skytycoon_v2';
+const OLD_KEY = 'skytycoon_v1';
+
+// ═════════════════════════ STATE ═════════════════════════
+function newWorld() {
+  return { cash: 0, run: 0, owned: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0], prog: Array(10).fill(0), running: Array(10).fill(false), mgr: Array(10).fill(false), upg: [] };
+}
 function fresh() {
   return {
-    cash: 0, lifetime: 0, run: 0, patents: 0,
-    owned: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    prog: Array(10).fill(0), running: Array(10).fill(false), mgr: Array(10).fill(false),
-    upg: [], played: 0, golden: 0, clicks: 0, resets: 0,
-    boostUntil: 0, mute: false, mode: 0, seenIntro: false, lastSave: Date.now(),
+    v: 2, w: { earth: newWorld(), mars: newWorld() }, cur: 'earth', marsUnlocked: false,
+    lifetime: 0, patents: 0, patentsEarned: 0, pshop: [], ach: [],
+    played: 0, runPlayed: 0, golden: 0, clicks: 0, resets: 0, events: 0, wonAt: 0,
+    boostUntil: 0, rushUntil: 0, event: null, nextEvent: 0, nextGolden: 0,
+    mute: false, music: false, mode: 0, seenIntro: false, lastSave: Date.now(), lastDaily: '', streak: 0,
   };
 }
 let S = fresh();
-let bought = new Set();
-let upgMult = Array(10).fill(1), allMult = 1;
+let clock = null;                       // sim override
+const now = () => clock ?? Date.now();
+let offlineFactor = 1;
 
+const C = { bought: {}, upg: {}, all: {}, psBiz: {}, psAll: 1, ps: new Set(), costMul: 1, mgrMul: 1, offline: 1, goldRate: 1, tailSec: 30, achSet: new Set() };
 function recalc() {
-  bought = new Set(S.upg);
-  upgMult = Array(10).fill(1); allMult = 1;
-  for (const u of UPG) if (bought.has(u.id)) { if (u.target < 0) allMult *= u.mult; else upgMult[u.target] *= u.mult; }
+  C.ps = new Set(S.pshop);
+  C.achSet = new Set(S.ach);
+  for (const w of WIDS) {
+    C.bought[w] = new Set(S.w[w].upg);
+    C.upg[w] = Array(10).fill(1); C.all[w] = 1;
+    for (const u of UPG[w]) if (C.bought[w].has(u.id)) { if (u.target < 0) C.all[w] *= u.mult; else C.upg[w][u.target] *= u.mult; }
+    C.psBiz[w] = Array(10).fill(1);
+  }
+  for (let i = 0; i < 10; i++) if (C.ps.has('e' + i)) C.psBiz.earth[i] = 3;
+  if (C.ps.has('mAll')) C.psBiz.mars = C.psBiz.mars.map(v => v * 5);
+  C.psAll = (C.ps.has('all1') ? 3 : 1) * (C.ps.has('all2') ? 3 : 1) * (C.ps.has('all3') ? 5 : 1) * (C.ps.has('all4') ? 10 : 1);
+  C.costMul = C.ps.has('bulk') ? .9 : 1;
+  C.mgrMul = C.ps.has('mgr') ? .5 : 1;
+  C.offline = (C.ps.has('night1') ? 2 : 1) * (C.ps.has('night2') ? 2 : 1);
+  C.goldRate = C.ps.has('spot') ? 2 : 1;
+  C.tailSec = C.ps.has('tail') ? 60 : 30;
 }
 
+function applySave(d) {
+  const f = fresh();
+  for (const k in f) if (k !== 'w' && d[k] !== undefined && (typeof d[k] === typeof f[k] || f[k] === null)) S[k] = d[k];
+  for (const w of WIDS) {
+    const src = (d.w && d.w[w]) || {}, dst = newWorld();
+    for (const k in dst) if (src[k] !== undefined && typeof src[k] === typeof dst[k]) dst[k] = src[k];
+    for (const k of ['owned', 'prog', 'running', 'mgr']) if (!Array.isArray(dst[k]) || dst[k].length !== 10) dst[k] = newWorld()[k];
+    S.w[w] = dst;
+  }
+  if (!WIDS.includes(S.cur) || (S.cur === 'mars' && !S.marsUnlocked)) S.cur = 'earth';
+}
+let migratedFromV1 = 0;
 function load() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) applySave(JSON.parse(raw));
+    else {
+      const old = localStorage.getItem(OLD_KEY);
+      if (old) {
+        const o = JSON.parse(old);
+        S.patents = S.patentsEarned = Math.max(0, Math.floor(o.patents || 0));
+        S.golden = o.golden || 0; S.played = o.played || 0; S.clicks = o.clicks || 0; S.mute = !!o.mute;
+        S.seenIntro = true; migratedFromV1 = 1 + S.patents;
+      }
+    }
   } catch (e) {}
   recalc();
-}
-function applySave(d) {
-  const f = fresh();
-  for (const k in f) if (d[k] !== undefined && typeof d[k] === typeof f[k]) S[k] = d[k];
-  for (const k of ['owned', 'prog', 'running', 'mgr']) if (!Array.isArray(S[k]) || S[k].length !== 10) S[k] = f[k];
 }
 function save() {
   S.lastSave = Date.now();
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {}
 }
 
-// ───────────────────────── Math ─────────────────────────
-const boosted = () => Date.now() < S.boostUntil;
-function speedSteps(o) { return MS.filter(m => o >= m).length; }
+// ═════════════════════════ ENGINE ═════════════════════════
+const boosted = () => now() < S.boostUntil;
+const rushing = () => now() < S.rushUntil;
+function speedSteps(o) { let n = 0; for (const m of MS) if (o >= m) n++; return n; }
 function profitSteps(o) { return o >= 500 ? Math.floor((o - 400) / 100) : 0; }
 function nextMs(o) { if (o < 400) return MS.find(m => m > o); return (Math.floor(o / 100) + 1) * 100; }
 function prevMs(o) { if (o < 400) { let p = 0; for (const m of MS) if (o >= m) p = m; return p; } return Math.floor(o / 100) * 100; }
-function fleetSteps() { const m = Math.min(...S.owned); return speedSteps(m) + profitSteps(m); }
-function fleetMult() { return Math.pow(3, fleetSteps()); }
-function cycleTime(i) { return BIZ[i].time / Math.pow(2, speedSteps(S.owned[i])); }
-function globalMult() { return (1 + 0.02 * S.patents) * allMult * fleetMult() * (boosted() ? 7 : 1); }
-function revenue(i) { return BIZ[i].rev * S.owned[i] * upgMult[i] * Math.pow(2, profitSteps(S.owned[i])) * globalMult(); }
-function ips() { let t = 0; for (let i = 0; i < 10; i++) if (S.mgr[i] && S.owned[i] > 0) t += revenue(i) / cycleTime(i); return t; }
-function costOf(i, n) { const b = BIZ[i], k = S.owned[i]; return b.cost * Math.pow(b.coef, k) * (Math.pow(b.coef, n) - 1) / (b.coef - 1); }
-function maxBuy(i) {
-  const b = BIZ[i], k = S.owned[i];
-  const n = Math.floor(Math.log(S.cash * (b.coef - 1) / (b.cost * Math.pow(b.coef, k)) + 1) / Math.log(b.coef));
+function fleetSteps(w) { const m = Math.min(...S.w[w].owned); return speedSteps(m) + profitSteps(m); }
+function eventMult(w, i) { const e = S.event; return e && e.w === w && e.i === i && now() < e.until ? e.mult : 1; }
+function globalMult(w) {
+  return (1 + .02 * S.patents) * (1 + .01 * S.ach.length) * C.all[w] * C.psAll * Math.pow(FLEET_MULT, fleetSteps(w)) * (boosted() ? 7 : 1) * offlineFactor;
+}
+function cycleTime(w, i) { return DEF[w][i].time / Math.pow(2, speedSteps(S.w[w].owned[i])) / (rushing() ? 2 : 1); }
+function revenue(w, i) {
+  const o = S.w[w].owned[i];
+  return DEF[w][i].rev * o * C.upg[w][i] * C.psBiz[w][i] * Math.pow(2, profitSteps(o)) * eventMult(w, i) * globalMult(w);
+}
+function ips(w) { let t = 0; const W = S.w[w]; for (let i = 0; i < 10; i++) if (W.mgr[i] && W.owned[i] > 0) t += revenue(w, i) / cycleTime(w, i); return t; }
+function worldActive(w) { return w === 'earth' || S.marsUnlocked; }
+function costOf(w, i, n) { const b = DEF[w][i], k = S.w[w].owned[i]; return C.costMul * b.cost * Math.pow(b.coef, k) * (Math.pow(b.coef, n) - 1) / (b.coef - 1); }
+function maxBuy(w, i) {
+  const b = DEF[w][i], k = S.w[w].owned[i];
+  const n = Math.floor(Math.log(S.w[w].cash * (b.coef - 1) / (C.costMul * b.cost * Math.pow(b.coef, k)) + 1) / Math.log(b.coef));
   return isFinite(n) ? Math.max(0, n) : 0;
 }
-function buyCount(i) {
+function buyCount(w, i) {
+  const o = S.w[w].owned[i];
   switch (MODES[S.mode]) {
     case 'x1': return 1;
     case 'x10': return 10;
     case 'x100': return 100;
-    case 'Next': return nextMs(S.owned[i]) - S.owned[i];
-    case 'Max': return Math.max(1, maxBuy(i));
+    case 'Next': return nextMs(o) - o;
+    case 'Max': return Math.max(1, maxBuy(w, i));
   }
 }
+function mgrCost(w, i) { return DEF[w][i].cost * MGR_MULT[i] * C.mgrMul; }
 function patentsFor(l) { return Math.floor(150 * Math.sqrt(l / PATENT_BASE)); }
-function claimable() { return Math.max(0, patentsFor(S.lifetime) - S.patents); }
+function claimable() { return Math.max(0, patentsFor(S.lifetime) - S.patentsEarned); }
+function stageIdx(l = S.lifetime) { let k = 0; STAGES.forEach((s, j) => { if (l >= s[0]) k = j; }); return k; }
 
-// ───────────────────────── Formatting ─────────────────────────
+function earn(w, x) { S.w[w].cash += x; S.w[w].run += x; S.lifetime += x; }
+
+function coreBuy(w, i, n) {
+  if (n < 1) return false;
+  const c = costOf(w, i, n);
+  if (S.w[w].cash < c) return false;
+  S.w[w].cash -= c; S.w[w].owned[i] += n;
+  return true;
+}
+function coreHire(w, i) {
+  const c = mgrCost(w, i);
+  if (S.w[w].mgr[i] || S.w[w].cash < c) return false;
+  S.w[w].cash -= c; S.w[w].mgr[i] = true;
+  return true;
+}
+function coreUpg(w, u) {
+  if (C.bought[w].has(u.id) || S.w[w].cash < u.cost) return false;
+  S.w[w].cash -= u.cost; S.w[w].upg.push(u.id); recalc();
+  return true;
+}
+function coreShop(item) {
+  if (C.ps.has(item.id) || S.patents < item.cost) return false;
+  S.patents -= item.cost; S.pshop.push(item.id); recalc();
+  return true;
+}
+function corePrestige() {
+  const cl = claimable();
+  if (cl < 1) return 0;
+  S.patents += cl; S.patentsEarned += cl; S.resets++;
+  const keepMgr = C.ps.has('keep') ? S.w.earth.mgr.slice() : null;
+  S.w = { earth: newWorld(), mars: newWorld() };
+  if (keepMgr) S.w.earth.mgr = keepMgr;
+  if (C.ps.has('seed1')) S.w.earth.cash = 25e4;
+  if (C.ps.has('seed2')) S.w.earth.cash = 1e9;
+  if (C.ps.has('mars1')) S.w.mars.cash = 1e9;
+  S.runPlayed = 0; S.event = null;
+  recalc();
+  return cl;
+}
+
+function step(dt, quiet) {
+  for (const w of WIDS) {
+    if (!worldActive(w)) continue;
+    const W = S.w[w];
+    for (let i = 0; i < 10; i++) {
+      if (W.owned[i] < 1) continue;
+      const T = cycleTime(w, i);
+      if (W.mgr[i]) {
+        W.prog[i] += dt;
+        if (W.prog[i] >= T) {
+          const n = Math.floor(W.prog[i] / T);
+          W.prog[i] -= n * T;
+          const r = revenue(w, i) * n;
+          earn(w, r);
+          if (!quiet && T >= 1) popAt(w, i, r);
+        }
+      } else if (W.running[i]) {
+        W.prog[i] += dt;
+        if (W.prog[i] >= T) {
+          W.prog[i] = 0; W.running[i] = false;
+          const r = revenue(w, i);
+          earn(w, r);
+          if (!quiet) { popAt(w, i, r); sfx.coin(); }
+        }
+      }
+    }
+  }
+}
+
+// Returns list of newly earned achievement ids, plus flags for unlocks.
+function checkProgress() {
+  const out = { ach: [], mars: false, win: false, stage: -1 };
+  if (!S.marsUnlocked && S.lifetime >= MARS_AT) { S.marsUnlocked = true; out.mars = true; }
+  for (const a of ACH) if (!C.achSet.has(a.id) && a.test(S)) { S.ach.push(a.id); C.achSet.add(a.id); out.ach.push(a); }
+  if (!S.wonAt && S.lifetime >= WIN_AT) { S.wonAt = Math.max(1, S.played); out.win = true; }
+  return out;
+}
+
+// ═════════════════════════ FORMATTING ═════════════════════════
 const SUF = ['', 'thousand', 'million', 'billion', 'trillion', 'quadrillion', 'quintillion', 'sextillion', 'septillion', 'octillion', 'nonillion', 'decillion', 'undecillion', 'duodecillion', 'tredecillion', 'quattuordecillion', 'quindecillion', 'sexdecillion', 'septendecillion', 'octodecillion', 'novemdecillion', 'vigintillion'];
 const SHORT = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
 function fmtNum(n) {
   if (!isFinite(n)) return '∞';
-  if (n < 1000) return n.toFixed(2);
+  if (n < 1000) return n < 100 && n % 1 ? n.toFixed(2) : Math.floor(n).toString();
   if (n < 1e6) return Math.floor(n).toLocaleString('en-US');
   let e = Math.floor(Math.log10(n) / 3), v = n / Math.pow(10, e * 3);
   if (v >= 999.9995) { v /= 1000; e++; }
   return e < SUF.length ? v.toFixed(3) + ' ' + SUF[e] : n.toExponential(3);
 }
-const fmt = n => '$' + fmtNum(n);
+function fmt(n) { return '$' + fmtNum(n); }
 function fmtShort(n) {
   if (n < 1000) return String(Math.floor(n));
   let e = Math.floor(Math.log10(n) / 3), v = n / Math.pow(10, e * 3);
@@ -459,16 +844,16 @@ function fmtDuration(s) {
   return `${s}s`;
 }
 
-// ───────────────────────── Sound ─────────────────────────
+// ═════════════════════════ AUDIO ═════════════════════════
 let actx;
-function tone(f, d = .08, type = 'sine', vol = .06, delay = 0) {
-  if (S.mute) return;
+function ac() { return actx = actx || new (window.AudioContext || window.webkitAudioContext)(); }
+function tone(f, d = .08, type = 'sine', vol = .06, delay = 0, force) {
+  if (S.mute && !force) return;
   try {
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    const t = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
+    const a = ac(), t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
     o.type = type; o.frequency.setValueAtTime(f, t);
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
-    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + d + .02);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + d + .02);
   } catch (e) {}
 }
 const sfx = {
@@ -478,27 +863,75 @@ const sfx = {
   big:  () => [523, 659, 784, 1047].forEach((f, k) => tone(f, .2, 'triangle', .06, k * .08)),
   nope: () => tone(150, .12, 'sawtooth', .025),
 };
+// Gentle generative background music: soft pad notes over a I-vi-IV-V loop.
+const Music = (() => {
+  const CH = [[261.6, 329.6, 392], [220, 261.6, 329.6], [174.6, 220, 261.6], [196, 246.9, 293.7]];
+  let timer = null, beat = 0;
+  function pad(f, start, dur, vol) {
+    const a = ac(), o = a.createOscillator(), g = a.createGain(), lp = a.createBiquadFilter();
+    o.type = 'triangle'; o.frequency.value = f;
+    lp.type = 'lowpass'; lp.frequency.value = 1400;
+    g.gain.setValueAtTime(0, start); g.gain.linearRampToValueAtTime(vol, start + .08); g.gain.exponentialRampToValueAtTime(.0001, start + dur);
+    o.connect(lp).connect(g).connect(a.destination); o.start(start); o.stop(start + dur + .05);
+  }
+  function tick() {
+    try {
+      const a = ac(), t = a.currentTime + .05, ch = CH[Math.floor(beat / 8) % 4];
+      if (beat % 8 === 0) pad(ch[0] / 2, t, 4.2, .035);
+      if (Math.random() < .7) pad(ch[Math.floor(Math.random() * 3)] * (Math.random() < .4 ? 2 : 1), t, 1.4, .018);
+      beat++;
+    } catch (e) {}
+  }
+  return {
+    start() { if (!timer) { ac().resume && ac().resume(); timer = setInterval(tick, 500); } },
+    stop() { clearInterval(timer); timer = null; },
+  };
+})();
 
-// ───────────────────────── UI helpers ─────────────────────────
+// ═════════════════════════ UI HELPERS ═════════════════════════
 const $ = s => document.querySelector(s);
+const cw = () => S.cur;
 function toast(html, kind = '') {
   const t = document.createElement('div');
   t.className = 'toast ' + kind; t.innerHTML = html;
   $('#toasts').appendChild(t);
   while ($('#toasts').children.length > 4) $('#toasts').firstChild.remove();
-  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3200);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3400);
 }
-function modal(html) { $('#modal').innerHTML = html; $('#modalBg').classList.add('on'); }
-function closeModal() { $('#modalBg').classList.remove('on'); }
+const modalQ = [];
+function modal(html, bind) {
+  modalQ.push({ html, bind });
+  if (!$('#modalBg').classList.contains('on')) showNextModal();
+}
+function showNextModal() {
+  const m = modalQ.shift();
+  if (!m) { $('#modalBg').classList.remove('on'); return; }
+  $('#modal').innerHTML = m.html; $('#modalBg').classList.add('on');
+  if (m.bind) m.bind();
+  const ok = $('#mOk'); if (ok && !ok.onclick) ok.onclick = closeModal;
+}
+function closeModal() { showNextModal(); }
 $('#modalBg').addEventListener('click', e => { if (e.target.id === 'modalBg') closeModal(); });
 function confirmModal(icon, title, text, okLabel, okClass, onOk) {
-  modal(`<div class="mi">${icon}</div><h3>${title}</h3><p>${text}</p>
-    <div class="btnrow"><button class="btn ghost" style="background:var(--well);color:var(--ink)" id="mNo">Cancel</button><button class="btn ${okClass}" id="mOk">${okLabel}</button></div>`);
-  $('#mNo').onclick = closeModal;
-  $('#mOk').onclick = () => { closeModal(); onOk(); };
+  modal(`<div class="mi emo">${icon}</div><h3>${title}</h3><p>${text}</p>
+    <div class="btnrow"><button class="btn plain" id="mNo">Cancel</button><button class="btn ${okClass}" id="mOk">${okLabel}</button></div>`,
+    () => { $('#mNo').onclick = closeModal; $('#mOk').onclick = () => { closeModal(); onOk(); }; });
+}
+function confetti(x, y, n = 26) {
+  const cols = ['#ffc83d', '#34cf94', '#4aa8ff', '#ff5d6c', '#8b6cff', '#ffffff'];
+  for (let k = 0; k < n; k++) {
+    const c = document.createElement('div');
+    c.className = 'conf';
+    c.style.left = x + 'px'; c.style.top = y + 'px';
+    c.style.background = cols[k % cols.length];
+    const a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 140;
+    c.style.setProperty('--dx', Math.cos(a) * d + 'px');
+    c.style.setProperty('--dy', Math.sin(a) * d + 60 + 'px');
+    c.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+    document.body.appendChild(c); setTimeout(() => c.remove(), 1100);
+  }
 }
 
-// clouds
 (() => {
   const c = $('#clouds');
   for (let k = 0; k < 6; k++) {
@@ -512,34 +945,60 @@ function confirmModal(icon, title, text, okLabel, okClass, onOk) {
   }
 })();
 
-// ───────────────────────── Businesses view ─────────────────────────
-const R = [];
+// ═════════════════════════ BUSINESSES VIEW ═════════════════════════
+const MINI = `<svg class="mini" viewBox="0 0 26 16"><rect class="r" x="0" y="1" width="10" height="2" rx="1"/><rect class="r" x="16" y="1" width="10" height="2" rx="1"/><rect x="4" y="3" width="2" height="4"/><rect x="20" y="3" width="2" height="4"/><rect x="2" y="6" width="22" height="3" rx="1.5"/><rect x="8" y="5" width="10" height="8" rx="4"/></svg>`;
+let R = [];
 function buildBiz() {
-  const wrap = $('#bizList');
-  BIZ.forEach((b, i) => {
+  const w = cw(), wrap = $('#bizList');
+  wrap.innerHTML = ''; R = [];
+  document.body.classList.toggle('mars', w === 'mars');
+  DEF[w].forEach((b, i) => {
     const el = document.createElement('div');
     el.className = 'biz';
     el.style.setProperty('--h', b.hue);
     el.innerHTML = `
-      <button class="biz-icon" aria-label="Run ${b.name}">${b.icon}<span class="lvl">0</span><span class="auto">AUTO</span></button>
+      <button class="biz-icon emo" aria-label="Run ${b.name}">${b.icon}<span class="lvl">0</span><span class="auto">AUTO</span></button>
       <div class="biz-body">
         <div class="biz-top"><div class="biz-name">${b.name}</div><div class="ms-txt"></div></div>
-        <div class="bar"><div class="fill"></div><span class="bar-txt"></span></div>
+        <div class="biz-job">${b.job}</div>
+        <div class="bar"><div class="fill"></div>${MINI}<span class="bar-txt"></span></div>
         <div class="biz-row">
           <button class="buy"><span class="buy-n"></span><span class="buy-c"></span></button>
           <div class="timer"></div>
         </div>
         <div class="ms"><div class="ms-fill"></div></div>
       </div>
-      <button class="lock"><span class="ln">${b.icon} ${b.name}</span><span class="lc"></span></button>`;
+      <button class="lock"><span class="ln"><span class="emo">${b.icon}</span> ${b.name}</span><span class="lr">Requires: ${b.req}</span><span class="lc"></span></button>`;
     wrap.appendChild(el);
     const q = s => el.querySelector(s);
-    R[i] = { el, icon: q('.biz-icon'), lvl: q('.lvl'), fill: q('.fill'), barTxt: q('.bar-txt'), buy: q('.buy'), buyN: q('.buy-n'), buyC: q('.buy-c'), timer: q('.timer'), msTxt: q('.ms-txt'), msFill: q('.ms-fill'), lock: q('.lock'), lockC: q('.lc') };
+    R[i] = { el, icon: q('.biz-icon'), lvl: q('.lvl'), fill: q('.fill'), mini: q('.mini'), barTxt: q('.bar-txt'), buy: q('.buy'), buyN: q('.buy-n'), buyC: q('.buy-c'), timer: q('.timer'), msTxt: q('.ms-txt'), msFill: q('.ms-fill'), lock: q('.lock'), lockC: q('.lc') };
     R[i].icon.onclick = () => runBiz(i);
     q('.bar').onclick = () => runBiz(i);
-    R[i].buy.onclick = () => buy(i, buyCount(i));
+    R[i].buy.onclick = () => buy(i, buyCount(w, i));
     R[i].lock.onclick = () => buy(i, 1);
   });
+  renderWorldSeg();
+}
+function renderWorldSeg() {
+  const seg = $('#worldSeg');
+  seg.innerHTML = '';
+  for (const w of WIDS) {
+    const b = document.createElement('button');
+    const info = WORLD_INFO[w];
+    b.innerHTML = `<span class="emo">${worldActive(w) ? info.icon : '🔒'}</span> ${info.name}`;
+    b.classList.toggle('on', w === cw());
+    b.disabled = !worldActive(w);
+    if (!worldActive(w)) b.title = `Unlocks at the ${STAGES[stageIdx(MARS_AT)][1]} stage (${fmt(MARS_AT)} all-time)`;
+    b.onclick = () => switchWorld(w);
+    seg.appendChild(b);
+  }
+}
+function switchWorld(w) {
+  if (!worldActive(w) || w === S.cur) return;
+  S.cur = w; dispCash = S.w[w].cash;
+  buildBiz(); renderLists(); updateText();
+}
+function buildModes() {
   const seg = $('#modeSeg');
   MODES.forEach((m, k) => {
     const btn = document.createElement('button');
@@ -548,7 +1007,6 @@ function buildBiz() {
     btn.onclick = () => setMode(k);
     seg.appendChild(btn);
   });
-  setMode(S.mode);
 }
 function setMode(k) {
   S.mode = k;
@@ -557,35 +1015,38 @@ function setMode(k) {
 }
 
 function runBiz(i) {
-  if (S.owned[i] < 1 || S.mgr[i] || S.running[i]) return;
-  S.running[i] = true; S.prog[i] = 0; S.clicks++;
+  const W = S.w[cw()];
+  if (W.owned[i] < 1 || W.mgr[i] || W.running[i]) return;
+  W.running[i] = true; W.prog[i] = 0; S.clicks++;
   sfx.tap();
 }
 
 function buy(i, n) {
-  if (n < 1) return;
-  const cost = costOf(i, n);
-  if (S.cash < cost) { sfx.nope(); return; }
-  const before = S.owned[i], fleetBefore = fleetSteps();
-  S.cash -= cost; S.owned[i] += n;
+  const w = cw(), W = S.w[w], b = DEF[w][i];
+  const before = W.owned[i], fleetBefore = fleetSteps(w);
+  if (!coreBuy(w, i, n)) { sfx.nope(); return; }
   sfx.buy();
-  if (before === 0) toast(`${BIZ[i].icon} <b>${BIZ[i].name}</b> is open for business!`);
-  const sp = speedSteps(S.owned[i]) - speedSteps(before), pr = profitSteps(S.owned[i]) - profitSteps(before);
-  if (sp > 0) { toast(`⚡ <b>${BIZ[i].name}</b> runs ${Math.pow(2, sp)}x faster!`, 'gold'); sfx.big(); }
-  if (pr > 0) { toast(`💎 <b>${BIZ[i].name}</b> profits x${Math.pow(2, pr)}!`, 'gold'); sfx.big(); }
-  const fl = fleetSteps() - fleetBefore;
-  if (fl > 0) toast(`🛩️ <b>Fleet bonus!</b> Every business has ${prevFleetTarget()}+. All profits x${Math.pow(3, fl)}.`, 'violet');
-  updateText(); renderLists();
+  const rect = R[i].el.getBoundingClientRect();
+  if (before === 0) {
+    toast(`<span class="emo">${b.icon}</span> <b>${b.name}</b> is open for business!`, 'green');
+    R[i].el.classList.remove('celebrate'); void R[i].el.offsetWidth; R[i].el.classList.add('celebrate');
+    confetti(rect.left + rect.width / 2, rect.top + rect.height / 2, 34);
+    sfx.big();
+  }
+  const sp = speedSteps(W.owned[i]) - speedSteps(before), pr = profitSteps(W.owned[i]) - profitSteps(before);
+  if (sp > 0 && before > 0) { toast(`⚡ <b>${b.name}</b> runs ${Math.pow(2, sp)}x faster!`, 'gold'); sfx.big(); confetti(rect.left + 50, rect.top + 40, 16); }
+  if (pr > 0) { toast(`💎 <b>${b.name}</b> profits x${Math.pow(2, pr)}!`, 'gold'); sfx.big(); confetti(rect.left + 50, rect.top + 40, 16); }
+  const fl = fleetSteps(w) - fleetBefore;
+  if (fl > 0) toast(`🛩️ <b>Fleet bonus!</b> Every business has ${prevMs(Math.min(...W.owned))}+. All profits x${Math.pow(FLEET_MULT, fl)}.`, 'violet');
+  progressTick(); updateText(); renderLists();
 }
-function prevFleetTarget() { return prevMs(Math.min(...S.owned)); }
 
-function earn(x) { S.cash += x; S.lifetime += x; S.run += x; }
-
-const lastPop = Array(10).fill(0);
-function popAt(i, amount) {
-  const now = performance.now();
-  if (now - lastPop[i] < 300 || document.hidden) return;
-  lastPop[i] = now;
+const lastPop = { earth: Array(10).fill(0), mars: Array(10).fill(0) };
+function popAt(w, i, amount) {
+  if (w !== cw() || document.hidden || !R[i]) return;
+  const t = performance.now();
+  if (t - lastPop[w][i] < 300) return;
+  lastPop[w][i] = t;
   const p = document.createElement('div');
   p.className = 'pop';
   p.textContent = '+' + fmt(amount);
@@ -596,94 +1057,94 @@ function popAt(i, amount) {
   setTimeout(() => p.remove(), 900);
 }
 
-// ───────────────────────── Simulation ─────────────────────────
-function step(dt, quiet) {
+// ═════════════════════════ RENDERING ═════════════════════════
+function renderBars() {
+  const w = cw(), W = S.w[w];
   for (let i = 0; i < 10; i++) {
-    if (S.owned[i] < 1) continue;
-    const T = cycleTime(i);
-    if (S.mgr[i]) {
-      S.prog[i] += dt;
-      if (S.prog[i] >= T) {
-        const n = Math.floor(S.prog[i] / T);
-        S.prog[i] -= n * T;
-        const r = revenue(i) * n;
-        earn(r);
-        if (!quiet && T >= 1) popAt(i, r);
-      }
-    } else if (S.running[i]) {
-      S.prog[i] += dt;
-      if (S.prog[i] >= T) {
-        S.prog[i] = 0; S.running[i] = false;
-        const r = revenue(i);
-        earn(r);
-        if (!quiet) { popAt(i, r); sfx.coin(); }
-      }
+    const r = R[i], o = W.owned[i];
+    if (!r) continue;
+    const T = cycleTime(w, i), active = o > 0 && (W.mgr[i] || W.running[i]);
+    const fast = active && T < .25;
+    r.el.classList.toggle('fast', fast);
+    r.el.classList.toggle('flying', active && !fast);
+    if (!fast) {
+      const f = active ? Math.min(1, W.prog[i] / T) : 0;
+      r.fill.style.transform = `scaleX(${f})`;
+      if (active) r.mini.style.left = `calc(${f * 100}% - 26px)`;
     }
   }
 }
 
-// ───────────────────────── Rendering ─────────────────────────
-function renderBars() {
-  for (let i = 0; i < 10; i++) {
-    const r = R[i], o = S.owned[i];
-    const T = cycleTime(i), active = S.mgr[i] || S.running[i];
-    const fast = active && T < .25;
-    r.el.classList.toggle('fast', fast);
-    if (!fast) r.fill.style.transform = `scaleX(${o > 0 && active ? Math.min(1, S.prog[i] / T) : 0})`;
+let dispCash = 0;
+function chipSet(id, on, html) {
+  for (const sfxId of ['', 'M']) {
+    const el = $('#' + id + sfxId);
+    el.classList.toggle('on', on);
+    if (on) el.innerHTML = html;
   }
 }
-
-let lastCash = 0;
 function updateText() {
-  const cashEl = $('#cash');
-  cashEl.textContent = fmt(S.cash);
-  const income = ips();
+  const w = cw(), W = S.w[w];
+  // cash counts up smoothly; spending snaps instantly
+  if (W.cash < dispCash || dispCash <= 0) dispCash = W.cash;
+  else { dispCash += (W.cash - dispCash) * .35; if (W.cash - dispCash < W.cash * 1e-4 + .5) dispCash = W.cash; }
+  $('#cash').textContent = fmt(dispCash);
+  const income = ips(w);
   $('#ips').textContent = income > 0 ? fmt(income) + ' / sec' : 'Hire a manager to earn while you\'re away';
-  const bActive = boosted();
-  $('#boostChip').classList.toggle('on', bActive);
-  if (bActive) $('#boostT').textContent = Math.ceil((S.boostUntil - Date.now()) / 1000) + 's';
-  $('#patN').textContent = fmtShort(S.patents) + ' · +' + fmtShort(S.patents * 2) + '%';
+
+  const t = now();
+  chipSet('boostChip', boosted(), `🌬️ Tailwind x7 · ${Math.ceil((S.boostUntil - t) / 1000)}s`);
+  chipSet('rushChip', rushing(), `⏩ Rush x2 speed · ${fmtTime((S.rushUntil - t) / 1000)}`);
+  const ev = S.event && t < S.event.until ? S.event : null;
+  chipSet('evChip', !!ev, ev ? `📈 ${ev.title} · ${DEF[ev.w][ev.i].name} x${ev.mult} · ${fmtTime((ev.until - t) / 1000)}` : '');
+
+  const si = stageIdx(), st = STAGES[si], nx = STAGES[si + 1];
+  $('#stageName').textContent = st[1];
+  $('#stageFill').style.width = nx ? (Math.max(0, Math.log10(Math.max(1, S.lifetime)) - Math.log10(Math.max(1, st[0]))) / (Math.log10(nx[0]) - Math.log10(Math.max(1, st[0]))) * 100) + '%' : '100%';
 
   let firstLocked = true;
   for (let i = 0; i < 10; i++) {
-    const r = R[i], o = S.owned[i], b = BIZ[i];
+    const r = R[i], o = W.owned[i];
+    if (!r) continue;
     const locked = o === 0;
     r.el.classList.toggle('locked', locked);
+    r.el.classList.toggle('evt', !!ev && ev.w === w && ev.i === i);
     if (locked) {
-      const c = costOf(i, 1);
+      const c = costOf(w, i, 1);
       r.lockC.textContent = fmt(c);
-      r.lock.classList.toggle('can', S.cash >= c);
+      r.lock.classList.toggle('can', W.cash >= c);
       r.el.style.display = firstLocked || i < 2 ? '' : 'none';
       firstLocked = false;
       continue;
     }
     r.el.style.display = '';
-    r.el.classList.toggle('managed', S.mgr[i]);
-    r.el.classList.toggle('idle', !S.mgr[i] && !S.running[i]);
+    r.el.classList.toggle('managed', W.mgr[i]);
+    r.el.classList.toggle('idle', !W.mgr[i] && !W.running[i]);
     r.lvl.textContent = fmtInt(o);
-    const T = cycleTime(i), rev = revenue(i), active = S.mgr[i] || S.running[i];
+    const T = cycleTime(w, i), rev = revenue(w, i), active = W.mgr[i] || W.running[i];
     r.barTxt.textContent = active && T < .25 ? fmt(rev / T) + ' / sec' : fmt(rev);
-    r.timer.textContent = active ? fmtTime(T - S.prog[i]) : fmtTime(T);
-    const n = buyCount(i), c = costOf(i, n);
-    r.buyN.textContent = 'Buy x' + fmtInt(n);
+    r.timer.textContent = active ? fmtTime(T - W.prog[i]) : fmtTime(T);
+    const n = buyCount(w, i), c = costOf(w, i, n);
+    r.buyN.textContent = 'Add x' + fmtInt(n);
     r.buyC.textContent = fmt(c);
-    r.buy.disabled = S.cash < c;
-    const nx = nextMs(o), pv = prevMs(o);
-    r.msFill.style.width = ((o - pv) / (nx - pv) * 100) + '%';
-    r.msTxt.textContent = `${fmtInt(o)}/${fmtInt(nx)} → ${nx > 400 ? 'profit x2' : 'speed x2'}`;
+    r.buy.disabled = W.cash < c;
+    const nm = nextMs(o), pv = prevMs(o);
+    r.msFill.style.width = ((o - pv) / (nm - pv) * 100) + '%';
+    r.msTxt.textContent = `${fmtInt(o)}/${fmtInt(nm)} → ${nm > 400 ? 'profit x2' : 'speed x2'}`;
   }
 
-  const fm = Math.min(...S.owned), fs = fleetSteps();
-  $('#fleetTxt').innerHTML = `🛩️ Fleet bonus <b>x${fmtShort(Math.pow(3, fs))}</b> · next x3 when every business reaches <b>${nextMs(fm)}</b>`;
+  const fm = Math.min(...W.owned), fs = fleetSteps(w);
+  $('#fleetTxt').innerHTML = `🛩️ Fleet bonus <b>x${fmtShort(Math.pow(FLEET_MULT, fs))}</b> · next x${FLEET_MULT} when every business reaches <b>${nextMs(fm)}</b>`;
 
   // badges
-  let m = 0; for (let i = 0; i < 10; i++) if (!S.mgr[i] && S.cash >= MGR[i].cost) m++;
-  let u = 0; for (const up of UPG) if (!bought.has(up.id) && S.cash >= up.cost) u++;
-  const cl = claimable();
-  setBadge('#bMgr', m); setBadge('#bUpg', u); setBadge('#bInv', cl, true);
+  let m = 0; for (let i = 0; i < 10; i++) if (!W.mgr[i] && W.cash >= mgrCost(w, i)) m++;
+  let u = 0; for (const up of UPG[w]) if (!C.bought[w].has(up.id) && W.cash >= up.cost) u++;
+  setBadge('#bMgr', m); setBadge('#bUpg', u);
+  setBadge('#bInv', claimable(), true);
+  setBadge('#bGoal', newAch);
 
-  // affordability inside lists
-  document.querySelectorAll('[data-cost]').forEach(btn => btn.disabled = S.cash < +btn.dataset.cost);
+  document.querySelectorAll('[data-cost]').forEach(btn => btn.disabled = W.cash < +btn.dataset.cost);
+  document.querySelectorAll('[data-pcost]').forEach(btn => btn.disabled = S.patents < +btn.dataset.pcost);
   $('#buyAllUpg').disabled = u === 0;
 
   if ($('#view-inv').classList.contains('active')) renderInv();
@@ -695,17 +1156,21 @@ function setBadge(sel, n, short) {
   b.textContent = short ? fmtShort(n) : n;
 }
 
-// ───────────────────────── Managers & upgrades ─────────────────────────
+// ═════════════════════════ MANAGERS & UPGRADES ═════════════════════════
 function renderLists() {
+  const w = cw(), W = S.w[w];
+  $('#mgrTitle').textContent = `${WORLD_INFO[w].name} managers`;
+  $('#upgTitle').textContent = `${WORLD_INFO[w].name} upgrades`;
   const ml = $('#mgrList');
   ml.innerHTML = '';
-  MGR.forEach((m, i) => {
+  MGR[w].forEach(([name, role, quip], i) => {
+    const b = DEF[w][i], c = mgrCost(w, i);
     const row = document.createElement('div');
-    row.className = 'row' + (S.mgr[i] ? ' done' : '');
-    row.style.setProperty('--h', BIZ[i].hue);
-    row.innerHTML = `<div class="ri">${BIZ[i].icon}</div>
-      <div class="rt"><div class="rn">${m.name}</div><div class="rd">Runs ${BIZ[i].name}. ${m.quip}</div></div>
-      ${S.mgr[i] ? '<span class="hired">✓ Hired</span>' : `<button class="btn" data-cost="${m.cost}">${fmt(m.cost)}</button>`}`;
+    row.className = 'row' + (W.mgr[i] ? ' done' : '');
+    row.style.setProperty('--h', b.hue);
+    row.innerHTML = `<div class="ri emo">${b.icon}</div>
+      <div class="rt"><div class="rn">${name} · ${role}</div><div class="rd">Runs ${b.name}. ${quip}</div></div>
+      ${W.mgr[i] ? '<span class="hired">✓ Hired</span>' : `<button class="btn" data-cost="${c}">${fmt(c)}</button>`}`;
     const btn = row.querySelector('button');
     if (btn) btn.onclick = () => hire(i);
     ml.appendChild(row);
@@ -713,49 +1178,51 @@ function renderLists() {
 
   const ul = $('#upgList');
   ul.innerHTML = '';
-  const left = UPG.filter(u => !bought.has(u.id));
-  $('#upgSub').textContent = `${UPG.length - left.length} of ${UPG.length} bought. Each one triples profits.`;
-  left.slice(0, 14).forEach(u => {
-    const t = TIERS[u.tier];
+  const left = UPG[w].filter(u => !C.bought[w].has(u.id));
+  $('#upgSub').textContent = `${UPG[w].length - left.length} of ${UPG[w].length} bought. Starter gear doubles profit; everything after triples it.`;
+  left.slice(0, 16).forEach(u => {
     const row = document.createElement('div');
     row.className = 'row';
-    row.style.setProperty('--h', u.target < 0 ? 45 : BIZ[u.target].hue);
-    row.innerHTML = `<div class="ri">${u.target < 0 ? '✨' : t.icon}</div>
-      <div class="rt"><div class="rn">${t.name}${u.target < 0 ? ' · Fleet-wide' : ''}</div><div class="rd">${u.target < 0 ? 'All businesses' : BIZ[u.target].name} profit x${u.mult}</div></div>
+    row.style.setProperty('--h', u.target < 0 ? 45 : DEF[w][u.target].hue);
+    row.innerHTML = `<div class="ri emo">${u.target < 0 ? '✨' : TIER_ICON[u.tier]}</div>
+      <div class="rt"><div class="rn">${u.name}</div><div class="rd">${u.target < 0 ? 'Every business' : DEF[w][u.target].name} profit x${u.mult}</div></div>
       <button class="btn" data-cost="${u.cost}">${fmt(u.cost)}</button>`;
     row.querySelector('button').onclick = () => buyUpg(u);
     ul.appendChild(row);
   });
-  if (!left.length) ul.innerHTML = '<div class="panel"><h3>🏆 All upgrades bought</h3><p>Your fleet is fully kitted out. Time to file some patents.</p></div>';
+  if (!left.length) ul.innerHTML = '<div class="panel"><h3>🏆 Every upgrade bought</h3><p>This fleet is fully kitted out. Time to file some patents.</p></div>';
+  renderShop();
   updateBadgesOnly();
 }
-function updateBadgesOnly() { document.querySelectorAll('[data-cost]').forEach(btn => btn.disabled = S.cash < +btn.dataset.cost); }
+function updateBadgesOnly() {
+  const W = S.w[cw()];
+  document.querySelectorAll('[data-cost]').forEach(btn => btn.disabled = W.cash < +btn.dataset.cost);
+  document.querySelectorAll('[data-pcost]').forEach(btn => btn.disabled = S.patents < +btn.dataset.pcost);
+}
 
 function hire(i) {
-  if (S.mgr[i] || S.cash < MGR[i].cost) { sfx.nope(); return; }
-  S.cash -= MGR[i].cost; S.mgr[i] = true;
+  const w = cw();
+  if (!coreHire(w, i)) { sfx.nope(); return; }
   sfx.buy();
-  toast(`🧑‍✈️ <b>${MGR[i].name}</b> now runs ${BIZ[i].name}.`, 'violet');
-  renderLists(); updateText();
+  toast(`🧑‍✈️ <b>${MGR[w][i][0]}</b> now runs ${DEF[w][i].name}.`, 'violet');
+  progressTick(); renderLists(); updateText();
 }
-function buyUpg(u, silent) {
-  if (bought.has(u.id) || S.cash < u.cost) { if (!silent) sfx.nope(); return false; }
-  S.cash -= u.cost; S.upg.push(u.id); recalc();
-  if (!silent) {
-    sfx.buy();
-    toast(`${TIERS[u.tier].icon} <b>${TIERS[u.tier].name}</b>: ${u.target < 0 ? 'all businesses' : BIZ[u.target].name} x${u.mult}`, 'gold');
-    renderLists(); updateText();
-  }
-  return true;
+function buyUpg(u) {
+  const w = cw();
+  if (!coreUpg(w, u)) { sfx.nope(); return; }
+  sfx.buy();
+  toast(`<span class="emo">${TIER_ICON[u.tier]}</span> <b>${u.name}</b>: ${u.target < 0 ? 'every business' : DEF[w][u.target].name} x${u.mult}`, 'gold');
+  progressTick(); renderLists(); updateText();
 }
 $('#buyAllUpg').onclick = () => {
+  const w = cw();
   let n = 0;
-  for (const u of UPG) if (!bought.has(u.id) && S.cash >= u.cost && buyUpg(u, true)) n++;
+  for (const u of UPG[w]) if (coreUpg(w, u)) n++;
   if (n) { sfx.big(); toast(`⚙️ Bought ${n} upgrade${n > 1 ? 's' : ''}!`, 'gold'); }
-  renderLists(); updateText();
+  progressTick(); renderLists(); updateText();
 };
 
-// ───────────────────────── Patents (prestige) ─────────────────────────
+// ═════════════════════════ PATENTS ═════════════════════════
 function renderInv() {
   const cl = claimable();
   $('#invHeld').textContent = fmtInt(S.patents);
@@ -767,91 +1234,183 @@ function renderInv() {
   $('#invNext').innerHTML = `All-time earnings: <b>${fmt(S.lifetime)}</b>. Next patent at <b>${fmt(need)}</b>.`;
   $('#prestigeBtn').disabled = cl < 1;
 }
+function renderShop() {
+  const list = $('#shopList');
+  list.innerHTML = '';
+  const sorted = SHOP.slice().sort((a, b) => (C.ps.has(a.id) - C.ps.has(b.id)) || a.cost - b.cost);
+  for (const item of sorted) {
+    const own = C.ps.has(item.id);
+    const row = document.createElement('div');
+    row.className = 'row' + (own ? ' done' : '');
+    row.innerHTML = `<div class="ri emo">${item.icon}</div>
+      <div class="rt"><div class="rn">${item.name}</div><div class="rd">${item.desc}</div></div>
+      ${own ? '<span class="hired">✓ Owned</span>' : `<button class="btn violet" data-pcost="${item.cost}">📜 ${fmtInt(item.cost)}</button>`}`;
+    const btn = row.querySelector('button');
+    if (btn) btn.onclick = () => {
+      const lose = item.cost * 2;
+      confirmModal(item.icon, item.name, `${item.desc}, permanently.<br><br>Costs <b>${fmtInt(item.cost)} patents</b>. Your held-patent bonus drops by ${fmtInt(lose)}%.`, 'Fund it', 'violet', () => {
+        if (!coreShop(item)) { sfx.nope(); return; }
+        sfx.big(); toast(`🔬 <b>${item.name}</b> funded!`, 'violet');
+        progressTick(); renderLists(); updateText();
+      });
+    };
+    list.appendChild(row);
+  }
+}
 $('#prestigeBtn').onclick = () => {
   const cl = claimable();
   if (cl < 1) return;
+  const keeps = [C.ps.has('keep') && 'Earth managers', C.ps.has('seed2') ? '$1 billion seed cash' : C.ps.has('seed1') && '$250,000 seed cash'].filter(Boolean);
   confirmModal('📜', `File ${fmtInt(cl)} patent${cl > 1 ? 's' : ''}?`,
-    `Your businesses, managers, upgrades and cash reset to zero. In exchange, all profits get <b>+${fmtInt((S.patents + cl) * 2)}%</b> from now on.`,
+    `Businesses, managers, upgrades and cash reset on both worlds${keeps.length ? ` (you keep ${keeps.join(' and ')})` : ''}. All profits get <b>+${fmtInt((S.patents + cl) * 2)}%</b> from held patents.`,
     'File & restart', 'violet', () => {
-      const keep = { lifetime: S.lifetime, patents: S.patents + cl, played: S.played, golden: S.golden, clicks: S.clicks, resets: S.resets + 1, mute: S.mute, mode: S.mode, seenIntro: true };
-      S = Object.assign(fresh(), keep);
-      recalc(); renderLists(); updateText(); save();
+      corePrestige();
+      S.cur = 'earth'; dispCash = S.w.earth.cash;
+      buildBiz(); renderLists(); progressTick(); updateText(); save();
       showView('biz');
-      sfx.big();
-      toast(`📜 Patents filed! Profits are now <b>+${fmtInt(S.patents * 2)}%</b>.`, 'violet');
+      sfx.big(); confetti(innerWidth / 2, innerHeight / 3, 50);
+      toast(`📜 Patents filed! You hold <b>${fmtInt(S.patents)}</b> patents.`, 'violet');
     });
 };
 
-// ───────────────────────── Stats & settings ─────────────────────────
+// ═════════════════════════ GOALS ═════════════════════════
+let newAch = 0;
+function renderGoals() {
+  const si = stageIdx();
+  $('#goalIntro').innerHTML = S.wonAt
+    ? `👑 You reached <b>Owner of the Skies</b> after ${fmtDuration(S.wonAt)} of play. The skies are yours, so keep going for every achievement.`
+    : `Stages are based on all-time earnings. Reach <b>Owner of the Skies</b> (${fmt(WIN_AT)}) to win.`;
+  $('#stageList').innerHTML = STAGES.map((s, j) => `
+    <div class="st ${j < si ? 'done' : j === si ? 'cur' : ''}">
+      <div class="sd">${j < si ? '✓' : j + 1}</div>
+      <div class="sn">${s[1]}<div class="sv">${s[2]}</div></div>
+      <div class="sv">${j === 0 ? 'Start' : fmt(s[0])}</div>
+    </div>`).join('');
+  $('#achTitle').innerHTML = `🏅 Achievements · ${S.ach.length} of ${ACH.length} · <span style="opacity:.85">each one adds +1% to all profits</span>`;
+  const got = ACH.filter(a => C.achSet.has(a.id)), not = ACH.filter(a => !C.achSet.has(a.id));
+  $('#achList').innerHTML = got.concat(not).map(a => `
+    <div class="ach ${C.achSet.has(a.id) ? '' : 'no'}"><div class="ai emo">${a.icon}</div><div><div class="an">${a.name}</div><div class="ad">${a.desc}</div></div></div>`).join('');
+}
+
+let lastStage = -1;
+function progressTick() {
+  const r = checkProgress();
+  for (const a of r.ach) { toast(`🏅 <b>${a.name}</b> · +1% profits`, 'gold'); newAch++; }
+  if (r.ach.length) sfx.big();
+  const si = stageIdx();
+  if (lastStage >= 0 && si > lastStage && si < STAGES.length - 1) {
+    toast(`🏢 Your company is now <b>${STAGES[si][1]}</b>! ${STAGES[si][2]}`, 'violet');
+    confetti(innerWidth / 2, 80, 40);
+  }
+  lastStage = si;
+  if (r.mars) {
+    renderWorldSeg();
+    modal(`<div class="mi emo">🚀</div><h3>Mars operations unlocked!</h3>
+      <p>You're an aerospace giant now, and a space agency wants your drones on Mars.</p>
+      <p>Mars has its own cash, ten new businesses, managers and upgrades. Patents and achievements help on both worlds.</p>
+      <div class="btnrow"><button class="btn plain" id="mNo">Later</button><button class="btn" id="mOk">Go to Mars</button></div>`,
+      () => { $('#mNo').onclick = closeModal; $('#mOk').onclick = () => { closeModal(); showView('biz'); switchWorld('mars'); }; });
+  }
+  if (r.win) {
+    confetti(innerWidth / 2, innerHeight / 3, 80);
+    modal(`<div class="mi emo">👑</div><h3>You own the skies!</h3>
+      <p>From one Part 107 pilot shooting real-estate listings to an interplanetary air network.</p>
+      <div class="mbig">${fmtDuration(S.wonAt)}</div>
+      <p>Total play time · ${fmtInt(S.resets)} restarts · ${S.ach.length} achievements</p>
+      <p>The game keeps going if you want to finish every achievement.</p>
+      <div class="btnrow"><button class="btn" id="mOk">Keep flying</button></div>`);
+  }
+  if ($('#view-goals').classList.contains('active') && (r.ach.length || r.win)) renderGoals();
+}
+
+// ═════════════════════════ STATS & SETTINGS ═════════════════════════
 function renderStats() {
   const rows = [
-    ['Cash on hand', fmt(S.cash)],
-    ['Earned this run', fmt(S.run)],
+    ['Company stage', STAGES[stageIdx()][1]],
+    ['Earth cash', fmt(S.w.earth.cash)],
+    ['Earth income', fmt(ips('earth')) + ' / sec'],
+  ];
+  if (S.marsUnlocked) rows.push(['Mars cash', fmt(S.w.mars.cash)], ['Mars income', fmt(ips('mars')) + ' / sec']);
+  rows.push(
+    ['Earned this run', fmt(S.w.earth.run + S.w.mars.run)],
     ['Earned all-time', fmt(S.lifetime)],
-    ['Income per second', fmt(ips())],
-    ['Businesses owned', fmtInt(S.owned.reduce((a, b) => a + b, 0))],
-    ['Managers hired', S.mgr.filter(Boolean).length + ' / 10'],
-    ['Upgrades bought', S.upg.length + ' / ' + UPG.length],
-    ['Patents', fmtInt(S.patents)],
+    ['Crews running', fmtInt(S.w.earth.owned.concat(S.w.mars.owned).reduce((a, b) => a + b, 0))],
+    ['Patents held / earned', `${fmtInt(S.patents)} / ${fmtInt(S.patentsEarned)}`],
+    ['R&D projects', `${S.pshop.length} / ${SHOP.length}`],
+    ['Achievements', `${S.ach.length} / ${ACH.length}`],
     ['Times restarted', fmtInt(S.resets)],
     ['Golden drones caught', fmtInt(S.golden)],
+    ['Market events ridden', fmtInt(S.events)],
+    ['Login streak', S.streak + ' day' + (S.streak === 1 ? '' : 's')],
     ['Manual flights', fmtInt(S.clicks)],
-    ['Time played', fmtDuration(S.played)],
-  ];
+    ['Time this run', fmtDuration(S.runPlayed)],
+    ['Total time played', fmtDuration(S.played)],
+  );
   $('#statTable').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
 }
 $('#exportBtn').onclick = () => {
   save();
   const code = btoa(unescape(encodeURIComponent(JSON.stringify(S))));
-  modal(`<div class="mi">💾</div><h3>Your save code</h3><p>Copy this somewhere safe.</p><textarea readonly id="saveTxt">${code}</textarea>
-    <div class="btnrow"><button class="btn" id="copySave">Copy</button><button class="btn ghost" style="background:var(--well);color:var(--ink)" id="mNo">Close</button></div>`);
-  $('#mNo').onclick = closeModal;
-  $('#copySave').onclick = () => {
-    const t = $('#saveTxt'); t.select();
-    (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).catch(() => document.execCommand('copy'));
-    $('#copySave').textContent = 'Copied!';
-  };
+  modal(`<div class="mi emo">💾</div><h3>Your save code</h3><p>Copy this somewhere safe.</p><textarea readonly id="saveTxt">${code}</textarea>
+    <div class="btnrow"><button class="btn" id="copySave">Copy</button><button class="btn plain" id="mOk">Close</button></div>`, () => {
+    $('#copySave').onclick = () => {
+      const t = $('#saveTxt'); t.select();
+      (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).catch(() => document.execCommand('copy'));
+      $('#copySave').textContent = 'Copied!';
+    };
+  });
 };
+function rebootUI() { recalc(); dispCash = S.w[S.cur].cash; lastStage = stageIdx(); buildBiz(); renderLists(); setMode(S.mode); syncAudio(); updateText(); }
 $('#importBtn').onclick = () => {
-  modal(`<div class="mi">📥</div><h3>Import a save</h3><p>Paste a save code. This replaces your current game.</p><textarea id="saveTxt" placeholder="Paste save code here"></textarea>
-    <div class="btnrow"><button class="btn ghost" style="background:var(--well);color:var(--ink)" id="mNo">Cancel</button><button class="btn" id="mOk">Import</button></div>`);
-  $('#mNo').onclick = closeModal;
-  $('#mOk').onclick = () => {
-    try {
-      const d = JSON.parse(decodeURIComponent(escape(atob($('#saveTxt').value.trim()))));
-      if (!Array.isArray(d.owned)) throw 0;
-      S = fresh(); applySave(d); recalc(); save();
-      closeModal(); renderLists(); updateText(); setMode(S.mode); syncMute();
-      toast('📥 Save imported!');
-    } catch (e) { $('#saveTxt').style.borderColor = 'var(--red)'; }
-  };
+  modal(`<div class="mi emo">📥</div><h3>Import a save</h3><p>Paste a save code. This replaces your current game.</p><textarea id="saveTxt" placeholder="Paste save code here"></textarea>
+    <div class="btnrow"><button class="btn plain" id="mNo">Cancel</button><button class="btn" id="mOk">Import</button></div>`, () => {
+    $('#mNo').onclick = closeModal;
+    $('#mOk').onclick = () => {
+      try {
+        const d = JSON.parse(decodeURIComponent(escape(atob($('#saveTxt').value.trim()))));
+        if (!d.w || !d.w.earth) throw 0;
+        S = fresh(); applySave(d); save();
+        closeModal(); rebootUI();
+        toast('📥 Save imported!');
+      } catch (e) { $('#saveTxt').style.borderColor = 'var(--red)'; }
+    };
+  });
 };
-$('#wipeBtn').onclick = () => confirmModal('🗑️', 'Delete your save?', 'This wipes everything, including patents. It can\'t be undone.', 'Delete everything', 'danger', () => {
-  S = fresh(); S.seenIntro = true; recalc(); save(); renderLists(); updateText(); setMode(0); syncMute();
-  toast('Fresh start. Go get that first toy drone flying!');
+$('#wipeBtn').onclick = () => confirmModal('🗑️', 'Delete your save?', 'This wipes everything, including patents, R&amp;D and achievements. It can\'t be undone.', 'Delete everything', 'danger', () => {
+  S = fresh(); S.seenIntro = true; S.lastDaily = todayStr(); save(); rebootUI();
+  toast('Fresh start. Go book that first listing shoot!');
 });
 
-function syncMute() { $('#muteBtn').textContent = S.mute ? '🔇' : '🔊'; }
-$('#muteBtn').onclick = () => { S.mute = !S.mute; syncMute(); if (!S.mute) sfx.tap(); };
+function syncAudio() {
+  $('#muteBtn').textContent = S.mute ? '🔇' : '🔊';
+  $('#musicBtn').classList.toggle('off', !S.music);
+  if (S.music) Music.start(); else Music.stop();
+}
+$('#muteBtn').onclick = () => { S.mute = !S.mute; syncAudio(); if (!S.mute) sfx.tap(); };
+$('#musicBtn').onclick = () => { S.music = !S.music; syncAudio(); };
+$('#stageBox').onclick = () => showView('goals');
+$('#evChip').onclick = $('#evChipM').onclick = () => { if (S.event) { showView('biz'); switchWorld(S.event.w); } };
 
-// ───────────────────────── Navigation ─────────────────────────
+// ═════════════════════════ NAVIGATION ═════════════════════════
 function showView(v) {
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
   document.querySelectorAll('.view').forEach(s => s.classList.toggle('active', s.id === 'view-' + v));
   $('#main').scrollTop = 0;
+  if (v === 'goals') { newAch = 0; renderGoals(); }
   updateText();
 }
 document.querySelectorAll('#nav button').forEach(b => b.onclick = () => showView(b.dataset.view));
 
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
-  if (/^[0-9]$/.test(e.key)) { const i = e.key === '0' ? 9 : +e.key - 1; runBiz(i); }
+  if (/^[0-9]$/.test(e.key)) runBiz(e.key === '0' ? 9 : +e.key - 1);
   else if (e.key === 'b' || e.key === 'B') setMode((S.mode + 1) % MODES.length);
+  else if (e.key === 'w' || e.key === 'W') switchWorld(S.cur === 'earth' ? 'mars' : 'earth');
   else if (e.key === 'm' || e.key === 'M') $('#muteBtn').click();
   else if (e.key === 'Escape') closeModal();
 });
 
-// ───────────────────────── Golden drone ─────────────────────────
+// ═════════════════════════ GOLDEN DRONE ═════════════════════════
 const GOLD_SVG = `<svg viewBox="0 0 120 90"><defs><linearGradient id="gd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1a8"/><stop offset="1" stop-color="#f2a900"/></linearGradient></defs>
   <rect x="8" y="22" width="40" height="7" rx="3.5" fill="#c98a00" class="rotor"/><rect x="72" y="22" width="40" height="7" rx="3.5" fill="#c98a00" class="rotor"/>
   <rect x="26" y="27" width="5" height="14" fill="#c98a00"/><rect x="89" y="27" width="5" height="14" fill="#c98a00"/>
@@ -859,7 +1418,6 @@ const GOLD_SVG = `<svg viewBox="0 0 120 90"><defs><linearGradient id="gd" x1="0"
   <rect x="38" y="34" width="44" height="30" rx="12" fill="url(#gd)" stroke="#c98a00" stroke-width="2.5"/>
   <circle cx="60" cy="50" r="8" fill="#1d2340"/><circle cx="62.5" cy="47.5" r="2.5" fill="#fff"/>
   <path d="M44 64 L38 76 M76 64 L82 76" stroke="#c98a00" stroke-width="4" stroke-linecap="round"/></svg>`;
-let nextGolden = Date.now() + 45000;
 function spawnGolden() {
   const g = document.createElement('button');
   g.className = 'golden ' + (Math.random() < .5 ? 'ltr' : 'rtl');
@@ -876,81 +1434,144 @@ function catchGolden(g, e) {
   sfx.big();
   for (let k = 0; k < 10; k++) {
     const s = document.createElement('div');
-    s.className = 'spark'; s.textContent = k % 2 ? '✨' : '💰';
+    s.className = 'spark emo'; s.textContent = k % 2 ? '✨' : '💰';
     s.style.left = e.clientX + 'px'; s.style.top = e.clientY + 'px';
     const a = Math.random() * Math.PI * 2, d = 50 + Math.random() * 60;
     s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d + 'px');
     document.body.appendChild(s); setTimeout(() => s.remove(), 800);
   }
+  const w = cw();
   if (Math.random() < .5) {
-    S.boostUntil = Math.max(Date.now(), S.boostUntil) + 30000;
-    toast('🌬️ <b>Tailwind!</b> All profits x7 for 30 seconds.', 'gold');
+    S.boostUntil = Math.max(now(), S.boostUntil) + C.tailSec * 1000;
+    toast(`🌬️ <b>Tailwind!</b> All profits x7 for ${C.tailSec} seconds.`, 'gold');
   } else {
-    const amt = Math.max(Math.min(S.cash * .15, ips() * 900), revenue(0) * 30 + 25);
-    earn(amt);
-    toast(`💰 <b>Lucky drop!</b> +${fmt(amt)}`, 'gold');
+    const amt = Math.max(Math.min(S.w[w].cash * .15, ips(w) * 900), revenue(w, 0) * 30 + 2500);
+    earn(w, amt);
+    toast(`💰 <b>Surprise contract!</b> +${fmt(amt)}`, 'gold');
   }
-  updateText();
+  progressTick(); updateText();
 }
 
-// ───────────────────────── Main loop ─────────────────────────
-let lastT = Date.now(), lastText = 0, lastSaveT = Date.now();
-// Simulation runs from both rAF (smooth bars) and a timer (keeps earning when the window isn't painting).
+// ═════════════════════════ EVENTS, DAILY BONUS ═════════════════════════
+function maybeEvent() {
+  const t = now();
+  if (S.event && t >= S.event.until) S.event = null;
+  if (S.event || t < S.nextEvent) return;
+  const pool = [];
+  for (const w of WIDS) if (worldActive(w)) S.w[w].owned.forEach((o, i) => { if (o > 0) pool.push([w, i]); });
+  if (!pool.length) return;
+  const [w, i] = pool[Math.floor(Math.random() * pool.length)];
+  const [title, desc, mult] = EVENTS[w][i];
+  const dur = (180 + Math.random() * 120) * 1000;
+  S.event = { w, i, mult, title, until: t + dur };
+  S.nextEvent = t + dur + (6 + Math.random() * 8) * 60000;
+  S.events++;
+  sfx.big();
+  toast(`📈 <b>${title}!</b> ${desc} ${DEF[w][i].name} profits x${mult} for ${Math.round(dur / 60000)} min.`, 'violet');
+  progressTick();
+}
+function todayStr(d = new Date()) { return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+function checkDaily() {
+  const today = todayStr();
+  if (S.lastDaily === today) return;
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  S.streak = S.lastDaily === todayStr(y) ? S.streak + 1 : 1;
+  S.lastDaily = today;
+  const day = Math.min(S.streak, 7);
+  const amt = Math.max(ips('earth') * 300 * day, 5000 * day);
+  earn('earth', amt);
+  if (day >= 7) S.boostUntil = Math.max(now(), S.boostUntil) + 120000;
+  const dots = Array.from({ length: 7 }, (_, k) => k < day ? '🟡' : '⚪').join(' ');
+  modal(`<div class="mi emo">📅</div><h3>Daily bonus · day ${S.streak}</h3>
+    <p>A client paid an invoice early. Log in every day to grow the bonus.</p>
+    <div class="mbig">+${fmt(amt)}</div>
+    <p class="emo" style="letter-spacing:2px">${dots}</p>
+    ${day >= 7 ? '<p><b>7-day streak:</b> 2-minute tailwind (x7 profits) too!</p>' : ''}
+    <div class="btnrow"><button class="btn" id="mOk">Collect</button></div>`);
+  progressTick();
+}
+
+// ═════════════════════════ MAIN LOOP ═════════════════════════
+let lastT = Date.now(), lastText = 0, lastSaveT = Date.now(), lastSlow = 0;
 function advance() {
-  const now = Date.now();
-  const dt = Math.max(0, (now - lastT) / 1000);
-  lastT = now;
+  const t = Date.now();
+  const dt = Math.max(0, (t - lastT) / 1000);
+  lastT = t;
   step(dt, dt > 2);
-  S.played += Math.min(dt, 5);
-  if (now - lastText > 100) { lastText = now; updateText(); }
-  if (now - lastSaveT > 5000) { lastSaveT = now; save(); }
-  if (now > nextGolden) {
-    nextGolden = now + (60 + Math.random() * 120) * 1000;
-    if (!document.hidden) spawnGolden();
+  S.played += Math.min(dt, 5); S.runPlayed += Math.min(dt, 5);
+  if (t - lastText > 100) { lastText = t; updateText(); }
+  if (t - lastSlow > 1000) { lastSlow = t; progressTick(); maybeEvent(); if (t - lastSaveT > 60000) checkDaily(); }
+  if (t - lastSaveT > 5000) { lastSaveT = t; save(); }
+  if (t > S.nextGolden) {
+    S.nextGolden = t + (60 + Math.random() * 120) * 1000 / C.goldRate;
+    if (!document.hidden && S.seenIntro) spawnGolden();
   }
 }
-function frame() {
-  advance();
-  renderBars();
-  requestAnimationFrame(frame);
-}
-setInterval(advance, 250);
+function frame() { advance(); renderBars(); requestAnimationFrame(frame); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 window.addEventListener('pagehide', save);
 
-// ───────────────────────── Boot ─────────────────────────
-load();
-buildBiz();
-renderLists();
-syncMute();
+// ═════════════════════════ BOOT ═════════════════════════
+function boot() {
+  load();
+  buildModes();
+  buildBiz();
+  renderLists();
+  setMode(S.mode);
+  syncAudio();
+  lastStage = stageIdx();
+  if (!S.nextEvent) S.nextEvent = Date.now() + 8 * 60000;
+  if (!S.nextGolden || S.nextGolden < Date.now()) S.nextGolden = Date.now() + 40000;
 
-(function offline() {
-  const away = (Date.now() - S.lastSave) / 1000;
-  if (away < 5) return;
-  const before = S.cash;
-  S.boostUntil = Math.min(S.boostUntil, S.lastSave);
-  step(away, true);
-  const got = S.cash - before;
-  if (got > 0 && away > 60) {
-    modal(`<div class="mi">🛬</div><h3>Welcome back!</h3><p>You were away for ${fmtDuration(away)}. Your managers kept the fleet flying and earned:</p>
-      <div class="mbig">${fmt(got)}</div><div class="btnrow"><button class="btn" id="mOk">Collect</button></div>`);
-    $('#mOk').onclick = () => { closeModal(); sfx.coin(); };
+  if (migratedFromV1) {
+    modal(`<div class="mi emo">🛠️</div><h3>Sky Tycoon 2.0</h3>
+      <p>The game got a big update: real drone-industry businesses, a realistic economy, Mars, R&amp;D, achievements and an ending.</p>
+      <p>The economy changed, so your company restarts, but you keep your <b>${fmtInt(S.patents)} patents</b>${S.patents ? ' (and you can spend them in the new R&amp;D lab)' : ''}.</p>
+      <div class="btnrow"><button class="btn" id="mOk">Let's fly</button></div>`);
   }
-})();
 
-if (!S.seenIntro) {
-  S.seenIntro = true;
-  modal(`<div class="mi">🪁</div><h3>Welcome to Sky Tycoon</h3>
-    <p>You own one tiny toy drone stand. Tap its icon to fly a run and earn cash.<br><br>
-    Buy more stands, unlock bigger businesses, and hire <b>managers</b> to automate them. Hitting 25, 50, 100+ of a business makes it <b>twice as fast</b>.<br><br>
-    Watch the skies for a <b>golden drone</b>. 🛸</p>
-    <div class="btnrow"><button class="btn" id="mOk">Let's fly</button></div>`);
-  $('#mOk').onclick = closeModal;
+  const away = (Date.now() - S.lastSave) / 1000;
+  if (away > 5) {
+    const before = { earth: S.w.earth.cash, mars: S.w.mars.cash };
+    S.boostUntil = Math.min(S.boostUntil, S.lastSave);
+    S.rushUntil = Math.min(S.rushUntil, S.lastSave);
+    if (S.event && S.event.until > S.lastSave) S.event.until = S.lastSave;
+    offlineFactor = C.offline;
+    step(away, true);
+    offlineFactor = 1;
+    const gotE = S.w.earth.cash - before.earth, gotM = S.w.mars.cash - before.mars;
+    if ((gotE > 0 || gotM > 0) && away > 60) {
+      const rushMin = Math.min(15, away / 60 / 6);
+      if (away >= 300) S.rushUntil = Date.now() + rushMin * 60000;
+      modal(`<div class="mi emo">🛬</div><h3>Welcome back!</h3>
+        <p>You were away for ${fmtDuration(away)}. Your managers kept the fleet flying${C.offline > 1 ? ` (night shifts: x${C.offline})` : ''}.</p>
+        <div class="mbig">${fmt(gotE)}</div>
+        ${gotM > 0 ? `<p>Plus <b>${fmt(gotM)}</b> on Mars.</p>` : ''}
+        ${away >= 300 ? `<p>⏩ Your crews are fired up: <b>2x speed for ${fmtDuration(rushMin * 60)}</b>.</p>` : ''}
+        <div class="btnrow"><button class="btn" id="mOk">Collect</button></div>`,
+        () => { $('#mOk').onclick = () => { closeModal(); sfx.coin(); }; });
+    }
+  }
+
+  if (!S.seenIntro) {
+    S.seenIntro = true;
+    S.lastDaily = todayStr(); S.streak = 1;
+    modal(`<div class="mi emo">🏡</div><h3>Welcome to Sky Tycoon</h3>
+      <p>You just passed your FAA Part 107 exam and own one drone. Tap the house icon to fly a real-estate listing shoot and get paid.</p>
+      <p>Add crews, unlock new services from roof inspections to air taxis, and hire <b>managers</b> to run them for you. Every 25, 50, 100+ crews makes a business <b>twice as fast</b>.</p>
+      <p>Grow from a garage startup to <b>Owner of the Skies</b> to win. Watch for the <b>golden drone</b>.</p>
+      <div class="btnrow"><button class="btn" id="mOk">Let's fly</button></div>`);
+  } else checkDaily();
+
+  progressTick();
+  newAch = 0;
+  dispCash = S.w[S.cur].cash;
+  updateText();
+  lastT = Date.now();
+  requestAnimationFrame(frame);
+  setInterval(advance, 250);
 }
-
-updateText();
-lastT = Date.now();
-requestAnimationFrame(frame);
+boot();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

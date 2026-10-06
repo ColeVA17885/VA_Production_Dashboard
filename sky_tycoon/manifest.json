@@ -2,7 +2,7 @@
   "id": "/VA_Production_Dashboard/sky_tycoon/",
   "name": "Sky Tycoon",
   "short_name": "Sky Tycoon",
-  "description": "Build a drone empire from a toy stand to orbital launches",
+  "description": "Grow a drone services company from one Part 107 pilot to an interplanetary air network",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
