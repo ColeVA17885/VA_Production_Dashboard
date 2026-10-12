@@ -823,6 +823,7 @@ $('clear').addEventListener('click', function(){
   rows = []; selectedId = null; drawer.classList.remove('open');
   lastFitBoundsKey = '';
   _groundRef = null;
+  groundElevMSL = null;
   if (mosaicJob) mosaicJob.cancelled = true;
   clearMosaic();
   render(); updateStatus();
@@ -932,6 +933,10 @@ function groundReferenceAlt() {
 // Manual override (from toolbar input); when set, takes priority.
 var aglOverrideM = null;
 
+// Ground elevation (MSL) at the survey site, filled asynchronously
+// by looking up a terrain DEM (open-meteo elevation API) once per load.
+var groundElevMSL = null;
+
 // Haversine distance in meters between two lat/lon points.
 function haversineM(a, b) {
   var R = 6371000;
@@ -983,10 +988,41 @@ function estimatedAGL(r) {
   if (Number.isFinite(aglOverrideM) && aglOverrideM > 0) return aglOverrideM;
   var gps = toNum(r.meta && r.meta.GPSAltitude);
   if (!Number.isFinite(gps)) return null;
+  // Prefer DEM ground elevation (true AGL), then in-set GPS min as a proxy.
+  if (Number.isFinite(groundElevMSL)) {
+    var agl1 = gps - groundElevMSL;
+    if (agl1 > 1) return agl1;
+  }
   var ref = groundReferenceAlt();
   if (!Number.isFinite(ref)) return null;
   var agl = gps - ref;
   return agl > 1 ? agl : null;
+}
+
+// Fetch ground elevation (MSL) at the median photo position from the free
+// open-meteo elevation API. Rounded to 0.01° (~1 km) and cached in-session.
+var _elevCache = {};
+async function fetchGroundElevation() {
+  var geo = rows.filter(function(r){
+    return r.meta && Number.isFinite(r.meta.latitude) && Number.isFinite(r.meta.longitude);
+  });
+  if (!geo.length) return null;
+  // Sort by latitude and take median — representative of the survey area
+  var mid = geo[Math.floor(geo.length / 2)];
+  var lat = Math.round(mid.meta.latitude * 100) / 100;
+  var lon = Math.round(mid.meta.longitude * 100) / 100;
+  var key = lat + ',' + lon;
+  if (_elevCache[key] != null) return _elevCache[key];
+  try {
+    var url = 'https://api.open-meteo.com/v1/elevation?latitude=' + lat + '&longitude=' + lon;
+    var resp = await fetch(url);
+    if (!resp.ok) return null;
+    var data = await resp.json();
+    var elev = data && data.elevation && data.elevation[0];
+    if (!Number.isFinite(elev)) return null;
+    _elevCache[key] = elev;
+    return elev;
+  } catch (_) { return null; }
 }
 
 // Compute the projected polygon on the ground for one photo.
@@ -1610,12 +1646,9 @@ function initMap() {
 
   L.control.layers({ 'Satellite': satellite, 'Streets': osm }, null, { position: 'topright' }).addTo(map);
 
-  cluster = L.markerClusterGroup({
-    showCoverageOnHover: false,
-    maxClusterRadius: 40,
-    spiderfyOnMaxZoom: true,
-    disableClusteringAtZoom: 19,
-  });
+  // Plain layer group — show every photo as its own dot at every zoom,
+  // no clustering numbers.
+  cluster = L.layerGroup();
   map.addLayer(cluster);
 
   mosaicLayer = L.layerGroup().addTo(map);
@@ -2037,6 +2070,7 @@ async function ingestFiles(files) {
   files = files.filter(function(f){ return IMG_EXT.test(f.name); });
   if (!files.length) { statText.textContent = 'No image files found in that drop.'; return; }
   _groundRef = null;
+  groundElevMSL = null;
   progWrap.style.display = '';
   var total = files.length, done = 0;
   prog.style.width = '0%';
@@ -2063,8 +2097,34 @@ async function ingestFiles(files) {
   progWrap.style.display = 'none';
   render();
   updateStatus();
-  // Only apply if user hasn't already set an explicit AGL
-  if (!Number.isFinite(aglOverrideM) || aglOverrideM <= 0) applyOverlapToAgl();
+  // Only auto-set AGL if the user hasn't already typed one
+  if (!Number.isFinite(aglOverrideM) || aglOverrideM <= 0) {
+    // Try terrain DEM first (uses GPSAltitude - ground MSL), fall back to overlap-based
+    statText.textContent = 'Looking up ground elevation…';
+    var elev = await fetchGroundElevation();
+    if (Number.isFinite(elev)) {
+      groundElevMSL = elev;
+      // Median AGL across all geotagged rows
+      var agls = [];
+      rows.forEach(function(r){
+        var g = toNum(r.meta && r.meta.GPSAltitude);
+        if (Number.isFinite(g)) agls.push(g - elev);
+      });
+      if (agls.length) {
+        agls.sort(function(a,b){ return a - b; });
+        var medAgl = agls[Math.floor(agls.length / 2)];
+        if (medAgl > 1) {
+          aglOverrideM = medAgl;
+          $('aglOverride').value = Math.round(medAgl * FT_PER_M);
+          statText.textContent = 'Auto AGL: ' + Math.round(medAgl * FT_PER_M) + ' ft (ground MSL ' + Math.round(elev) + ' m from DEM)';
+        }
+      }
+    }
+    if (!Number.isFinite(aglOverrideM) || aglOverrideM <= 0) {
+      applyOverlapToAgl();
+      updateStatus();
+    }
+  }
 }
 
 async function processOne(file) {
