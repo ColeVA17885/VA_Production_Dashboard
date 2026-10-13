@@ -109,6 +109,8 @@
   .svg-lbl { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; fill: var(--ink); }
   .svg-lbl.dim { fill: var(--ink-2); font-size: 12px; }
   .svg-lbl.tiny { fill: var(--ink-3); font-size: 11px; letter-spacing: .09em; }
+  .svg-len { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10px; fill: var(--ink-2); }
+  body.editing.view-edit .lenlbl { transform: translateY(-18px); }
   .svg-pin { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 9px; fill: var(--ink-3); }
   .svg-cav { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 9px; fill: var(--cav-text); }
   .svg-dimline { stroke: var(--ink-3); stroke-width: 1; }
@@ -1678,6 +1680,15 @@
     var side = b.node.side === 'left' ? (odd ? 'far' : 'near') : (odd ? 'near' : 'far');
     return { x: odd ? b.colA : b.colB, y: b.top + row * L.rowPitch, far: side === 'far', box: b };
   }
+  function bezPts(p0, p1, p2, p3) {
+    var out = [];
+    for (var i = 0; i <= 40; i++) {
+      var t = i / 40, u = 1 - t;
+      out.push([u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0],
+                u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]]);
+    }
+    return out;
+  }
   function casing(d) { return '<path d="' + d + '" fill="none" stroke="var(--wire-edge)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>'; }
   function core(d, c) { return '<path d="' + d + '" fill="none" stroke="' + c + '" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>'; }
 
@@ -1880,20 +1891,47 @@
       }
       d += segs.map(function (p) { return p[0] + ' ' + p[1]; }).join(' L ');
       var ex = tail[0][0], ey = tail[0][1];
-      var r = l.route;
+      var r = l.route, along = [];
       if (r && r.x != null) {
         /* hand-routed: ease through the waypoint the user dragged */
         var k1 = (r.x - ax) * 0.5, k2 = (ex - r.x) * 0.5;
+        along = bezPts([ax, ay], [ax + k1, ay], [r.x - k1, r.y], [r.x, r.y])
+          .concat(bezPts([r.x, r.y], [r.x + k2, r.y], [ex - k2, ey], [ex, ey]));
         d += ' C ' + (ax + k1) + ' ' + ay + ', ' + (r.x - k1) + ' ' + r.y + ', ' + r.x + ' ' + r.y;
         d += ' C ' + (r.x + k2) + ' ' + r.y + ', ' + (ex - k2) + ' ' + ey + ', ' + ex + ' ' + ey;
       } else {
         var mid1 = ax + (ex - ax) * 0.45, mid2 = ax + (ex - ax) * 0.55;
+        along = bezPts([ax, ay], [mid1, ay], [mid2, ey], [ex, ey]);
         d += ' C ' + mid1 + ' ' + ay + ', ' + mid2 + ' ' + ey + ', ' + ex + ' ' + ey;
       }
       for (var t = 1; t < tail.length; t++) d += ' L ' + tail[t][0] + ' ' + tail[t][1];
       s += casing(d) + core(d, hex(l.color));
       handles.push({ i: li, x: (r && r.x != null) ? r.x : (ax + ex) / 2,
-                     y: (r && r.x != null) ? r.y : (ay + ey) / 2, c: hex(l.color), routed: !!(r && r.x != null) });
+                     y: (r && r.x != null) ? r.y : (ay + ey) / 2, c: hex(l.color), routed: !!(r && r.x != null), along: along });
+    });
+
+    /* wire lengths, tagged at the middle of each run; edit mode lifts them clear of the route handle */
+    var placed = [];
+    handles.forEach(function (h) {
+      var len = String(DATA.links[h.i].length || '').trim(); if (!len) return;
+      var w = len.length * 6.1 + 24;
+      /* start at the middle of the run and slide outward along the wire until the tag sits clear of the others */
+      var pts = h.along, n = pts.length, best = null;
+      for (var step = 0; step <= n * 0.36 && !best; step++) {
+        for (var sg = -1; sg <= 1; sg += 2) {
+          var pt = pts[Math.round(n / 2 + sg * step)]; if (!pt) continue;
+          var hitT = placed.some(function (q) { return Math.abs(q.x - pt[0]) < (q.w + w) / 2 + 4 && Math.abs(q.y - pt[1]) < 22; });
+          if (!hitT) { best = pt; break; }
+          if (!step) break;
+        }
+      }
+      if (!best) best = [h.x, h.y];
+      placed.push({ x: best[0], y: best[1], w: w });
+      h = { i: h.i, c: h.c, x: best[0], y: best[1] };
+      s += '<g class="lenlbl"><rect x="' + (h.x - w / 2) + '" y="' + (h.y - 9) + '" width="' + w + '" height="18" rx="9" ' +
+        'fill="var(--panel)" stroke="var(--wire-edge)" stroke-width="1"/>' +
+        '<circle cx="' + (h.x - w / 2 + 9) + '" cy="' + h.y + '" r="3.6" fill="' + h.c + '" stroke="var(--wire-edge)" stroke-width="0.8"/>' +
+        '<text class="svg-len" x="' + (h.x - w / 2 + 16) + '" y="' + (h.y + 3.5) + '">' + esc(len) + '</text></g>';
     });
 
     /* route handles — one per wire, draggable in edit mode */
@@ -1913,7 +1951,7 @@
       var a = endPoint(e, true); if (!a || a.splice) return;
       var key = e.n; leadN[key] = (leadN[key] == null) ? 0 : leadN[key] + 1;
       var k = leadN[key], lb = a.box, ld = l.lead || '', li = DATA.links.indexOf(l);
-      var tag = esc(l.ref) + ' ' + esc(l.kind === 'nc' ? 'NC' : 'trim');
+      var tag = esc(l.ref) + ' ' + esc(l.kind === 'nc' ? 'NC' : 'trim') + (String(l.length || '').trim() ? ' · ' + esc(l.length) : '');
       if (ld === 'up' || ld === 'down') {
         /* straight out of the top or bottom of the housing */
         var uy = ld === 'down' ? 1 : -1;
