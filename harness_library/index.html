@@ -268,8 +268,8 @@
   body.editing.view-edit .card .pick { display: flex; }
   .card .pick select { font: 500 11px/1.2 var(--mono); padding: 3px 4px; border: 1px solid var(--rule-strong);
     border-radius: 4px; background: var(--panel); color: var(--ink); max-width: 150px; }
-  select.ksel, select.epsel, select.connfield { display: none; }
-  body.editing select.ksel, body.editing select.epsel, body.editing select.connfield {
+  select.ksel, select.epsel, select.connfield, select.lsel { display: none; }
+  body.editing select.ksel, body.editing select.epsel, body.editing select.connfield, body.editing select.lsel {
     display: inline-block; font: 500 11px/1.2 var(--mono); padding: 2px 3px;
     border: 1px solid var(--rule-strong); border-radius: 4px; background: var(--panel); color: var(--ink); }
   body.editing td.kind .ro, body.editing td.mono .ro { display: none; }
@@ -285,6 +285,12 @@
   body.editing.view-edit svg.dragging .cavhit[data-busy] { cursor: grabbing; }
   body.editing.view-edit .cavhit.drop-hot { stroke: var(--edit); stroke-width: 2.4px; }
   body.editing.view-edit .draw-panel { outline: 1px dashed var(--rule-strong); outline-offset: 4px; border-radius: 10px; }
+  .movehit, .leadhit { pointer-events: none; }
+  body.editing.view-edit .movehit { pointer-events: all; cursor: move; }
+  body.editing.view-edit .leadhit { pointer-events: stroke; cursor: pointer; }
+  body.editing.view-edit .movehit:hover { fill: var(--edit-soft); fill-opacity: .35; }
+  /* in edit mode only the hit areas take the pointer, so artwork drawn on top never blocks them */
+  body.editing.view-edit .draw-panel svg :not(.cavhit):not(.routehit):not(.movehit):not(.leadhit) { pointer-events: none; }
   .drag-tip { display: none; }
   body.editing.view-edit .drag-tip { display: block; margin: 8px 0 0; }
 
@@ -1557,15 +1563,34 @@
     var left = DATA.nodes.filter(function (n) { return n.side === 'left'; });
     var right = DATA.nodes.filter(function (n) { return n.side !== 'left'; });
 
+    /* NC / trim leads sent up or down need clear space beyond the housing */
+    function leadRoom(n, way) {
+      var c = 0;
+      DATA.links.forEach(function (l) {
+        if ((l.kind !== 'nc' && l.kind !== 'stub') || l.lead !== way) return;
+        var e = (l.from && l.from.n != null) ? l.from : l.to;
+        if (e && e.n === n.id) c++;
+      });
+      return c ? 24 + 22 * c + (way === 'up' ? 20 : 0) : 0;
+    }
+    function rowsOf(n) { return n.arrange === 'row' ? 1 : (n.layout === 'dual' ? Math.ceil(n.pins / 2) : n.pins); }
     function stack(list, cx) {
-      var y = L.topY - 8;
-      list.forEach(function (n, k) {
-        var rows = n.arrange === 'row' ? 1 : (n.layout === 'dual' ? Math.ceil(n.pins / 2) : n.pins);
+      var y0 = L.topY - 8, y = y0;
+      /* hand-placed connectors sit where they were dropped; the rest stack below them */
+      list.forEach(function (n) {
+        if (!n.pos) return;
+        var pb = boxFor(n, n.pos.x, n.pos.y, rowsOf(n));
+        g.nodes[n.id] = pb; y = Math.max(y, pb.b + 62);
+      });
+      list.forEach(function (n) {
+        if (n.pos) return;
+        var rows = rowsOf(n);
+        y += leadRoom(n, 'up');
         var box = boxFor(n, cx, y, rows);
         /* clear the heading lines of the block above, and the chamfer callout under a bullet body */
-        if (k > 0 && box.y < y) { box = boxFor(n, cx, y + (y - box.y), rows); }
+        if (y > y0 && box.y < y) { box = boxFor(n, cx, y + (y - box.y), rows); }
         g.nodes[n.id] = box;
-        y = box.b + (n.arrange === 'stack' ? 76 : 62);
+        y = box.b + (n.arrange === 'stack' ? 76 : 62) + leadRoom(n, 'down');
       });
     }
     stack(left, L.leftX);
@@ -1593,6 +1618,11 @@
     return g;
   }
   function boxFor(n, cx, top, rows) {
+    var b = boxAt(n, cx, top, rows);
+    b.cx = cx; b.ty = top;    /* the anchor a dragged connector is stored by */
+    return b;
+  }
+  function boxAt(n, cx, top, rows) {
     var dual = n.layout === 'dual';
     if (n.arrange === 'stack') {
       /* side view: body lies across, poles stacked, wires leaving the back */
@@ -1777,6 +1807,12 @@
         '<path d="M 0 1 L 10 5 L 0 9 z" fill="var(--ink-2)"/></marker></defs>';
 
     DATA.nodes.forEach(function (n) { s += housing(g.nodes[n.id]); });
+    DATA.nodes.forEach(function (n) {
+      var b = g.nodes[n.id], lft = n.side === 'left', ring = n.style === 'ring' ? 54 : 0;
+      var mx = b.x - (lft ? ring : 0) - 10, mw = (b.r + (lft ? 0 : ring) + 10) - mx;
+      s += '<rect class="movehit" data-move="' + esc(n.id) + '" x="' + mx + '" y="' + (b.y - 36) + '" width="' + mw +
+        '" height="' + (b.h + 42) + '" rx="8" fill="transparent"/>';
+    });
 
     /* headings */
     DATA.nodes.forEach(function (n) {
@@ -1876,16 +1912,31 @@
       var e = (l.from && (l.from.n != null || l.from.s != null)) ? l.from : l.to;
       var a = endPoint(e, true); if (!a || a.splice) return;
       var key = e.n; leadN[key] = (leadN[key] == null) ? 0 : leadN[key] + 1;
-      var k = leadN[key], dir = a.leftSide ? 1 : -1;
-      var x0 = a.x + dir * (L.cavW / 2), x1 = a.x + dir * (L.cavW / 2 + 46 + 26 * k);
+      var k = leadN[key], lb = a.box, ld = l.lead || '', li = DATA.links.indexOf(l);
+      var tag = esc(l.ref) + ' ' + esc(l.kind === 'nc' ? 'NC' : 'trim');
+      if (ld === 'up' || ld === 'down') {
+        /* straight out of the top or bottom of the housing */
+        var uy = ld === 'down' ? 1 : -1;
+        var y0 = a.y + uy * (L.cavH / 2), y1 = (uy > 0 ? lb.b + 24 : lb.y - 44) + uy * 22 * k;
+        var dv = 'M ' + a.x + ' ' + y0 + ' L ' + a.x + ' ' + y1;
+        s += casing(dv) + core(dv, hex(l.color));
+        s += '<path class="leadhit" data-lead="' + li + '" d="' + dv + '" stroke="transparent" stroke-width="16" fill="none"/>';
+        s += '<path d="M ' + (a.x - 7) + ' ' + (y1 - uy * 6) + ' L ' + (a.x + 7) + ' ' + (y1 + uy * 2) +
+          '" stroke="var(--ink-2)" stroke-width="1.6" fill="none"/>';
+        s += '<text class="svg-lbl tiny" x="' + a.x + '" y="' + (uy > 0 ? y1 + 15 : y1 - 7) + '" text-anchor="middle">' + tag + '</text>';
+        return;
+      }
+      var dir = ld === 'left' ? -1 : (ld === 'right' ? 1 : (a.leftSide ? 1 : -1));
+      var x0 = a.x + dir * (L.cavW / 2);
+      var x1 = ld ? ((dir > 0 ? lb.r : lb.x) + dir * (30 + 26 * k)) : a.x + dir * (L.cavW / 2 + 46 + 26 * k);
       var d = 'M ' + x0 + ' ' + a.y + ' L ' + x1 + ' ' + a.y;
       s += casing(d) + core(d, hex(l.color));
+      s += '<path class="leadhit" data-lead="' + li + '" d="' + d + '" stroke="transparent" stroke-width="16" fill="none"/>';
       /* cut tick */
       s += '<path d="M ' + (x1 + dir * 2) + ' ' + (a.y - 7) + ' L ' + (x1 - dir * 6) + ' ' + (a.y + 7) +
         '" stroke="var(--ink-2)" stroke-width="1.6" fill="none"/>';
       s += '<text class="svg-lbl tiny" x="' + (x1 + dir * 7) + '" y="' + (a.y + (k % 2 ? 16 : -10)) +
-        '" text-anchor="' + (a.leftSide ? 'start' : 'end') + '">' + esc(l.ref) + ' ' +
-        esc(l.kind === 'nc' ? 'NC' : 'trim') + '</text>';
+        '" text-anchor="' + (dir > 0 ? 'start' : 'end') + '">' + tag + '</text>';
     });
 
     /* jumpers inside one connector */
@@ -1980,7 +2031,9 @@
             esc(lab) + '</text>';
           continue;
         }
-        s += '<text class="svg-lbl dim" x="' + (b.r + 14) + '" y="' + (pp.y + 4) + '">' + esc(lab) + '</text>';
+        s += n.side === 'left'
+          ? '<text class="svg-lbl dim" x="' + (b.x - 14) + '" y="' + (pp.y + 4) + '" text-anchor="end">' + esc(lab) + '</text>'
+          : '<text class="svg-lbl dim" x="' + (b.r + 14) + '" y="' + (pp.y + 4) + '">' + esc(lab) + '</text>';
       }
     });
 
@@ -2091,6 +2144,7 @@
     return s + '</select>';
   }
   var KINDS = ['wire', 'jumper', 'nc', 'stub'];
+  var LEADS = [['', 'auto'], ['down', '↓ down'], ['right', '→ right'], ['up', '↑ up'], ['left', '← left']];
   function renderCutlist() {
     var h = '<div class="table-wrap" id="cutlist"><table><thead><tr>' +
       '<th>Wire</th><th>Type</th><th>From</th><th>Color</th><th>To</th><th>AWG</th><th>Length</th><th>Signal</th><th class="act"></th>' +
@@ -2104,6 +2158,11 @@
       var ksel = '<select class="ksel" data-i="' + i + '" aria-label="Type">';
       KINDS.forEach(function (k) { ksel += '<option value="' + k + '"' + (k === l.kind ? ' selected' : '') + '>' + k + '</option>'; });
       ksel += '</select>';
+      if (l.kind === 'nc' || l.kind === 'stub') {
+        ksel += '<select class="lsel" data-i="' + i + '" aria-label="Lead direction" title="Which way the lead points in the diagram">';
+        LEADS.forEach(function (o) { ksel += '<option value="' + o[0] + '"' + (o[0] === (l.lead || '') ? ' selected' : '') + '>' + o[1] + '</option>'; });
+        ksel += '</select>';
+      }
       h += '<tr>' +
         '<td class="num">' + ed(l.ref, 'links', i, 'ref') + '</td>' +
         '<td class="kind"><span class="ro">' + esc(l.kind) + '</span>' + ksel + '</td>' +
@@ -2267,6 +2326,32 @@
       });
     });
 
+    Array.prototype.forEach.call(svg.querySelectorAll('.leadhit'), function (el) {
+      el.addEventListener('pointerdown', function (ev) {
+        ev.preventDefault();
+        var l = DATA.links[parseInt(el.dataset.lead, 10)]; if (!l) return;
+        var at = 0; LEADS.forEach(function (o, j) { if (o[0] === (l.lead || '')) at = j; });
+        var nx = LEADS[(at + 1) % LEADS.length];
+        if (nx[0]) l.lead = nx[0]; else delete l.lead;
+        rerenderAll(); markDirty(); setStatus(l.ref + ' lead: ' + nx[1] + ' — click again to swing it');
+      });
+    });
+
+    Array.prototype.forEach.call(svg.querySelectorAll('.movehit'), function (el) {
+      el.addEventListener('pointerdown', function (ev) {
+        ev.preventDefault();
+        /* pin every connector where it sits now, so moving one never shuffles the others */
+        var g0 = geom(), pinned = [], nd = null;
+        DATA.nodes.forEach(function (n) {
+          if (n.id === el.dataset.move) nd = n;
+          if (!n.pos && g0.nodes[n.id]) { n.pos = { x: g0.nodes[n.id].cx, y: g0.nodes[n.id].ty }; pinned.push(n); }
+        });
+        if (!nd) return;
+        dragState = { kind: 'node', node: nd, o: svgPt(ev), x0: nd.pos.x, y0: nd.pos.y, side0: nd.side, pinned: pinned, moved: false };
+        svg.classList.add('dragging');
+      });
+    });
+
     if (dragInstalled) return;
     dragInstalled = true;
 
@@ -2280,10 +2365,20 @@
         var t = targetUnder(ev); if (t) t.classList.add('drop-hot');
         return;
       }
-      /* routing: move the waypoint and redraw on the next frame */
       var pt = svgPt(ev);
-      var l = DATA.links[dragState.i]; if (!l) return;
-      l.route = { x: Math.round(pt.x), y: Math.round(pt.y) };
+      if (dragState.kind === 'node') {
+        var ds = dragState, dx = pt.x - ds.o.x, dy = pt.y - ds.o.y;
+        if (!ds.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+        ds.moved = true;
+        var snap = function (v) { return Math.round(v / 8) * 8; };
+        ds.node.pos = { x: Math.max(40, Math.min(1020, snap(ds.x0 + dx))), y: Math.max(64, snap(ds.y0 + dy)) };
+        /* past the middle of the sheet the connector turns round to face the other way */
+        ds.node.side = ds.node.pos.x > 496 ? 'right' : 'left';
+      } else {
+        /* routing: move the waypoint and redraw on the next frame */
+        var l = DATA.links[dragState.i]; if (!l) return;
+        l.route = { x: Math.round(pt.x), y: Math.round(pt.y) };
+      }
       if (rafPending) return;
       rafPending = true;
       window.requestAnimationFrame(function () {
@@ -2303,6 +2398,12 @@
         var layer2 = svg4.querySelector('#draglayer'); if (layer2) layer2.innerHTML = '';
       }
       clearHot();
+      if (d.kind === 'node') {
+        if (!d.moved) { d.pinned.forEach(function (n) { delete n.pos; }); return; }
+        rerenderAll(); markDirty();
+        setStatus(d.node.side !== d.side0 ? 'Moved — now facing ' + d.node.side : 'Connector moved — Reset layout puts them all back');
+        return;
+      }
       if (d.kind === 'route') { markDirty(); setStatus('Wire routed — double-click the handle to undo it'); return; }
       var t = targetUnder(ev); if (!t) return;
       var tk = hitKey(t); if (!tk || tk === d.from) return;
@@ -2328,6 +2429,7 @@
            '<button id="btn-edit">Edit</button>' +
            '<button id="btn-csv">Export CSV</button>' +
            '<button id="btn-straighten">Straighten wires</button>' +
+           '<button id="btn-layout" title="Put every connector back in its automatic place">Reset layout</button>' +
            '<button id="btn-print">Print / PDF</button>';
     } else {
       h += '<button id="btn-tab-list"' + (view === 'list' ? ' class="on"' : '') + '>Harnesses</button>' +
@@ -2404,7 +2506,8 @@
     h += '<section><h2>Diagram</h2>' + renderSvg() +
       '<p class="hint drag-tip">Drag the dot on a wire to route it where you want; double-click the dot to let it ' +
       'go straight again. Drag a filled cavity onto another to move that wire end — drop it on an occupied ' +
-      'cavity and the two swap.</p>' + renderCards() + '</section>';
+      'cavity and the two swap. Drag a connector by its body or title to move it — across the middle it turns to face ' +
+      'the other way. Click an NC or trim lead to swing it round.</p>' + renderCards() + '</section>';
     h += '<section><h2>Cut list</h2>' + renderCutlist() + '</section>';
     h += '<section><h2>Bill of Materials</h2>' + renderBom() + '</section>';
     h += '<section class="bottom">' + renderPhoto() + renderTitleBlock() + '</section>';
@@ -2507,6 +2610,12 @@
       rerenderAll(); markDirty();
       setStatus(n ? 'Routing cleared on ' + n + ' wire' + (n === 1 ? '' : 's') : 'Nothing was hand-routed');
     });
+    on('btn-layout', function () {
+      var n = 0;
+      DATA.nodes.forEach(function (nd) { if (nd.pos) { delete nd.pos; n++; } });
+      rerenderAll(); markDirty();
+      setStatus(n ? 'Layout reset' : 'Nothing was moved');
+    });
     on('btn-print', function () { if (editing) { editing = false; applyEditState(); } window.print(); });
     on('btn-add-conn', function () {
       newConnector(null); rerenderAll(); markDirty();
@@ -2568,6 +2677,13 @@
     each('select.ksel', function (s) {
       s.addEventListener('change', function () {
         DATA.links[parseInt(s.dataset.i, 10)].kind = s.value; rerenderAll(); markDirty();
+      });
+    });
+    each('select.lsel', function (s) {
+      s.addEventListener('change', function () {
+        var l = DATA.links[parseInt(s.dataset.i, 10)];
+        if (s.value) l.lead = s.value; else delete l.lead;
+        rerenderAll(); markDirty();
       });
     });
     each('select.epsel', function (s) {
