@@ -691,6 +691,8 @@ var COLUMNS = {
     ['latitude', 'Lat'],
     ['longitude', 'Lon'],
     ['GPSAltitude', 'Alt (m)'],
+    ['GPSXYAccuracy', 'XY ± (m)'],
+    ['GPSZAccuracy', 'Z ± (m)'],
     ['GPSImgDirection', 'Heading'],
     ['GPSSpeed', 'Speed'],
   ],
@@ -792,6 +794,7 @@ function formatValue(key, val) {
     if (key === 'ISO') return String(Math.round(val));
     if (key === 'ExposureCompensation') return (val > 0 ? '+' : '') + val.toFixed(1);
     if (key === 'GPSAltitude') return val.toFixed(1);
+    if (key === 'GPSXYAccuracy' || key === 'GPSZAccuracy') return val.toFixed(3);
     if (key === 'latitude' || key === 'longitude') return val.toFixed(6);
     // trim absurd precision
     if (Math.abs(val) < 1000 && val % 1 !== 0) return Math.round(val * 100) / 100;
