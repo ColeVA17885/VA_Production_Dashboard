@@ -1,0 +1,2676 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vision Aerial harness library</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="application-name" content="Harness Library">
+<meta name="theme-color" content="#1a1e20">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500&amp;display=swap">
+<style id="pagecss">
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  img, svg { max-width: 100%; }
+  [hidden] { display: none !important; }
+
+  :root {
+    --ground: #f2f2ef; --panel: #ffffff; --panel-2: #e9e9e4;
+    --ink: #17191a; --ink-2: #4c5052; --ink-3: #7a7f81;
+    --rule: #d4d5d0; --rule-strong: #b4b6b0;
+    --edit: #1f5f8b; --edit-soft: #dbeaf4;
+    --wire-edge: #6c7073;
+    --hsg-hi: #f4f4f2; --hsg-lo: #c8cac4; --hsg-edge: #94968f;
+    --cav: #3a3f41; --cav-edge: #23282a; --cav-text: #f0f2f1;
+    --xt-hi: #f2c53d; --xt-lo: #d39f14; --xt-edge: #8a6708;
+    --shadow: 0 1px 2px rgba(20,22,24,.05), 0 10px 26px rgba(20,22,24,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #131515; --panel: #1c1e1f; --panel-2: #242727;
+      --ink: #e8eaea; --ink-2: #a8adae; --ink-3: #7b8082;
+      --rule: #2e3132; --rule-strong: #454849;
+      --edit: #6fb3dc; --edit-soft: #16303f;
+      --wire-edge: #9aa0a3;
+      --hsg-hi: #4d5254; --hsg-lo: #2e3234; --hsg-edge: #656a6d;
+      --cav: #141718; --cav-edge: #0b0d0e; --cav-text: #e4e8e7;
+    --xt-hi: #d6a92a; --xt-lo: #9c7510; --xt-edge: #ffd968;
+      --xt-hi: #d6a92a; --xt-lo: #9c7510; --xt-edge: #ffd968;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #131515; --panel: #1c1e1f; --panel-2: #242727;
+    --ink: #e8eaea; --ink-2: #a8adae; --ink-3: #7b8082;
+    --rule: #2e3132; --rule-strong: #454849;
+    --edit: #6fb3dc; --edit-soft: #16303f;
+    --wire-edge: #9aa0a3;
+    --hsg-hi: #4d5254; --hsg-lo: #2e3234; --hsg-edge: #656a6d;
+    --cav: #141718; --cav-edge: #0b0d0e; --cav-text: #e4e8e7;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.35);
+  }
+
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.55;
+    padding-inline: 20px; padding-block: 0 64px;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+  .bar {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--ground); border-bottom: 1px solid var(--rule);
+    margin-inline: -20px; padding: 10px 20px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+  .bar .status {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px;
+    letter-spacing: .06em; color: var(--ink-3); margin-right: auto;
+  }
+  .bar .status.dirty { color: var(--edit); }
+  button {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; letter-spacing: .04em;
+    padding: 7px 14px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--rule-strong); background: var(--panel); color: var(--ink);
+  }
+  button:hover { border-color: var(--ink-3); }
+  button:focus-visible { outline: 2px solid var(--edit); outline-offset: 2px; }
+  button.primary { background: var(--edit); border-color: var(--edit); color: #fff; font-weight: 500; }
+  button[disabled] { opacity: .45; cursor: default; }
+  button.mini { padding: 3px 9px; font-size: 11px; }
+
+  header { display: flex; flex-direction: column; gap: 8px; padding-top: 28px; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3);
+  }
+  h1 {
+    font-family: Archivo, system-ui, sans-serif; font-weight: 700;
+    font-size: clamp(24px, 4vw, 34px); letter-spacing: -.02em; line-height: 1.06;
+    text-wrap: balance; margin: 0;
+  }
+  .pnline {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 17px;
+    color: var(--ink); display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: baseline;
+  }
+  .pnline .lab { color: var(--ink-3); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+
+  h2 { font-family: Archivo, system-ui, sans-serif; font-weight: 600; font-size: 18px; letter-spacing: -.01em; margin: 0 0 8px; }
+
+  .draw-panel {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 16px; overflow-x: auto;
+  }
+  .draw-panel svg { display: block; min-width: 820px; width: 100%; height: auto; }
+
+  .svg-lbl { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; fill: var(--ink); }
+  .svg-lbl.dim { fill: var(--ink-2); font-size: 12px; }
+  .svg-lbl.tiny { fill: var(--ink-3); font-size: 11px; letter-spacing: .09em; }
+  .svg-pin { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 9px; fill: var(--ink-3); }
+  .svg-cav { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 9px; fill: var(--cav-text); }
+  .svg-dimline { stroke: var(--ink-3); stroke-width: 1; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px; margin-top: 12px; }
+  .card { border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); display: flex; flex-direction: column; overflow: hidden; }
+  .card > .hd {
+    background: var(--panel-2); padding: 6px 10px; border-bottom: 1px solid var(--rule);
+    display: flex; align-items: baseline; gap: 8px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  .card > .hd .ref { font-weight: 600; font-size: 12.5px; }
+  .card > .hd .nm { color: var(--ink-2); font-size: 11.5px; }
+  .card > .hd .pn { margin-left: auto; color: var(--ink-3); font-size: 11px; }
+  .card .comp {
+    border-top: 1px solid var(--rule); padding: 6px 10px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px;
+  }
+  .card .comp .ttl, .card .notes-blk .ttl {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10px;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 2px;
+  }
+  .card .comp div.row { display: flex; gap: 6px; }
+  .card .comp .bref { color: var(--ink-3); }
+  .card .notes-blk { border-top: 1px solid var(--rule); padding: 6px 10px; flex: 1; }
+  .card .notes-body { font-size: 12px; color: var(--ink-2); white-space: pre-wrap; min-height: 16px; display: block; }
+  .card .notes-body:empty::before { content: attr(data-ph); color: var(--ink-3); opacity: .6; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--panel); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  #cutlist table { min-width: 700px; }
+  #bom table { min-width: 760px; }
+  thead th {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 500;
+    text-align: left; padding: 8px 11px; border-bottom: 1px solid var(--rule-strong);
+    background: var(--panel-2); white-space: nowrap;
+  }
+  tbody td { padding: 6px 11px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, td.mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  td.num { font-variant-numeric: tabular-nums; color: var(--ink-2); white-space: nowrap; width: 1%; text-align: center; }
+  td.mono { font-size: 12px; white-space: nowrap; }
+  td.kind { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--ink-3); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; width: 1%; }
+  td.col { white-space: nowrap; width: 1%; }
+  td.desc { min-width: 180px; }
+  td.act { width: 1%; }
+  .act button { display: none; }
+  body.editing .act button { display: inline-block; }
+  .tbl-actions { display: none; margin-top: 10px; }
+  body.editing .tbl-actions { display: flex; gap: 10px; }
+
+  .swatch { display: inline-flex; align-items: center; gap: 7px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; white-space: nowrap; }
+  .swatch i { width: 19px; height: 10px; border-radius: 2px; display: block; border: 1px solid var(--wire-edge); }
+  .swatch b { font-weight: 500; color: var(--ink-3); }
+
+  .ed { display: inline-block; min-width: 14px; border-radius: 3px; }
+  body.editing .ed { outline: 1px dashed var(--rule-strong); outline-offset: 2px; background: var(--edit-soft); cursor: text; }
+  body.editing .ed:hover { outline-color: var(--edit); }
+  .ed:focus { outline: 2px solid var(--edit); outline-offset: 2px; background: var(--edit-soft); }
+  .ed:empty::before { content: "—"; color: var(--ink-3); }
+  select.csel { display: none; }
+  body.editing select.csel {
+    display: inline-block; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px;
+    padding: 2px 5px; border-radius: 5px; border: 1px solid var(--rule-strong);
+    background: var(--panel); color: var(--ink);
+  }
+  body.editing .swatch { display: none; }
+
+  .bottom { display: grid; grid-template-columns: 1.55fr 1fr; gap: 12px; }
+  .photo-panel {
+    border: 1px solid var(--rule); border-radius: 10px; background: var(--panel);
+    overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 130px;
+  }
+  .photo-panel img { display: block; width: 100%; height: auto; }
+  .photo-empty {
+    border: 1px dashed var(--rule-strong); border-radius: 8px; margin: 10px; padding: 14px;
+    text-align: center; color: var(--ink-3); font-size: 12px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace; line-height: 1.5;
+  }
+  .photo-act { margin-top: 8px; display: none; }
+  body.editing .photo-act { display: block; }
+  .titleblock {
+    border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--panel);
+    font-family: "IBM Plex Mono", ui-monospace, monospace; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .titleblock .tb-row, .titleblock .tb-grid > div { padding: 5px 9px; }
+  .titleblock .tb-row + .tb-grid, .titleblock .tb-grid + .tb-row { border-top: 1px solid var(--rule); }
+  .titleblock .tb-grid { display: grid; grid-template-columns: 1.3fr 1fr .6fr 1fr .8fr; }
+  .titleblock .tb-grid > div + div { border-left: 1px solid var(--rule); }
+  .titleblock .tb-k { display: block; font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
+  .titleblock .tb-v { display: block; font-size: 12px; }
+  .titleblock .tb-v.big { font-size: 15px; color: var(--edit); font-weight: 600; }
+  .titleblock .tb-v.file { font-size: 10px; color: var(--ink-2); word-break: break-all; }
+  .titleblock .tb-title .tb-v.big { color: var(--ink); }
+
+  footer { color: var(--ink-3); font-size: 11.5px; font-family: "IBM Plex Mono", ui-monospace, monospace; border-top: 1px solid var(--rule); padding-top: 10px; }
+
+  @page { size: letter portrait; margin: 8mm; }
+  @media print {
+    :root, :root:not([data-theme="light"]), :root[data-theme="dark"] {
+      --ground: #fff; --panel: #fff; --panel-2: #f1f1ee;
+      --ink: #000; --ink-2: #333; --ink-3: #555;
+      --rule: #bcbcb8; --rule-strong: #8a8a86;
+      --hsg-hi: #f6f6f4; --hsg-lo: #d6d7d2; --hsg-edge: #8e908a;
+      --cav: #3a3f41; --cav-edge: #23282a; --cav-text: #fff;
+      --xt-hi: #f2c53d; --xt-lo: #d39f14; --xt-edge: #8a6708;
+      --wire-edge: #555; --shadow: none;
+    }
+    body { background: #fff; font-size: 8pt; line-height: 1.3; padding: 0;
+           -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .wrap { max-width: none; gap: 2.4pt; }
+    .bar, .tbl-actions, td.act, th.act, .card .pick, select { display: none !important; }
+    header { padding-top: 0; gap: 2pt; }
+    h1 { font-size: 12pt; }
+    .eyebrow { font-size: 7pt; }
+    .pnline { font-size: 10.5pt; gap: 2pt 14pt; }
+    h2 { font-size: 9pt; margin-bottom: 1.8pt; }
+    section { break-inside: avoid; }
+    .draw-panel { padding: 3pt; box-shadow: none; overflow: visible; }
+    .draw-panel svg { min-width: 0; width: 72%; margin: 0 auto; height: auto; }
+    .cards { gap: 3pt; margin-top: 3pt; grid-template-columns: repeat(5, 1fr); }
+    .card > .hd { padding: 2pt 4pt; }
+    .card > .hd .ref { font-size: 7.6pt; } .card > .hd .nm { font-size: 6.6pt; } .card > .hd .pn { font-size: 6.4pt; }
+    .card .comp, .card .notes-blk { padding: 1.6pt 4pt; font-size: 6.4pt; }
+    .card .comp .ttl, .card .notes-blk .ttl { font-size: 6pt; }
+    .card .notes-body { font-size: 6.4pt; line-height: 1.15; min-height: 0; }
+    .card .notes-body:empty { display: none; }
+    .card .notes-body:empty::before { content: ""; }
+    .table-wrap { box-shadow: none; overflow: visible; break-inside: avoid; }
+    table, #cutlist table, #bom table { min-width: 0; font-size: 6.6pt; }
+    thead th { padding: 1.4pt 4pt; font-size: 6pt; }
+    tbody td { padding: 0.7pt 4pt; line-height: 1.08; }
+    .ed { line-height: 1.08; }
+    td.mono { font-size: 6.4pt; } td.desc { white-space: normal; min-width: 0; font-size: 6.4pt; }
+    .swatch { font-size: 6.4pt; gap: 3px; } .swatch i { width: 11px; height: 5px; }
+    .bottom { gap: 5pt; break-inside: avoid; }
+    .bottom:not(:has(img)) { grid-template-columns: 1fr; }
+    .photo-panel:not(:has(img)) { display: none; }
+    .photo-empty { display: none; }
+    .titleblock .tb-row, .titleblock .tb-grid > div { padding: 1.1pt 4pt; }
+    .titleblock .tb-v, .titleblock .tb-k { line-height: 1.15; }
+    .titleblock .tb-k { font-size: 5.8pt; } .titleblock .tb-v { font-size: 7.6pt; }
+    .titleblock .tb-v.big { font-size: 9pt; } .titleblock .tb-v.file { font-size: 6pt; }
+    footer { padding-top: 2.5pt; font-size: 6pt; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  /* ---- app shell ---- */
+  .bar button.on { background: var(--edit-soft); border-color: var(--rule-strong); }
+  .hint { color: var(--ink-3); font-size: 12px; }
+  .hint.block { max-width: 70ch; line-height: 1.5; margin: 0 0 12px; }
+  table.list td.ttl-cell a { color: inherit; font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--rule-strong); }
+  table.list td.ttl-cell a:hover { color: var(--edit); }
+  table.list td.act button { display: inline-block; margin-left: 4px; }
+  .card .pick { display: none; gap: 5px; padding: 6px 8px; border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
+  body.editing.view-edit .card .pick { display: flex; }
+  .card .pick select { font: 500 11px/1.2 var(--mono); padding: 3px 4px; border: 1px solid var(--rule-strong);
+    border-radius: 4px; background: var(--panel); color: var(--ink); max-width: 150px; }
+  select.ksel, select.epsel, select.connfield { display: none; }
+  body.editing select.ksel, body.editing select.epsel, body.editing select.connfield {
+    display: inline-block; font: 500 11px/1.2 var(--mono); padding: 2px 3px;
+    border: 1px solid var(--rule-strong); border-radius: 4px; background: var(--panel); color: var(--ink); }
+  body.editing td.kind .ro, body.editing td.mono .ro { display: none; }
+  body.editing .tbl-actions .hint { align-self: center; }
+
+  .card .pick .hint { flex-basis: 100%; font-size: 10.5px; }
+
+  /* ---- drag a wire end to another pin ---- */
+  .draw-panel svg text { pointer-events: none; }
+  .cavhit { pointer-events: none; fill-opacity: 1; }
+  body.editing.view-edit .cavhit { pointer-events: all; }
+  body.editing.view-edit .cavhit[data-busy] { cursor: grab; }
+  body.editing.view-edit svg.dragging .cavhit[data-busy] { cursor: grabbing; }
+  body.editing.view-edit .cavhit.drop-hot { stroke: var(--edit); stroke-width: 2.4px; }
+  body.editing.view-edit .draw-panel { outline: 1px dashed var(--rule-strong); outline-offset: 4px; border-radius: 10px; }
+  .drag-tip { display: none; }
+  body.editing.view-edit .drag-tip { display: block; margin: 8px 0 0; }
+
+  /* ---- connector spec, inline in the harness sheet ---- */
+  .card .pick .spec { display: none; flex-basis: 100%; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  body.editing.view-edit .card .pick .spec { display: flex; }
+  .card .pick .spec label { display: inline-flex; align-items: center; gap: 4px;
+    font: 500 10.5px/1.2 var(--mono); color: var(--ink-3); text-transform: uppercase; letter-spacing: .04em; }
+  .card .pick .spec select { max-width: 110px; }
+  .mini-ed { min-width: 22px; display: inline-block; font: 500 11px/1.3 var(--mono); color: var(--ink);
+    text-transform: none; padding: 1px 3px; }
+  tr.just-added td { background: var(--edit-soft); }
+
+  /* ---- wire routing handles ---- */
+  .routehit { display: none; }
+  body.editing.view-edit .routehit { display: inline; cursor: grab; opacity: .55; }
+  body.editing.view-edit .routehit:hover { opacity: 1; r: 9; }
+  body.editing.view-edit .routehit.routed { opacity: .9; stroke: var(--edit); stroke-width: 2.2px; }
+  body.editing.view-edit svg.dragging .routehit { cursor: grabbing; }
+  body.editing.view-edit svg.dragging { user-select: none; }
+
+  .svg-cav.pole { font-size: 13px; font-weight: 600; }
+  .xt-mark { fill: var(--xt-edge); letter-spacing: .08em; font-size: 8px; }
+  .xt-emboss { fill: var(--xt-edge); font-size: 15px; font-weight: 700; letter-spacing: .1em; opacity: .85; }
+  .xt-chamfer { fill: var(--xt-edge); font-size: 7px; letter-spacing: .12em; opacity: .9; }
+  .card .hd button.mini { display: none; }
+  body.editing.view-edit .card .hd button.mini { display: inline-block; }
+</style>
+</head>
+<body>
+<script id="appdata" type="application/json">
+{
+ "version": 1,
+ "colors": {
+  "black": "#1a1a1a",
+  "red": "#cf3a2c",
+  "blue": "#2a6bd0",
+  "purple": "#7a46bd",
+  "gray": "#9aa0a6",
+  "white": "#f4f4f2",
+  "green": "#2c9c4e",
+  "yellow": "#e0b016",
+  "orange": "#df7c22",
+  "brown": "#7a5230"
+ },
+ "abbr": {
+  "black": "BLK",
+  "red": "RED",
+  "blue": "BLU",
+  "purple": "VIO",
+  "gray": "GRY",
+  "white": "WHT",
+  "green": "GRN",
+  "yellow": "YEL",
+  "orange": "ORG",
+  "brown": "BRN"
+ },
+ "connectors": [
+  {
+   "id": "V3265",
+   "name": "OLED board 1x7",
+   "pn": "V3265",
+   "pins": 7,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "board header, 2.54 mm",
+   "termination": "solder",
+   "contactPn": "",
+   "notes": "Pin 1 is the square pad."
+  },
+  {
+   "id": "V1817",
+   "name": "CONN JSTGH 1x8",
+   "pn": "V1817",
+   "pins": 8,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "GH series, 1.25 mm",
+   "termination": "crimp",
+   "contactPn": "V1705",
+   "notes": ""
+  },
+  {
+   "id": "V2267",
+   "name": "CONN JSTGH 1x5",
+   "pn": "V2267",
+   "pins": 5,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "GH series, 1.25 mm",
+   "termination": "crimp",
+   "contactPn": "V1705",
+   "notes": ""
+  },
+  {
+   "id": "V1815",
+   "name": "CONN JSTGH 1x4",
+   "pn": "V1815",
+   "pins": 4,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "GH series, 1.25 mm",
+   "termination": "crimp",
+   "contactPn": "V1705",
+   "notes": ""
+  },
+  {
+   "id": "GH6",
+   "name": "CONN JSTGH 1x6",
+   "pn": "TBD",
+   "pins": 6,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "GH series, 1.25 mm",
+   "termination": "crimp",
+   "contactPn": "TBD",
+   "notes": ""
+  },
+  {
+   "id": "H2140",
+   "name": "CONN RCPT HSG 2x7",
+   "pn": "H2140-ND",
+   "pins": 14,
+   "layout": "dual",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "receptacle housing, 2.00 mm",
+   "termination": "crimp",
+   "contactPn": "TBD",
+   "notes": "Pin 1 carries the moulded triangle; pin 2 sits directly below it."
+  },
+  {
+   "id": "ZPD26",
+   "name": "CONN ZPD 2x13",
+   "pn": "ZPDR-26V-S",
+   "pins": 26,
+   "layout": "dual",
+   "numbering": "interleaved",
+   "order": "reverse",
+   "type": "ZPD receptacle",
+   "termination": "crimp",
+   "contactPn": "TBD",
+   "notes": "Pin 1 at the BOTTOM — numbering runs upward. Odd pins one column, even the other."
+  },
+  {
+   "id": "HSG2x10",
+   "name": "CONN HSG 2x10",
+   "pn": "5011892010",
+   "pins": 20,
+   "layout": "dual",
+   "numbering": "column",
+   "order": "normal",
+   "type": "Molex housing",
+   "termination": "crimp",
+   "contactPn": "TBD",
+   "notes": "Big tab on top. Pins 1-10 run straight down one column, 11-20 straight down the other."
+  },
+  {
+   "id": "NANO1x2",
+   "name": "CONN NANOFIT 1x2",
+   "pn": "TBD",
+   "pins": 2,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "Molex Nano-Fit",
+   "termination": "crimp",
+   "contactPn": "TBD",
+   "notes": "Pin 1 on the left."
+  },
+  {
+   "id": "V1100F",
+   "name": "CONN JR 1x3 female",
+   "pn": "V1100",
+   "pins": 3,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "JR",
+   "termination": "female crimp",
+   "contactPn": "TBD",
+   "notes": ""
+  },
+  {
+   "id": "V1100M",
+   "name": "CONN JR 1x3 male",
+   "pn": "V1100",
+   "pins": 3,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "JR",
+   "termination": "male crimp",
+   "contactPn": "TBD",
+   "notes": ""
+  },
+  {
+   "id": "XT90M",
+   "name": "CONN XT90 MALE",
+   "pn": "TBD",
+   "pins": 2,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "XT90 bullet, 4.5 mm, 90 A",
+   "termination": "solder",
+   "contactPn": "",
+   "notes": "Pole 1 positive (+) at the top, pole 2 negative (-) at the bottom. The big chamfer runs down the negative corner — that is the key, it only mates one way. Solder cups, no crimp contacts.",
+   "style": "xt90",
+   "arrange": "stack",
+   "polarity": "male"
+  },
+  {
+   "id": "XT90F",
+   "name": "CONN XT90 FEMALE",
+   "pn": "TBD",
+   "pins": 2,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "XT90 bullet, 4.5 mm, 90 A",
+   "termination": "solder",
+   "contactPn": "",
+   "notes": "Pole 1 positive (+) at the top, pole 2 negative (-) at the bottom. The big chamfer runs down the negative corner — that is the key, it only mates one way. Solder cups, no crimp contacts.",
+   "style": "xt90",
+   "arrange": "stack",
+   "polarity": "female"
+  }
+ ],
+ "harnesses": [
+  {
+   "id": "oled-gh",
+   "title": "OLED to JST-GH Harness",
+   "assemblyPn": "TBD",
+   "rev": "A",
+   "eyebrow": "Vision Aerial · wire harness",
+   "nodes": [
+    {
+     "id": "J1",
+     "ref": "J1",
+     "conn": "V3265",
+     "side": "left",
+     "components": [
+      {
+       "qty": "7",
+       "desc": "Solder joints",
+       "bom": 3
+      }
+     ],
+     "notes": "Pin 1 is the square pad."
+    },
+    {
+     "id": "J2",
+     "ref": "J2",
+     "conn": "V1817",
+     "side": "right",
+     "components": [
+      {
+       "qty": "7",
+       "desc": "Crimp contacts",
+       "bom": 4
+      }
+     ],
+     "notes": "Position 8 stays empty."
+    }
+   ],
+   "splices": [],
+   "links": [
+    {
+     "ref": "W1",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 1
+     },
+     "to": {
+      "n": "J2",
+      "p": 1
+     },
+     "color": "black",
+     "gauge": "28 AWG",
+     "length": "70 mm",
+     "signal": "",
+     "note": ""
+    },
+    {
+     "ref": "W2",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 2
+     },
+     "to": {
+      "n": "J2",
+      "p": 2
+     },
+     "color": "red",
+     "gauge": "28 AWG",
+     "length": "70 mm",
+     "signal": "",
+     "note": ""
+    },
+    {
+     "ref": "W3",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 3
+     },
+     "to": {
+      "n": "J2",
+      "p": 3
+     },
+     "color": "blue",
+     "gauge": "28 AWG",
+     "length": "70 mm",
+     "signal": "",
+     "note": ""
+    },
+    {
+     "ref": "W4",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 4
+     },
+     "to": {
+      "n": "J2",
+      "p": 4
+     },
+     "color": "purple",
+     "gauge": "28 AWG",
+     "length": "70 mm",
+     "signal": "",
+     "note": ""
+    },
+    {
+     "ref": "W5",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 5
+     },
+     "to": {
+      "n": "J2",
+      "p": 5
+     },
+     "color": "gray",
+     "gauge": "28 AWG",
+     "length": "70 mm",
+     "signal": "",
+     "note": ""
+    },
+    {
+     "ref": "W6",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 6
+     },
+     "to": {
+      "n": "J2",
+      "p": 6
+     },
+     "color": "white",
+     "gauge": "28 AWG",
+     "length": "70 mm",
+     "signal": "",
+     "note": ""
+    },
+    {
+     "ref": "W7",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 7
+     },
+     "to": {
+      "n": "J2",
+      "p": 7
+     },
+     "color": "green",
+     "gauge": "28 AWG",
+     "length": "70 mm",
+     "signal": "",
+     "note": ""
+    }
+   ],
+   "bom": [],
+   "titleBlock": {
+    "date": "",
+    "size": "A4",
+    "sheet": "1 of 1",
+    "file": ""
+   },
+   "footer": "Straight-through 1:1 harness, all conductors cut to the same length."
+  },
+  {
+   "id": "h2140-can",
+   "title": "H2140 to JST-GH CAN Harness",
+   "assemblyPn": "TBD",
+   "rev": "A",
+   "eyebrow": "Vision Aerial · wire harness",
+   "nodes": [
+    {
+     "id": "J1",
+     "ref": "J1",
+     "conn": "H2140",
+     "side": "left",
+     "components": [
+      {
+       "qty": "3",
+       "desc": "Crimp contacts",
+       "bom": 4
+      }
+     ],
+     "notes": "Cavities 7, 8, 13 and 14 arrive preassembled — no contacts to crimp there."
+    },
+    {
+     "id": "J2",
+     "ref": "J2",
+     "conn": "GH6",
+     "side": "right",
+     "components": [
+      {
+       "qty": "4",
+       "desc": "Crimp contacts",
+       "bom": 5
+      }
+     ],
+     "notes": "Pin 1 red is not connected; pins 2 and 6 unused."
+    }
+   ],
+   "splices": [],
+   "links": [
+    {
+     "ref": "W1",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 4
+     },
+     "to": {
+      "n": "J2",
+      "p": 5
+     },
+     "color": "black",
+     "gauge": "26 AWG",
+     "length": "580 mm",
+     "signal": "GND",
+     "note": "cable conductor"
+    },
+    {
+     "ref": "W2",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 11
+     },
+     "to": {
+      "n": "J2",
+      "p": 3
+     },
+     "color": "green",
+     "gauge": "26 AWG",
+     "length": "580 mm",
+     "signal": "CAN H",
+     "note": "cable conductor"
+    },
+    {
+     "ref": "W3",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 12
+     },
+     "to": {
+      "n": "J2",
+      "p": 4
+     },
+     "color": "white",
+     "gauge": "26 AWG",
+     "length": "580 mm",
+     "signal": "CAN L",
+     "note": "cable conductor"
+    },
+    {
+     "ref": "W4",
+     "kind": "nc",
+     "from": null,
+     "to": {
+      "n": "J2",
+      "p": 1
+     },
+     "color": "red",
+     "gauge": "26 AWG",
+     "length": "580 mm",
+     "signal": "NC",
+     "note": "in the cable, cut back at the J1 end"
+    },
+    {
+     "ref": "W5",
+     "kind": "jumper",
+     "from": {
+      "n": "J1",
+      "p": 7
+     },
+     "to": {
+      "n": "J1",
+      "p": 8
+     },
+     "color": "white",
+     "gauge": "26 AWG",
+     "length": "—",
+     "signal": "",
+     "note": "preassembled jumper"
+    },
+    {
+     "ref": "W6",
+     "kind": "stub",
+     "from": {
+      "n": "J1",
+      "p": 13
+     },
+     "to": null,
+     "color": "white",
+     "gauge": "26 AWG",
+     "length": "—",
+     "signal": "",
+     "note": "preassembled lead — trim the tip"
+    },
+    {
+     "ref": "W7",
+     "kind": "stub",
+     "from": {
+      "n": "J1",
+      "p": 14
+     },
+     "to": null,
+     "color": "white",
+     "gauge": "26 AWG",
+     "length": "—",
+     "signal": "",
+     "note": "preassembled lead — trim the tip"
+    }
+   ],
+   "bom": [],
+   "titleBlock": {
+    "date": "",
+    "size": "A4",
+    "sheet": "1 of 1",
+    "file": ""
+   },
+   "footer": "Cable: 4 cond 26 AWG, black jacket. Red conductor cut back at the J1 end."
+  },
+  {
+   "id": "v2171",
+   "title": "JR Servo Harness, 3 pin",
+   "assemblyPn": "V2171",
+   "rev": "A",
+   "eyebrow": "Vision Aerial · wire harness",
+   "nodes": [
+    {
+     "id": "JR1",
+     "ref": "JR1",
+     "conn": "V1100F",
+     "side": "left",
+     "components": [
+      {
+       "qty": "3",
+       "desc": "Crimp contacts",
+       "bom": 4
+      },
+      {
+       "qty": "10",
+       "unit": "mm",
+       "desc": "Heat shrink",
+       "bom": 7
+      }
+     ],
+     "notes": "Add \"V2171\" to the label heat shrink."
+    },
+    {
+     "id": "JR2",
+     "ref": "JR2",
+     "conn": "V1100M",
+     "side": "right",
+     "components": [
+      {
+       "qty": "3",
+       "desc": "Crimp contacts",
+       "bom": 5
+      },
+      {
+       "qty": "1",
+       "desc": "Housing sleeve",
+       "bom": 8
+      }
+     ],
+     "notes": "Apply 120 mm heat shrink at this end."
+    }
+   ],
+   "splices": [],
+   "links": [
+    {
+     "ref": "W1",
+     "kind": "wire",
+     "from": {
+      "n": "JR1",
+      "p": 1
+     },
+     "to": {
+      "n": "JR2",
+      "p": 1
+     },
+     "color": "white",
+     "gauge": "22 AWG",
+     "length": "270 mm",
+     "signal": "Signal",
+     "note": ""
+    },
+    {
+     "ref": "W2",
+     "kind": "wire",
+     "from": {
+      "n": "JR1",
+      "p": 2
+     },
+     "to": {
+      "n": "JR2",
+      "p": 2
+     },
+     "color": "red",
+     "gauge": "22 AWG",
+     "length": "270 mm",
+     "signal": "7V",
+     "note": ""
+    },
+    {
+     "ref": "W3",
+     "kind": "wire",
+     "from": {
+      "n": "JR1",
+      "p": 3
+     },
+     "to": {
+      "n": "JR2",
+      "p": 3
+     },
+     "color": "black",
+     "gauge": "22 AWG",
+     "length": "270 mm",
+     "signal": "GND",
+     "note": ""
+    }
+   ],
+   "bom": [],
+   "titleBlock": {
+    "date": "",
+    "size": "A4",
+    "sheet": "1 of 1",
+    "file": ""
+   },
+   "footer": "Cable V1554, 3 x 22 AWG."
+  },
+  {
+   "id": "v3104",
+   "title": "HRNS CAN VS AFT",
+   "assemblyPn": "V3104",
+   "rev": "Rev 1",
+   "eyebrow": "Vision Aerial · wire harness",
+   "nodes": [
+    {
+     "id": "CON1",
+     "ref": "CON1",
+     "conn": "V2267",
+     "side": "left",
+     "components": [
+      {
+       "qty": "4",
+       "desc": "Terminals, V1705",
+       "bom": 1
+      }
+     ],
+     "notes": "Position 5 unused. Add 30 mm label heat shrink V2228, 10 mm from the connector."
+    },
+    {
+     "id": "CON2",
+     "ref": "CON2",
+     "conn": "V1815",
+     "side": "right",
+     "components": [
+      {
+       "qty": "4",
+       "desc": "Terminals, V1705",
+       "bom": 1
+      }
+     ],
+     "notes": ""
+    }
+   ],
+   "splices": [],
+   "links": [
+    {
+     "ref": "W1",
+     "kind": "wire",
+     "from": {
+      "n": "CON1",
+      "p": 1
+     },
+     "to": {
+      "n": "CON2",
+      "p": 1
+     },
+     "color": "red",
+     "gauge": "26 AWG",
+     "length": "150 mm",
+     "signal": "",
+     "note": "V1801"
+    },
+    {
+     "ref": "W2",
+     "kind": "wire",
+     "from": {
+      "n": "CON1",
+      "p": 2
+     },
+     "to": {
+      "n": "CON2",
+      "p": 2
+     },
+     "color": "yellow",
+     "gauge": "26 AWG",
+     "length": "150 mm",
+     "signal": "",
+     "note": "V2574"
+    },
+    {
+     "ref": "W3",
+     "kind": "wire",
+     "from": {
+      "n": "CON1",
+      "p": 3
+     },
+     "to": {
+      "n": "CON2",
+      "p": 3
+     },
+     "color": "white",
+     "gauge": "26 AWG",
+     "length": "150 mm",
+     "signal": "",
+     "note": "V2577"
+    },
+    {
+     "ref": "W4",
+     "kind": "wire",
+     "from": {
+      "n": "CON1",
+      "p": 4
+     },
+     "to": {
+      "n": "CON2",
+      "p": 4
+     },
+     "color": "black",
+     "gauge": "26 AWG",
+     "length": "150 mm",
+     "signal": "",
+     "note": "V1799"
+    }
+   ],
+   "bom": [],
+   "titleBlock": {
+    "date": "2/23/2026",
+    "size": "A4",
+    "sheet": "1 of 1",
+    "file": "V3104_HRNS_CAN_VS_AFT"
+   },
+   "footer": ""
+  },
+  {
+   "id": "zpd26",
+   "title": "HRNS ZPD26 PWR MAVLINK",
+   "assemblyPn": "TBD",
+   "rev": "A",
+   "eyebrow": "Vision Aerial · wire harness",
+   "nodes": [
+    {
+     "id": "J1",
+     "ref": "J1",
+     "conn": "ZPD26",
+     "side": "left",
+     "components": [
+      {
+       "qty": "8",
+       "unit": "",
+       "desc": "Crimp contacts",
+       "bom": 4
+      }
+     ],
+     "notes": "Pin 1 at the bottom — numbering runs up. Odd pins left column, even right."
+    },
+    {
+     "id": "J3",
+     "ref": "J3",
+     "conn": "HSG2x10",
+     "side": "right",
+     "components": [
+      {
+       "qty": "6",
+       "unit": "",
+       "desc": "Crimp contacts",
+       "bom": 6
+      }
+     ],
+     "notes": "Big tab on top. Pins 1-10 run down one column, 11-20 down the other. Two MAVLink wires plus two jumpers."
+    },
+    {
+     "id": "J2",
+     "ref": "J2",
+     "conn": "NANO1x2",
+     "side": "right",
+     "components": [
+      {
+       "qty": "2",
+       "unit": "",
+       "desc": "Crimp contacts",
+       "bom": 5
+      }
+     ],
+     "notes": "Pin 1 red (left), pin 2 black."
+    }
+   ],
+   "splices": [
+    {
+     "id": "S1",
+     "ref": "S1",
+     "name": "solder splice",
+     "color": "red",
+     "notes": "3 × 28 AWG red from J1 to 1 × 24 AWG red out. Insulate the joint."
+    },
+    {
+     "id": "S2",
+     "ref": "S2",
+     "name": "solder splice",
+     "color": "black",
+     "notes": "3 × 28 AWG black from J1 to 1 × 24 AWG black out. Insulate the joint."
+    }
+   ],
+   "links": [
+    {
+     "ref": "W1",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 4
+     },
+     "to": {
+      "n": "J3",
+      "p": 14
+     },
+     "color": "white",
+     "gauge": "28 AWG",
+     "length": "70 mm",
+     "signal": "MAVLink TX"
+    },
+    {
+     "ref": "W2",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 6
+     },
+     "to": {
+      "n": "J3",
+      "p": 15
+     },
+     "color": "yellow",
+     "gauge": "28 AWG",
+     "length": "70 mm",
+     "signal": "MAVLink RX"
+    },
+    {
+     "ref": "W3",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 7
+     },
+     "to": {
+      "s": "S1"
+     },
+     "color": "red",
+     "gauge": "28 AWG",
+     "length": "30 mm",
+     "signal": "PWR"
+    },
+    {
+     "ref": "W4",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 13
+     },
+     "to": {
+      "s": "S1"
+     },
+     "color": "red",
+     "gauge": "28 AWG",
+     "length": "30 mm",
+     "signal": "PWR"
+    },
+    {
+     "ref": "W5",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 19
+     },
+     "to": {
+      "s": "S1"
+     },
+     "color": "red",
+     "gauge": "28 AWG",
+     "length": "30 mm",
+     "signal": "PWR"
+    },
+    {
+     "ref": "W6",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 8
+     },
+     "to": {
+      "s": "S2"
+     },
+     "color": "black",
+     "gauge": "28 AWG",
+     "length": "30 mm",
+     "signal": "GND"
+    },
+    {
+     "ref": "W7",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 14
+     },
+     "to": {
+      "s": "S2"
+     },
+     "color": "black",
+     "gauge": "28 AWG",
+     "length": "30 mm",
+     "signal": "GND"
+    },
+    {
+     "ref": "W8",
+     "kind": "wire",
+     "from": {
+      "n": "J1",
+      "p": 20
+     },
+     "to": {
+      "s": "S2"
+     },
+     "color": "black",
+     "gauge": "28 AWG",
+     "length": "30 mm",
+     "signal": "GND"
+    },
+    {
+     "ref": "W9",
+     "kind": "wire",
+     "from": {
+      "s": "S1"
+     },
+     "to": {
+      "n": "J2",
+      "p": 1
+     },
+     "color": "red",
+     "gauge": "24 AWG",
+     "length": "30 mm",
+     "signal": "PWR"
+    },
+    {
+     "ref": "W10",
+     "kind": "wire",
+     "from": {
+      "s": "S2"
+     },
+     "to": {
+      "n": "J2",
+      "p": 2
+     },
+     "color": "black",
+     "gauge": "24 AWG",
+     "length": "30 mm",
+     "signal": "GND"
+    },
+    {
+     "ref": "W11",
+     "kind": "jumper",
+     "from": {
+      "n": "J3",
+      "p": 12
+     },
+     "to": {
+      "n": "J3",
+      "p": 20
+     },
+     "color": "orange",
+     "gauge": "28 AWG",
+     "length": "30 mm",
+     "signal": "jumper"
+    },
+    {
+     "ref": "W12",
+     "kind": "jumper",
+     "from": {
+      "n": "J3",
+      "p": 13
+     },
+     "to": {
+      "n": "J3",
+      "p": 19
+     },
+     "color": "brown",
+     "gauge": "28 AWG",
+     "length": "30 mm",
+     "signal": "jumper"
+    }
+   ],
+   "bom": [
+    {
+     "qty": "1",
+     "meas": "EACH",
+     "item": "TBD",
+     "desig": "J1",
+     "desc": "CONN ZPD 26 POS — JST ZPDR-26V-S (DigiKey 2472569)"
+    },
+    {
+     "qty": "1",
+     "meas": "EACH",
+     "item": "TBD",
+     "desig": "J2",
+     "desc": "CONN NANO-FIT 1X2"
+    },
+    {
+     "qty": "1",
+     "meas": "EACH",
+     "item": "TBD",
+     "desig": "J3",
+     "desc": "CONN HSG 2X10 — Molex 5011892010 (DigiKey 1531522)"
+    },
+    {
+     "qty": "8",
+     "meas": "EACH",
+     "item": "TBD",
+     "desig": "J1",
+     "desc": "CONTACT, CRIMP, ZPD"
+    },
+    {
+     "qty": "2",
+     "meas": "EACH",
+     "item": "TBD",
+     "desig": "J2",
+     "desc": "CONTACT, CRIMP, NANO-FIT"
+    },
+    {
+     "qty": "6",
+     "meas": "EACH",
+     "item": "TBD",
+     "desig": "J3",
+     "desc": "CONTACT, CRIMP, HSG 2X10"
+    },
+    {
+     "qty": "70",
+     "meas": "mm",
+     "item": "TBD",
+     "desig": "W1",
+     "desc": "WIRE STRANDED 28AWG WHT"
+    },
+    {
+     "qty": "70",
+     "meas": "mm",
+     "item": "TBD",
+     "desig": "W2",
+     "desc": "WIRE STRANDED 28AWG YEL"
+    },
+    {
+     "qty": "90",
+     "meas": "mm",
+     "item": "TBD",
+     "desig": "W3-W5",
+     "desc": "WIRE STRANDED 28AWG RED (3 × 30 mm)"
+    },
+    {
+     "qty": "90",
+     "meas": "mm",
+     "item": "TBD",
+     "desig": "W6-W8",
+     "desc": "WIRE STRANDED 28AWG BLK (3 × 30 mm)"
+    },
+    {
+     "qty": "30",
+     "meas": "mm",
+     "item": "TBD",
+     "desig": "W9",
+     "desc": "WIRE STRANDED 24AWG RED"
+    },
+    {
+     "qty": "30",
+     "meas": "mm",
+     "item": "TBD",
+     "desig": "W10",
+     "desc": "WIRE STRANDED 24AWG BLK"
+    },
+    {
+     "qty": "30",
+     "meas": "mm",
+     "item": "TBD",
+     "desig": "W11",
+     "desc": "WIRE STRANDED 28AWG ORG"
+    },
+    {
+     "qty": "30",
+     "meas": "mm",
+     "item": "TBD",
+     "desig": "W12",
+     "desc": "WIRE STRANDED 28AWG BRN"
+    },
+    {
+     "qty": "2",
+     "meas": "EACH",
+     "item": "TBD",
+     "desig": "S1, S2",
+     "desc": "HEAT SHRINK, SPLICE INSULATION — size TBD"
+    }
+   ],
+   "titleBlock": {
+    "date": "",
+    "size": "A4",
+    "sheet": "1 of 1",
+    "file": ""
+   },
+   "footer": "Two solder splices: three 28 AWG pigtails from J1 join one 24 AWG lead into J2. J3 carries two internal jumpers. Pin 1 positions to be confirmed against the parts before crimping."
+  }
+ ]
+}
+</script>
+<div id="app"></div>
+<script id="pagejs">(function () {
+  var STORAGE_KEY = 'va-harness-app-v1';
+  var SEED = JSON.parse(document.getElementById('appdata').textContent);
+  var STORE = SEED, restored = false;
+  try {
+    var sv = window.localStorage.getItem(STORAGE_KEY);
+    if (sv) { var p = JSON.parse(sv); if (p && p.harnesses) { STORE = p; restored = true; } }
+  } catch (e) {}
+  /* connectors shipped with a newer app file are added to a stored library, without touching edits */
+  (function () {
+    if (!restored || !STORE.connectors) return;
+    var have = {}, added = 0;
+    STORE.connectors.forEach(function (c) { have[c.id] = 1; });
+    (SEED.connectors || []).forEach(function (c) {
+      if (!have[c.id]) { STORE.connectors.push(JSON.parse(JSON.stringify(c))); added++; }
+    });
+    if (added) { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(STORE)); } catch (e) {} }
+  })();
+
+  var app = document.getElementById('app');
+  var view = 'list', curId = null, DATA = null;
+  var editing = false, dirty = false;
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function ed(v, scope, i, k) {
+    return '<span class="ed" data-scope="' + scope + '" data-i="' + i + '" data-k="' + k + '">' + esc(v) + '</span>';
+  }
+  function edM(v, k) { return '<span class="ed" data-meta="' + k + '">' + esc(v) + '</span>'; }
+  function hex(n) { return STORE.colors[n] || '#888'; }
+  function ab(n) { return STORE.abbr[n] || ''; }
+  function colorNames() { return Object.keys(STORE.colors); }
+  function connById(id) {
+    for (var i = 0; i < STORE.connectors.length; i++) if (STORE.connectors[i].id === id) return STORE.connectors[i];
+    return null;
+  }
+  function harnessById(id) {
+    for (var i = 0; i < STORE.harnesses.length; i++) if (STORE.harnesses[i].id === id) return STORE.harnesses[i];
+    return null;
+  }
+  var RESOLVED = ['name', 'pn', 'pins', 'layout', 'numbering', 'order', 'type', 'termination', 'contactPn',
+                  'style', 'arrange', 'polarity'];
+  function resolve(h) {
+    (h.nodes || []).forEach(function (n) {
+      var c = connById(n.conn);
+      if (!c) { n.name = n.name || '(missing connector)'; n.pins = n.pins || 2; n.layout = n.layout || 'single'; return; }
+      RESOLVED.forEach(function (k) { n[k] = c[k]; });
+    });
+    return h;
+  }
+  function stripResolved(h) {
+    var c = JSON.parse(JSON.stringify(h));
+    (c.nodes || []).forEach(function (n) { RESOLVED.forEach(function (k) { delete n[k]; }); });
+    return c;
+  }
+  function serialize() {
+    return {
+      version: 1, colors: STORE.colors, abbr: STORE.abbr,
+      connectors: STORE.connectors,
+      harnesses: STORE.harnesses.map(stripResolved)
+    };
+  }
+  function uid(base) {
+    var n = base, i = 2;
+    while (harnessById(n)) { n = base + '-' + i; i++; }
+    return n;
+  }
+  function endpoints() {
+    var out = [{ v: '', t: '— none —' }];
+    (DATA.nodes || []).forEach(function (n) {
+      for (var p = 1; p <= n.pins; p++) out.push({ v: 'n:' + n.id + ':' + p, t: n.ref + ':' + p });
+    });
+    (DATA.splices || []).forEach(function (s) { out.push({ v: 's:' + s.id, t: s.ref }); });
+    return out;
+  }
+  function epValue(e) {
+    if (!e) return '';
+    if (e.s != null) return 's:' + e.s;
+    if (e.n != null) return 'n:' + e.n + ':' + e.p;
+    return '';
+  }
+  function epParse(v) {
+    if (!v) return null;
+    var p = v.split(':');
+    if (p[0] === 's') return { s: p[1] };
+    return { n: p[1], p: parseInt(p[2], 10) };
+  }
+
+  /* ---------------- layout ---------------- */
+  var L = { cavW: 28, cavH: 12, rowPitch: 20, colPitch: 50, polePitch: 74, poleR: 14, stackPitch: 48, bodyW: 132, leftX: 152, rightX: 840, topY: 112 };
+
+  function geom() {
+    var g = { nodes: {}, splices: {} };
+    var left = DATA.nodes.filter(function (n) { return n.side === 'left'; });
+    var right = DATA.nodes.filter(function (n) { return n.side !== 'left'; });
+
+    function stack(list, cx) {
+      var y = L.topY - 8;
+      list.forEach(function (n, k) {
+        var rows = n.arrange === 'row' ? 1 : (n.layout === 'dual' ? Math.ceil(n.pins / 2) : n.pins);
+        var box = boxFor(n, cx, y, rows);
+        /* clear the heading lines of the block above, and the chamfer callout under a bullet body */
+        if (k > 0 && box.y < y) { box = boxFor(n, cx, y + (y - box.y), rows); }
+        g.nodes[n.id] = box;
+        y = box.b + (n.arrange === 'stack' ? 76 : 62);
+      });
+    }
+    stack(left, L.leftX);
+    stack(right, L.rightX);
+
+    DATA.splices.forEach(function (sp, si) {
+      var ys = [];
+      DATA.links.forEach(function (l) {
+        if (l.to && l.to.s === sp.id && l.from && l.from.n != null) {
+          var b2 = g.nodes[l.from.n];
+          if (b2) { var pp0 = pinPos(g, l.from.n, l.from.p); if (pp0) ys.push(pp0.y); }
+        }
+      });
+      ys.sort(function (a2, b3) { return a2 - b3; });
+      var y2;
+      if (!ys.length) y2 = 200 + si * 120;
+      else if (si === 0) y2 = ys[Math.floor(ys.length / 2)];
+      else y2 = ys[ys.length - 1] + 46;
+      g.splices[sp.id] = { x: 392, y: y2 };
+    });
+
+    var maxB = 0;
+    Object.keys(g.nodes).forEach(function (k) { maxB = Math.max(maxB, g.nodes[k].b); });
+    g.H = maxB + 46;
+    return g;
+  }
+  function boxFor(n, cx, top, rows) {
+    var dual = n.layout === 'dual';
+    if (n.arrange === 'stack') {
+      /* side view: body lies across, poles stacked, wires leaving the back */
+      var sh = (n.pins - 1) * L.stackPitch + 78;
+      var left = n.side === 'left';
+      var bx2 = { node: n, dual: false, stack: true, rows: n.pins, top: top + 10,
+                  x: cx - (left ? 34 : L.bodyW - 34), w: L.bodyW,
+                  y: top + 10 - 26, h: sh };
+      bx2.r = bx2.x + bx2.w; bx2.b = bx2.y + bx2.h;
+      /* mating face away from the run, wires off the other end */
+      bx2.mate = left ? bx2.x : bx2.r;
+      bx2.back = left ? bx2.r : bx2.x;
+      bx2.dir = left ? 1 : -1;
+      bx2.colA = bx2.back - bx2.dir * 16;
+      bx2.colB = bx2.colA;
+      return bx2;
+    }
+    if (n.arrange === 'row') {
+      var pw = (n.pins - 1) * L.polePitch + L.poleR * 2 + 34;
+      var bx = { node: n, dual: false, row: true, rows: 1, top: top,
+                 colA: cx - ((n.pins - 1) * L.polePitch) / 2, colB: cx,
+                 x: cx - pw / 2, w: pw,
+                 y: top - L.poleR - 17, h: L.poleR * 2 + 34 };
+      bx.r = bx.x + bx.w; bx.b = bx.y + bx.h;
+      return bx;
+    }
+    var w = dual ? (L.colPitch + L.cavW + 28) : (L.cavW + 28);
+    var box = { node: n, dual: dual, rows: rows, top: top,
+                colA: dual ? cx : cx, colB: dual ? cx + L.colPitch : cx,
+                x: cx - L.cavW / 2 - 14, w: w,
+                y: top - L.cavH / 2 - 14, h: (rows - 1) * L.rowPitch + L.cavH + 28 };
+    box.r = box.x + box.w; box.b = box.y + box.h;
+    return box;
+  }
+  function pinPos(g, id, p) {
+    var b = g.nodes[id]; if (!b || p == null) return null;
+    if (b.row) return { x: b.colA + (p - 1) * L.polePitch, y: b.top, far: false, box: b, pole: true };
+    if (b.stack) return { x: b.colA, y: b.top + (p - 1) * L.stackPitch, far: false, box: b, pole: true, stack: true };
+    if (!b.dual) return { x: b.colA, y: b.top + (p - 1) * L.rowPitch, far: false, box: b };
+    var row, first;
+    if (b.node.numbering === 'column') {
+      /* pins run down one column then down the other: 1..n/2 in the far column, n/2+1..n in the near */
+      var half = Math.ceil(b.node.pins / 2);
+      first = (p <= half);
+      row = first ? (p - 1) : (p - half - 1);
+      var farCol = first;
+      return { x: farCol ? (b.node.side === 'left' ? b.colA : b.colB) : (b.node.side === 'left' ? b.colB : b.colA),
+               y: b.top + row * L.rowPitch, far: farCol, box: b };
+    }
+    row = Math.ceil(p / 2) - 1;
+    if (b.node.order === 'reverse') row = b.rows - 1 - row;   /* pin 1 at the bottom of the housing */
+    var odd = (p % 2 === 1);
+    var side = b.node.side === 'left' ? (odd ? 'far' : 'near') : (odd ? 'near' : 'far');
+    return { x: odd ? b.colA : b.colB, y: b.top + row * L.rowPitch, far: side === 'far', box: b };
+  }
+  function casing(d) { return '<path d="' + d + '" fill="none" stroke="var(--wire-edge)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>'; }
+  function core(d, c) { return '<path d="' + d + '" fill="none" stroke="' + c + '" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>'; }
+
+  function housing(b) {
+    var s = '';
+    if (b.node.style === 'xt90') return xt90Housing(b);
+    s += '<rect x="' + b.x + '" y="' + b.y + '" width="' + b.w + '" height="' + b.h +
+      '" rx="6" fill="url(#hsgSide)" stroke="var(--hsg-edge)" stroke-width="1.5"/>';
+    var rx = b.node.side === 'left' ? (b.x - 8) : (b.r - 1);
+    s += '<rect x="' + rx + '" y="' + (b.y + b.h * 0.3) + '" width="9" height="' + (b.h * 0.4) +
+      '" rx="2" fill="url(#hsgSide)" stroke="var(--hsg-edge)" stroke-width="1.2"/>';
+    s += '<rect x="' + (b.x + 5) + '" y="' + (b.y + 5) + '" width="' + (b.w - 10) + '" height="' + (b.h - 10) +
+      '" rx="4" fill="none" stroke="var(--hsg-edge)" stroke-width="0.8" opacity="0.5"/>';
+    if (b.node.numbering === 'column') {
+      /* big latch tab across the top of the housing */
+      var tw = b.w * 0.42, txx = b.x + (b.w - tw) / 2;
+      s += '<rect x="' + txx + '" y="' + (b.y - 9) + '" width="' + tw + '" height="11" rx="3" ' +
+        'fill="url(#hsgSide)" stroke="var(--hsg-edge)" stroke-width="1.2"/>';
+      for (var ri = 1; ri <= 3; ri++) {
+        var rxx = txx + tw * ri / 4;
+        s += '<line x1="' + rxx + '" y1="' + (b.y - 7) + '" x2="' + rxx + '" y2="' + (b.y) + '" stroke="var(--hsg-edge)" stroke-width="0.9" opacity="0.7"/>';
+      }
+    }
+    var p1x = (b.node.numbering === 'column')
+      ? ((b.node.side === 'left' ? b.colA : b.colB) - L.cavW / 2 - 9)
+      : (b.x + 8);
+    var bottom = (b.node.order === 'reverse');
+    var tx = p1x, ty = bottom ? (b.b - 13) : (b.y + 5);
+    s += bottom
+      ? '<path d="M ' + tx + ' ' + ty + ' L ' + (tx + 9) + ' ' + ty + ' L ' + (tx + 4.5) + ' ' + (ty + 8) + ' Z" fill="var(--ink)" opacity="0.8"/>'
+      : '<path d="M ' + tx + ' ' + (ty + 8) + ' L ' + (tx + 9) + ' ' + (ty + 8) + ' L ' + (tx + 4.5) + ' ' + ty + ' Z" fill="var(--ink)" opacity="0.8"/>';
+    return s;
+  }
+
+
+  /* XT90 on its side (the part turned a quarter turn): the chamfer runs the full length of the GND edge */
+  function xt90Housing(b) {
+    if (!b.stack) return xt90Face(b);
+    var s = '', d = b.dir, y = b.y, bot = b.b;
+    var mate = b.mate, back = b.back;
+    var shoulder = mate + d * 26;      /* where the mating shroud meets the body */
+    var bev = 20;                      /* width of the chamfered face along the bottom edge */
+    var face = bot - bev;              /* the main face stops here; below it is the chamfer */
+
+    /* mating shroud */
+    s += '<path d="M ' + mate + ' ' + (y + 13) + ' L ' + shoulder + ' ' + (y + 13) +
+      ' L ' + shoulder + ' ' + (face - 4) + ' L ' + mate + ' ' + (face - 4) + ' Z" ' +
+      'fill="var(--xt-lo)" stroke="var(--xt-edge)" stroke-width="1.4"/>';
+    s += '<line x1="' + (mate + d * 9) + '" y1="' + (y + 19) + '" x2="' + (mate + d * 9) + '" y2="' + (face - 10) +
+      '" stroke="var(--xt-edge)" stroke-width="0.9" opacity="0.6"/>';
+
+    /* main body face */
+    s += '<path d="M ' + shoulder + ' ' + y + ' L ' + back + ' ' + y + ' L ' + back + ' ' + face +
+      ' L ' + shoulder + ' ' + face + ' Z" fill="url(#xtBody)" stroke="var(--xt-edge)" stroke-width="1.6"/>';
+
+    /* the chamfer: one long 45° face down the whole negative side, ends tapered */
+    s += '<path d="M ' + mate + ' ' + face + ' L ' + back + ' ' + face +
+      ' L ' + (back - d * 7) + ' ' + bot + ' L ' + (mate + d * 7) + ' ' + bot + ' Z" ' +
+      'fill="var(--xt-lo)" stroke="var(--xt-edge)" stroke-width="1.3"/>';
+    s += '<line x1="' + mate + '" y1="' + face + '" x2="' + back + '" y2="' + face +
+      '" stroke="var(--xt-edge)" stroke-width="1.6" opacity="0.95"/>';
+
+    /* call it out under the chamfered edge */
+    var lx2 = (shoulder + back) / 2;
+    s += '<line x1="' + lx2 + '" y1="' + (face + bev / 2) + '" x2="' + lx2 + '" y2="' + (bot + 18) +
+      '" stroke="var(--ink-2)" stroke-width="1" opacity="0.8"/>';
+    s += '<text class="svg-lbl tiny xt-chamfer" x="' + lx2 + '" y="' + (bot + 29) +
+      '" text-anchor="middle">CHAMFER RUNS THE FULL LENGTH · GND SIDE</text>';
+
+    /* moulded panel and the XT90 emboss */
+    var midX = (shoulder + back) / 2, midY = (y + face) / 2;
+    s += '<rect x="' + (Math.min(shoulder, back) + 8) + '" y="' + (midY - 13) + '" width="' + (Math.abs(back - shoulder) - 16) +
+      '" height="26" rx="4" fill="none" stroke="var(--xt-edge)" stroke-width="0.9" opacity="0.5"/>';
+    s += '<text class="svg-lbl xt-emboss" x="' + midX + '" y="' + (midY + 5) + '" text-anchor="middle">XT90</text>';
+    s += '<text class="svg-lbl tiny xt-mark" x="' + midX + '" y="' + (y + 12) + '" text-anchor="middle">' +
+      (b.node.polarity === 'female' ? 'FEMALE' : (b.node.polarity === 'male' ? 'MALE' : '')) + '</text>';
+    return s;
+  }
+
+  /* face-on fallback, for a bullet connector laid out as a row */
+  function xt90Face(b) {
+    var s = '', x = b.x, y = b.y, w = b.w, h = b.h, ch = 9;
+    var d = 'M ' + (x + ch) + ' ' + y + ' L ' + (x + w - ch) + ' ' + y + ' L ' + (x + w) + ' ' + (y + ch) +
+      ' L ' + (x + w) + ' ' + (y + h - 3) + ' Q ' + (x + w) + ' ' + (y + h) + ' ' + (x + w - 3) + ' ' + (y + h) +
+      ' L ' + (x + 3) + ' ' + (y + h) + ' Q ' + x + ' ' + (y + h) + ' ' + x + ' ' + (y + h - 3) +
+      ' L ' + x + ' ' + (y + ch) + ' Z';
+    s += '<path d="' + d + '" fill="url(#xtBody)" stroke="var(--xt-edge)" stroke-width="1.5"/>';
+    s += '<text class="svg-lbl tiny xt-mark" x="' + (x + w / 2) + '" y="' + (y + h - 6) +
+      '" text-anchor="middle">XT90</text>';
+    return s;
+  }
+
+  function renderSvg() {
+    var g = geom(), W = 1060, H = g.H;
+    var used = {};
+    DATA.links.forEach(function (l) {
+      [l.from, l.to].forEach(function (e) { if (e && e.n != null) used[e.n + ':' + e.p] = l; });
+    });
+
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Harness from a 26 position ZPD connector to a 2 position Nano-Fit and a 20 position housing, with two solder splices.">';
+    s += '<defs>' +
+      '<linearGradient id="hsgSide" x1="0" y1="0" x2="1" y2="0">' +
+        '<stop offset="0" stop-color="var(--hsg-hi)"/><stop offset="1" stop-color="var(--hsg-lo)"/></linearGradient>' +
+      '<linearGradient id="xtBody" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="var(--xt-hi)"/><stop offset="1" stop-color="var(--xt-lo)"/></linearGradient>' +
+      '<marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+        '<path d="M 0 1 L 10 5 L 0 9 z" fill="var(--ink-2)"/></marker></defs>';
+
+    DATA.nodes.forEach(function (n) { s += housing(g.nodes[n.id]); });
+
+    /* headings */
+    DATA.nodes.forEach(function (n) {
+      var b = g.nodes[n.id], leftSide = n.side === 'left';
+      var hx = leftSide ? b.x : b.r, anch = leftSide ? 'start' : 'end';
+      s += '<text class="svg-lbl" x="' + hx + '" y="' + (b.y - 22) + '" text-anchor="' + anch + '">' +
+        esc(n.ref) + ' · ' + esc(n.name) + '</text>';
+      s += '<text class="svg-lbl dim" x="' + hx + '" y="' + (b.y - 8) + '" text-anchor="' + anch + '">P/N ' + esc(n.pn) + '</text>';
+    });
+
+    /* ---- conductors ---- */
+    function endPoint(e, isStart) {
+      if (!e) return null;
+      if (e.s != null) { var sp = g.splices[e.s]; return { x: sp.x, y: sp.y, splice: true }; }
+      var pp = pinPos(g, e.n, e.p); if (!pp) return null;
+      var b = pp.box, leftSide = b.node.side === 'left';
+      return { x: pp.x, y: pp.y, far: pp.far, pole: pp.pole, p: e.p, leftSide: leftSide, box: b };
+    }
+    var handles = [];
+    DATA.links.forEach(function (l, li) {
+      if (l.kind !== 'wire') return;
+      var a = endPoint(l.from, true), z = endPoint(l.to, false);
+      if (!a || !z) return;
+      var d = 'M ';
+      var ax = a.x, ay = a.y, zx = z.x, zy = z.y;
+      var segs = [];
+      /* leave the source */
+      if (a.splice) { segs.push([ax, ay]); }
+      else if (a.pole && a.box.stack) {
+        segs.push([ax + a.box.dir * 30, ay]); ax = ax + a.box.dir * 30;
+      }
+      else if (a.pole) {
+        segs.push([ax, ay]);
+        var px = a.leftSide ? a.box.r + 14 : a.box.x - 14;
+        segs.push([px, ay]);
+        var lane = ay + (a.p - (a.box.node.pins + 1) / 2) * 22;
+        var px2 = a.leftSide ? px + 16 : px - 16;
+        segs.push([px2, lane]); ax = px2; ay = lane;
+      }
+      else {
+        segs.push([ax, ay]);
+        if (a.far) { segs.push([ax, ay + L.rowPitch * 0.5]); ay = ay + L.rowPitch * 0.5; }
+        var ox = a.leftSide ? a.box.r + 16 : a.box.x - 16;
+        segs.push([ox, ay]); ax = ox;
+      }
+      /* arrive at the target */
+      var tail = [];
+      if (z.splice) { tail.push([zx, zy]); }
+      else if (z.pole && z.box.stack) {
+        tail.push([zx + z.box.dir * 30, zy]);
+      }
+      else if (z.pole) {
+        var qx = z.leftSide ? z.box.r + 14 : z.box.x - 14;
+        var qlane = zy + (z.p - (z.box.node.pins + 1) / 2) * 22;
+        var qx2 = z.leftSide ? qx + 16 : qx - 16;
+        tail.push([qx2, qlane]); tail.push([qx, zy]); tail.push([zx, zy]);
+      }
+      else {
+        var iy = zy;
+        if (z.far) iy = zy - L.rowPitch * 0.5;
+        var ix = z.leftSide ? z.box.r + 16 : z.box.x - 16;
+        tail.push([ix, iy]);
+        if (z.far) { tail.push([zx, iy]); }
+        tail.push([zx, zy]);
+      }
+      d += segs.map(function (p) { return p[0] + ' ' + p[1]; }).join(' L ');
+      var ex = tail[0][0], ey = tail[0][1];
+      var r = l.route;
+      if (r && r.x != null) {
+        /* hand-routed: ease through the waypoint the user dragged */
+        var k1 = (r.x - ax) * 0.5, k2 = (ex - r.x) * 0.5;
+        d += ' C ' + (ax + k1) + ' ' + ay + ', ' + (r.x - k1) + ' ' + r.y + ', ' + r.x + ' ' + r.y;
+        d += ' C ' + (r.x + k2) + ' ' + r.y + ', ' + (ex - k2) + ' ' + ey + ', ' + ex + ' ' + ey;
+      } else {
+        var mid1 = ax + (ex - ax) * 0.45, mid2 = ax + (ex - ax) * 0.55;
+        d += ' C ' + mid1 + ' ' + ay + ', ' + mid2 + ' ' + ey + ', ' + ex + ' ' + ey;
+      }
+      for (var t = 1; t < tail.length; t++) d += ' L ' + tail[t][0] + ' ' + tail[t][1];
+      s += casing(d) + core(d, hex(l.color));
+      handles.push({ i: li, x: (r && r.x != null) ? r.x : (ax + ex) / 2,
+                     y: (r && r.x != null) ? r.y : (ay + ey) / 2, c: hex(l.color), routed: !!(r && r.x != null) });
+    });
+
+    /* route handles — one per wire, draggable in edit mode */
+    handles.forEach(function (h) {
+      s += '<circle class="routehit' + (h.routed ? ' routed' : '') + '" data-link="' + h.i + '" cx="' + h.x +
+        '" cy="' + h.y + '" r="7" fill="' + h.c + '" stroke="var(--wire-edge)" stroke-width="1.6"/>';
+    });
+
+    /* single-ended leads: an nc conductor or a preassembled stub, terminated at one end only */
+    var leadN = {};
+    DATA.links.filter(function (l) {
+      if (l.kind !== 'nc' && l.kind !== 'stub') return false;
+      var ha = l.from && (l.from.n != null || l.from.s != null), hb = l.to && (l.to.n != null || l.to.s != null);
+      return (ha ? 1 : 0) + (hb ? 1 : 0) === 1;
+    }).forEach(function (l) {
+      var e = (l.from && (l.from.n != null || l.from.s != null)) ? l.from : l.to;
+      var a = endPoint(e, true); if (!a || a.splice) return;
+      var key = e.n; leadN[key] = (leadN[key] == null) ? 0 : leadN[key] + 1;
+      var k = leadN[key], dir = a.leftSide ? 1 : -1;
+      var x0 = a.x + dir * (L.cavW / 2), x1 = a.x + dir * (L.cavW / 2 + 46 + 26 * k);
+      var d = 'M ' + x0 + ' ' + a.y + ' L ' + x1 + ' ' + a.y;
+      s += casing(d) + core(d, hex(l.color));
+      /* cut tick */
+      s += '<path d="M ' + (x1 + dir * 2) + ' ' + (a.y - 7) + ' L ' + (x1 - dir * 6) + ' ' + (a.y + 7) +
+        '" stroke="var(--ink-2)" stroke-width="1.6" fill="none"/>';
+      s += '<text class="svg-lbl tiny" x="' + (x1 + dir * 7) + '" y="' + (a.y + (k % 2 ? 16 : -10)) +
+        '" text-anchor="' + (a.leftSide ? 'start' : 'end') + '">' + esc(l.ref) + ' ' +
+        esc(l.kind === 'nc' ? 'NC' : 'trim') + '</text>';
+    });
+
+    /* jumpers inside one connector */
+    var jIdx = {}, jSeen = {};
+    DATA.links.filter(function (l) { return l.kind === 'jumper'; }).forEach(function (l) {
+      var k = l.from.n; jSeen[k] = (jSeen[k] == null) ? 0 : jSeen[k] + 1; jIdx[l.ref] = jSeen[k];
+    });
+    DATA.links.filter(function (l) { return l.kind === 'jumper'; }).forEach(function (l) {
+      if (!l.from || !l.to || l.from.n == null || l.to.n == null) return;
+      var a = pinPos(g, l.from.n, l.from.p), z = pinPos(g, l.to.n, l.to.p);
+      if (!a || !z) return;
+      var b = a.box;
+      var jn = jIdx[l.ref] || 0;               /* stack jumper arcs at different depths so they stay readable */
+      var channel = !a.far;
+      var outSide = b.node.side === 'left' ? -1 : 1;
+      var spread = 13 * jn;
+      var bx = channel
+        ? (b.colA + L.cavW / 2 + 8) + outSide * spread
+        : (b.r + 15 + spread);
+      var sx = a.x + L.cavW / 2, ex = z.x + L.cavW / 2;
+      var d = 'M ' + sx + ' ' + a.y + ' C ' + bx + ' ' + a.y + ', ' + bx + ' ' + z.y + ', ' + ex + ' ' + z.y;
+      s += casing(d) + core(d, hex(l.color));
+      /* label outside the housing, on the side away from the incoming wires, level with the start pin */
+      var outX = b.node.side === 'left' ? (b.x - 10) : (b.r + 10);
+      s += '<text class="svg-lbl tiny" x="' + outX + '" y="' + (a.y + 3) +
+        '" text-anchor="' + (b.node.side === 'left' ? 'end' : 'start') + '">' + esc(l.ref) + '</text>';
+    });
+
+    /* a bullet housing is re-drawn over the runs so the wires read as entering the back of the body */
+    DATA.nodes.forEach(function (n) {
+      if (n.style === 'xt90') s += xt90Housing(g.nodes[n.id]);
+    });
+
+    /* ---- cavities ---- */
+    DATA.nodes.forEach(function (n) {
+      var b = g.nodes[n.id];
+      for (var p = 1; p <= n.pins; p++) {
+        var pp = pinPos(g, n.id, p), link = used[n.id + ':' + p];
+        var cx = pp.x - L.cavW / 2, cy = pp.y - L.cavH / 2;
+        var hit = ' class="cavhit" data-node="' + esc(n.id) + '" data-pin="' + p + '"' +
+                  (link ? ' data-busy="1"' : '');
+        if (pp.stack) {
+          var bb = pp.box, dd = bb.dir, mk = (p === 1) ? '+' : (p === 2 ? '\u2212' : String(p));
+          /* solder barrel sticking out of the back face */
+          s += '<rect x="' + (dd > 0 ? pp.x : pp.x - 30) + '" y="' + (pp.y - 9) + '" width="30" height="18" rx="4" ' +
+            'fill="var(--cav)" stroke="var(--cav-edge)" stroke-width="1.2"' + (link ? '' : ' stroke-dasharray="3 2.5"') + '/>';
+          s += '<text class="svg-cav pole" x="' + (pp.x + dd * 15) + '" y="' + (pp.y + 5) + '" text-anchor="middle">' + mk + '</text>';
+          s += '<rect x="' + (dd > 0 ? pp.x : pp.x - 30) + '" y="' + (pp.y - 9) + '" width="30" height="18" rx="4" fill="transparent"' + hit + '/>';
+          continue;
+        }
+        if (pp.pole) {
+          var mark = (p === 1) ? '+' : (p === 2 ? '\u2212' : String(p));
+          s += '<circle cx="' + pp.x + '" cy="' + pp.y + '" r="' + L.poleR + '" fill="var(--cav)" ' +
+            'stroke="var(--xt-edge)" stroke-width="1.4"' + (link ? '' : ' stroke-dasharray="3 2.5"') + '/>';
+          s += '<circle cx="' + pp.x + '" cy="' + pp.y + '" r="' + (L.poleR - 4.5) + '" fill="none" ' +
+            'stroke="var(--cav-edge)" stroke-width="1" opacity="0.8"/>';
+          s += '<text class="svg-cav pole" x="' + pp.x + '" y="' + (pp.y + 5) + '" text-anchor="middle">' + mark + '</text>';
+          s += '<circle cx="' + pp.x + '" cy="' + pp.y + '" r="' + L.poleR + '" fill="transparent"' + hit + '/>';
+          continue;
+        }
+        if (link) {
+          s += '<rect x="' + cx + '" y="' + cy + '" width="' + L.cavW + '" height="' + L.cavH +
+            '" rx="2.5" fill="var(--cav)" stroke="var(--cav-edge)" stroke-width="1.2"' + hit + '/>';
+          s += '<text class="svg-cav" x="' + pp.x + '" y="' + (pp.y + 3) + '" text-anchor="middle">' + p + '</text>';
+        } else {
+          s += '<rect x="' + cx + '" y="' + cy + '" width="' + L.cavW + '" height="' + L.cavH +
+            '" rx="2.5" fill="var(--hsg-lo)" stroke="var(--hsg-edge)" stroke-width="1" stroke-dasharray="3 2.5"' + hit + '/>';
+          s += '<text class="svg-pin" x="' + pp.x + '" y="' + (pp.y + 3) + '" text-anchor="middle">' + p + '</text>';
+        }
+      }
+    });
+
+    /* single-row connectors get signal labels outside */
+    DATA.nodes.filter(function (n) { return n.layout !== 'dual'; }).forEach(function (n) {
+      var b = g.nodes[n.id];
+      for (var p = 1; p <= n.pins; p++) {
+        var pp = pinPos(g, n.id, p), link = used[n.id + ':' + p];
+        var lab = link ? (ab(link.color) + ' · ' + (link.signal || '')) : 'N/A';
+        if (pp.stack) {  /* side view: label on the mating side, clear of the wires */
+          var sb = pp.box;
+          s += '<text class="svg-lbl dim" x="' + (sb.mate - sb.dir * 10) + '" y="' + (pp.y + 4) +
+            '" text-anchor="' + (sb.dir > 0 ? 'end' : 'start') + '">' + esc(lab) + '</text>';
+          continue;
+        }
+        if (pp.pole) {   /* poles sit side by side, so the label goes under each one */
+          s += '<text class="svg-lbl dim" x="' + pp.x + '" y="' + (b.b + 15) + '" text-anchor="middle">' +
+            esc(lab) + '</text>';
+          continue;
+        }
+        s += '<text class="svg-lbl dim" x="' + (b.r + 14) + '" y="' + (pp.y + 4) + '">' + esc(lab) + '</text>';
+      }
+    });
+
+    /* ---- splices ---- */
+    DATA.splices.forEach(function (sp) {
+      var pos = g.splices[sp.id]; if (!pos) return;
+      s += '<rect x="' + (pos.x - 24) + '" y="' + (pos.y - 11) + '" width="48" height="22" rx="10" ' +
+        'fill="var(--panel)" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="4 2.5"/>';
+      s += '<circle cx="' + pos.x + '" cy="' + pos.y + '" r="5" fill="' + hex(sp.color) + '" stroke="var(--wire-edge)" stroke-width="1.4"/>';
+      s += '<rect class="cavhit" data-splice="' + esc(sp.id) + '" data-busy="1" x="' + (pos.x - 24) + '" y="' + (pos.y - 11) +
+        '" width="48" height="22" rx="10" fill="transparent"/>';
+      s += '<text class="svg-lbl" x="' + pos.x + '" y="' + (pos.y - 17) + '" text-anchor="middle">' + esc(sp.ref) + '</text>';
+    });
+
+    s += '<g id="draglayer"></g></svg>';
+    return '<div class="draw-panel">' + s + '</div>';
+  }
+
+
+  /* ---------------- cards ---------------- */
+  function notesBlock(v, scope, i) {
+    return '<div class="notes-blk"><div class="ttl">Notes</div>' +
+      '<div class="ed notes-body" data-scope="' + scope + '" data-i="' + i + '" data-k="notes" ' +
+      'data-ph="Build note">' + esc(v || '') + '</div></div>';
+  }
+  function connSelect(i, cur) {
+    var s = '<select class="connsel" data-i="' + i + '" aria-label="Connector">';
+    STORE.connectors.forEach(function (c) {
+      s += '<option value="' + esc(c.id) + '"' + (c.id === cur ? ' selected' : '') + '>' + esc(c.name) + ' · ' + esc(c.pn) + '</option>';
+    });
+    return s + '<option value="__new">+ New connector…</option></select>';
+  }
+  function newConnector(seed) {
+    var c = { id: 'C' + Date.now().toString(36) + Math.floor(Math.random() * 99),
+      name: 'NEW CONNECTOR', pn: 'TBD', pins: 4, layout: 'single', numbering: 'interleaved',
+      order: 'normal', type: '', termination: 'crimp', contactPn: 'TBD', notes: '' };
+    if (seed) Object.keys(seed).forEach(function (k) { c[k] = seed[k]; });
+    STORE.connectors.push(c);
+    return c;
+  }
+  function connIndex(id) {
+    for (var i = 0; i < STORE.connectors.length; i++) if (STORE.connectors[i].id === id) return i;
+    return -1;
+  }
+
+  function connSpec(n) {
+    var ci = connIndex(n.conn); if (ci < 0) return '';
+    var c = STORE.connectors[ci];
+    return '<div class="spec">' +
+      '<label>Pos <span class="ed mini-ed" data-scope="connectors" data-i="' + ci + '" data-k="pins">' + esc(c.pins) + '</span></label>' +
+      '<label>Rows ' + pick(ci, 'layout', c.layout, [['single', '1'], ['dual', '2']]) + '</label>' +
+      '<label>Numbering ' + pick(ci, 'numbering', c.numbering, [['interleaved', 'odd / even'], ['column', 'down a column']]) + '</label>' +
+      '<label>Pin 1 ' + pick(ci, 'order', c.order, [['normal', 'top'], ['reverse', 'bottom']]) + '</label>' +
+      '</div>';
+  }
+  function sideSelect(i, cur) {
+    var s = '<select class="sidesel" data-i="' + i + '" aria-label="Side">';
+    ['left', 'right'].forEach(function (v) {
+      s += '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + v + '</option>';
+    });
+    return s + '</select>';
+  }
+  function renderCards() {
+    var h = '<div class="cards">';
+    DATA.nodes.forEach(function (n, i) {
+      h += '<div class="card"><div class="hd">' +
+        '<span class="ref">' + ed(n.ref, 'nodes', i, 'ref') + '</span>' +
+        '<span class="nm">' + ed(n.name, 'connnode', i, 'name') + '</span>' +
+        '<span class="pn">' + ed(n.pn, 'connnode', i, 'pn') + '</span></div>' +
+        '<div class="pick">' + connSelect(i, n.conn) + sideSelect(i, n.side) +
+        '<button class="mini" data-del="nodes:' + i + '">Remove</button>' + connSpec(n) +
+        '<span class="hint">name, P/N and the spec above edit the connector library</span></div>';
+      if (n.components && n.components.length) {
+        h += '<div class="comp"><div class="ttl">Additional components</div>';
+        n.components.forEach(function (c) {
+          h += '<div class="row"><span>' + esc(c.qty) + (c.unit ? ' ' + esc(c.unit) : '') + ' ×</span>' +
+               '<span>' + esc(c.desc) + '</span><span class="bref">#' + esc(c.bom) + '</span></div>';
+        });
+        h += '</div>';
+      }
+      h += notesBlock(n.notes, 'nodes', i) + '</div>';
+    });
+    DATA.splices.forEach(function (sp, i) {
+      h += '<div class="card"><div class="hd">' +
+        '<span class="ref">' + ed(sp.ref, 'splices', i, 'ref') + '</span>' +
+        '<span class="nm">' + ed(sp.name, 'splices', i, 'name') + '</span>' +
+        '<button class="mini" data-del="splices:' + i + '">Remove</button></div>' +
+        notesBlock(sp.notes, 'splices', i) + '</div>';
+    });
+    h += '</div><div class="tbl-actions edit-only"><button id="btn-add-node">Add connector</button>' +
+         '<button id="btn-add-splice">Add splice</button></div>';
+    return h;
+  }
+
+  /* ---------------- cut list ---------------- */
+  function endLabel(e) {
+    if (!e) return '—';
+    if (e.s != null) { var sp = null; DATA.splices.forEach(function (s) { if (s.id === e.s) sp = s; }); return sp ? sp.ref : e.s; }
+    var nd = null; DATA.nodes.forEach(function (n) { if (n.id === e.n) nd = n; });
+    return (nd ? nd.ref : e.n) + ':' + e.p;
+  }
+  function epSelect(i, which, e) {
+    var s = '<select class="epsel" data-i="' + i + '" data-w="' + which + '">';
+    var cur = epValue(e);
+    endpoints().forEach(function (o) {
+      s += '<option value="' + esc(o.v) + '"' + (o.v === cur ? ' selected' : '') + '>' + esc(o.t) + '</option>';
+    });
+    return s + '</select>';
+  }
+  var KINDS = ['wire', 'jumper', 'nc', 'stub'];
+  function renderCutlist() {
+    var h = '<div class="table-wrap" id="cutlist"><table><thead><tr>' +
+      '<th>Wire</th><th>Type</th><th>From</th><th>Color</th><th>To</th><th>AWG</th><th>Length</th><th>Signal</th><th class="act"></th>' +
+      '</tr></thead><tbody>';
+    DATA.links.forEach(function (l, i) {
+      var sel = '<select class="csel" data-csel="' + i + '" aria-label="Color for ' + esc(l.ref) + '">';
+      colorNames().forEach(function (c) {
+        sel += '<option value="' + c + '"' + (c === l.color ? ' selected' : '') + '>' + esc(c) + '</option>';
+      });
+      sel += '</select>';
+      var ksel = '<select class="ksel" data-i="' + i + '" aria-label="Type">';
+      KINDS.forEach(function (k) { ksel += '<option value="' + k + '"' + (k === l.kind ? ' selected' : '') + '>' + k + '</option>'; });
+      ksel += '</select>';
+      h += '<tr>' +
+        '<td class="num">' + ed(l.ref, 'links', i, 'ref') + '</td>' +
+        '<td class="kind"><span class="ro">' + esc(l.kind) + '</span>' + ksel + '</td>' +
+        '<td class="mono"><span class="ro">' + esc(endLabel(l.from)) + '</span>' + epSelect(i, 'from', l.from) + '</td>' +
+        '<td class="col"><span class="swatch"><i style="background:' + hex(l.color) + '"></i>' +
+          esc(l.color) + ' <b>' + esc(ab(l.color)) + '</b></span>' + sel + '</td>' +
+        '<td class="mono"><span class="ro">' + esc(endLabel(l.to)) + '</span>' + epSelect(i, 'to', l.to) + '</td>' +
+        '<td class="mono">' + ed(l.gauge, 'links', i, 'gauge') + '</td>' +
+        '<td class="mono">' + ed(l.length, 'links', i, 'length') + '</td>' +
+        '<td class="mono">' + ed(l.signal, 'links', i, 'signal') + '</td>' +
+        '<td class="act"><button class="mini" data-mv="' + i + ':-1" title="Move up">↑</button>' +
+        '<button class="mini" data-mv="' + i + ':1" title="Move down">↓</button>' +
+        '<button class="mini" data-del="links:' + i + '">Remove</button></td></tr>';
+    });
+    h += '</tbody></table></div><div class="tbl-actions"><button id="btn-add-link">Add conductor</button></div>';
+    return h;
+  }
+
+  var BOM_COLS = [['qty','Qty','num'],['meas','Meas','mono'],['item','Item','mono'],['desig','Designators','mono'],['desc','Description','desc']];
+  function autoBom() {
+    var rows = [], seen = {};
+    DATA.nodes.forEach(function (n) {
+      rows.push({ qty: '1', meas: 'EACH', item: n.pn || 'TBD', desig: n.ref, desc: n.name + (n.type ? ' — ' + n.type : '') });
+    });
+    DATA.nodes.forEach(function (n) {
+      var cnt = 0;
+      DATA.links.forEach(function (l) {
+        [l.from, l.to].forEach(function (e) { if (e && e.n === n.id) cnt++; });
+      });
+      if (!cnt) return;
+      if (/solder/i.test(n.termination || '')) {
+        rows.push({ qty: String(cnt), meas: 'EACH', item: '—', desig: n.ref, desc: 'SOLDER JOINT — ' + n.name + ' (no contacts)' });
+        return;
+      }
+      rows.push({ qty: String(cnt), meas: 'EACH', item: n.contactPn || 'TBD', desig: n.ref, desc: 'CONTACT, CRIMP — ' + n.name });
+    });
+    DATA.links.forEach(function (l) {
+      if (!l.gauge && !l.color) return;
+      var k = l.gauge + '|' + l.color + '|' + l.length;
+      if (seen[k]) { seen[k].refs.push(l.ref); seen[k].n++; return; }
+      seen[k] = { refs: [l.ref], n: 1, l: l };
+    });
+    Object.keys(seen).forEach(function (k) {
+      var g = seen[k], mm = parseFloat(g.l.length) || 0;
+      rows.push({ qty: mm ? String(mm * g.n) : '—', meas: mm ? 'mm' : '', item: g.l.note && /^V\d/.test(g.l.note) ? g.l.note : 'TBD',
+        desig: g.refs.length > 2 ? g.refs[0] + '-' + g.refs[g.refs.length - 1] : g.refs.join(', '),
+        desc: 'WIRE STRANDED ' + (g.l.gauge || '').replace(' ', '') + ' ' + (ab(g.l.color) || g.l.color) +
+              (g.n > 1 ? ' (' + g.n + ' × ' + g.l.length + ')' : '') });
+    });
+    return rows;
+  }
+  function renderBom() {
+    var auto = !DATA.bom || !DATA.bom.length;
+    var rows = auto ? autoBom() : DATA.bom;
+    var h = '<div class="table-wrap" id="bom"><table><thead><tr><th>Id</th>';
+    BOM_COLS.forEach(function (c) { h += '<th>' + c[1] + '</th>'; });
+    h += '<th class="act"></th></tr></thead><tbody>';
+    rows.forEach(function (r, i) {
+      h += '<tr><td class="num">' + (i + 1) + '</td>';
+      BOM_COLS.forEach(function (c) {
+        h += '<td class="' + c[2] + '">' + (auto ? esc(r[c[0]]) : ed(r[c[0]], 'bom', i, c[0])) + '</td>';
+      });
+      h += '<td class="act">' + (auto ? '' : '<button class="mini" data-del="bom:' + i + '">Remove</button>') + '</td></tr>';
+    });
+    h += '</tbody></table></div><div class="tbl-actions">';
+    h += auto ? '<button id="btn-bom-take">Edit this BOM by hand</button><span class="hint">Generated from the connectors and conductors above.</span>'
+              : '<button id="btn-add-bom">Add line</button><button id="btn-bom-auto">Back to generated BOM</button>';
+    return h + '</div>';
+  }
+
+  function renderPhoto() {
+    var h = '<div class="photo-panel">';
+    if (DATA.photo) {
+      h += '<img src="' + DATA.photo + '" alt="Build photo">' +
+           '<div class="photo-act"><button class="mini" id="btn-photo-clear">Remove photo</button></div>';
+    } else {
+      h += '<div class="photo-empty">Build photo — shoot the finished harness against a rule, then add it here.' +
+           '<div class="photo-act"><button class="mini" id="btn-photo">Add build photo</button></div></div>';
+    }
+    return h + '</div>';
+  }
+  function renderTitleBlock() {
+    var tb = DATA.titleBlock || (DATA.titleBlock = {});
+    return '<div class="titleblock">' +
+      '<div class="tb-row tb-title"><span class="tb-k">Title</span><span class="tb-v big">' + edM(DATA.title, 'title') + '</span></div>' +
+      '<div class="tb-grid">' +
+        '<div><span class="tb-k">Number</span><span class="tb-v big">' + edM(DATA.assemblyPn, 'assemblyPn') + '</span></div>' +
+        '<div><span class="tb-k">Revision</span><span class="tb-v big">' + edM(DATA.rev, 'rev') + '</span></div>' +
+        '<div><span class="tb-k">Size</span><span class="tb-v">' + ed(tb.size, 'titleBlock', 0, 'size') + '</span></div>' +
+        '<div><span class="tb-k">Date</span><span class="tb-v">' + ed(tb.date, 'titleBlock', 0, 'date') + '</span></div>' +
+        '<div><span class="tb-k">Sheet</span><span class="tb-v">' + ed(tb.sheet, 'titleBlock', 0, 'sheet') + '</span></div>' +
+      '</div>' +
+      '<div class="tb-row"><span class="tb-k">File</span><span class="tb-v file">' + ed(tb.file, 'titleBlock', 0, 'file') + '</span></div></div>';
+  }
+
+
+  /* ---------------- dragging: wire ends between pins, and wire routing ---------------- */
+  var dragState = null, dragInstalled = false, rafPending = false, lastTap = null;
+
+  function epKey(e) { if (!e) return ''; return e.s != null ? 's:' + e.s : (e.n != null ? 'n:' + e.n + ':' + e.p : ''); }
+  function hitKey(el) {
+    if (!el) return '';
+    if (el.dataset.splice) return 's:' + el.dataset.splice;
+    if (el.dataset.node) return 'n:' + el.dataset.node + ':' + el.dataset.pin;
+    return '';
+  }
+  function findEnd(key) {
+    for (var i = 0; i < DATA.links.length; i++) {
+      if (epKey(DATA.links[i].from) === key) return { i: i, w: 'from' };
+      if (epKey(DATA.links[i].to) === key) return { i: i, w: 'to' };
+    }
+    return null;
+  }
+  function theSvg() { return app.querySelector('.draw-panel svg'); }
+  function svgPt(ev) {
+    var svg = theSvg(); if (!svg) return { x: 0, y: 0 };
+    var r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+    return { x: (ev.clientX - r.left) / r.width * vb.width, y: (ev.clientY - r.top) / r.height * vb.height };
+  }
+  function targetUnder(ev) {
+    var el = document.elementFromPoint(ev.clientX, ev.clientY);
+    return el && el.classList && el.classList.contains('cavhit') ? el : null;
+  }
+  function clearHot() {
+    var svg = theSvg(); if (!svg) return;
+    Array.prototype.forEach.call(svg.querySelectorAll('.drop-hot'), function (e) { e.classList.remove('drop-hot'); });
+  }
+
+  function wireDrag() {
+    if (view !== 'edit' || !editing) return;
+    var svg = theSvg(); if (!svg) return;
+
+    Array.prototype.forEach.call(svg.querySelectorAll('.cavhit'), function (el) {
+      el.addEventListener('pointerdown', function (ev) {
+        var key = hitKey(el); if (!key) return;
+        var end = findEnd(key); if (!end) return;       /* only an occupied end can be moved */
+        ev.preventDefault();
+        var o = svgPt(ev);
+        dragState = { kind: 'end', end: end, from: key };
+        svg.classList.add('dragging');
+        var layer = svg.querySelector('#draglayer');
+        if (layer) layer.innerHTML = '<line id="dragline" x1="' + o.x + '" y1="' + o.y + '" x2="' + o.x +
+          '" y2="' + o.y + '" stroke="var(--edit)" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="round"/>';
+      });
+    });
+
+    Array.prototype.forEach.call(svg.querySelectorAll('.routehit'), function (el) {
+      el.addEventListener('pointerdown', function (ev) {
+        ev.preventDefault();
+        var i = parseInt(el.dataset.link, 10), now = Date.now();
+        /* pointerdown suppresses the native dblclick, so detect the second tap here */
+        if (lastTap && lastTap.i === i && now - lastTap.t < 400) {
+          lastTap = null;
+          if (DATA.links[i]) delete DATA.links[i].route;
+          redraw(); markDirty(); setStatus('Routing cleared for that wire');
+          return;
+        }
+        lastTap = { i: i, t: now };
+        dragState = { kind: 'route', i: i };
+        svg.classList.add('dragging');
+      });
+    });
+
+    if (dragInstalled) return;
+    dragInstalled = true;
+
+    document.addEventListener('pointermove', function (ev) {
+      if (!dragState) return;
+      if (dragState.kind === 'end') {
+        var svg2 = theSvg(); if (!svg2) return;
+        var q = svgPt(ev), ln = svg2.querySelector('#dragline');
+        if (ln) { ln.setAttribute('x2', q.x); ln.setAttribute('y2', q.y); }
+        clearHot();
+        var t = targetUnder(ev); if (t) t.classList.add('drop-hot');
+        return;
+      }
+      /* routing: move the waypoint and redraw on the next frame */
+      var pt = svgPt(ev);
+      var l = DATA.links[dragState.i]; if (!l) return;
+      l.route = { x: Math.round(pt.x), y: Math.round(pt.y) };
+      if (rafPending) return;
+      rafPending = true;
+      window.requestAnimationFrame(function () {
+        rafPending = false;
+        if (!dragState) return;
+        redraw();
+        var svg3 = theSvg(); if (svg3) svg3.classList.add('dragging');
+      });
+    });
+
+    function finish(ev) {
+      if (!dragState) return;
+      var d = dragState; dragState = null;
+      var svg4 = theSvg();
+      if (svg4) {
+        svg4.classList.remove('dragging');
+        var layer2 = svg4.querySelector('#draglayer'); if (layer2) layer2.innerHTML = '';
+      }
+      clearHot();
+      if (d.kind === 'route') { markDirty(); setStatus('Wire routed — double-click the handle to undo it'); return; }
+      var t = targetUnder(ev); if (!t) return;
+      var tk = hitKey(t); if (!tk || tk === d.from) return;
+      var occupant = findEnd(tk);
+      DATA.links[d.end.i][d.end.w] = epParse(tk);
+      if (occupant) DATA.links[occupant.i][occupant.w] = epParse(d.from);   /* swap rather than double up */
+      rerenderAll(); markDirty();
+      setStatus(occupant ? 'Swapped' : 'Moved');
+    }
+    document.addEventListener('pointerup', finish);
+    document.addEventListener('pointercancel', function () {
+      dragState = null; clearHot();
+      var svg5 = theSvg(); if (svg5) { svg5.classList.remove('dragging');
+        var l5 = svg5.querySelector('#draglayer'); if (l5) l5.innerHTML = ''; }
+    });
+  }
+
+  /* ---------------- views ---------------- */
+  function bar() {
+    var h = '<div class="bar"><span class="status" id="status"></span>';
+    if (view === 'edit') {
+      h += '<button id="btn-back">← All harnesses</button>' +
+           '<button id="btn-edit">Edit</button>' +
+           '<button id="btn-csv">Export CSV</button>' +
+           '<button id="btn-straighten">Straighten wires</button>' +
+           '<button id="btn-print">Print / PDF</button>';
+    } else {
+      h += '<button id="btn-tab-list"' + (view === 'list' ? ' class="on"' : '') + '>Harnesses</button>' +
+           '<button id="btn-tab-conn"' + (view === 'conn' ? ' class="on"' : '') + '>Connector library</button>' +
+           '<button id="btn-import">Import JSON</button><button id="btn-export">Export JSON</button>';
+    }
+    h += '<button id="btn-save" title="Download a standalone copy of the whole library">Download backup</button></div>';
+    return h;
+  }
+
+  function renderList() {
+    var h = '<div class="wrap"><header><div class="eyebrow">Vision Aerial · wire harness</div>' +
+      '<h1>Harness library</h1></header><section><div class="table-wrap"><table class="list"><thead><tr>' +
+      '<th>Title</th><th>Assembly P/N</th><th>Rev</th><th>Connectors</th><th>Conductors</th><th class="act"></th>' +
+      '</tr></thead><tbody>';
+    STORE.harnesses.forEach(function (hh, i) {
+      resolve(hh);
+      var conns = hh.nodes.map(function (n) { return n.name; }).join(' · ');
+      h += '<tr><td class="ttl-cell"><a href="#" data-open="' + esc(hh.id) + '">' + esc(hh.title) + '</a></td>' +
+        '<td class="mono">' + esc(hh.assemblyPn || 'TBD') + '</td>' +
+        '<td class="mono">' + esc(hh.rev || '') + '</td>' +
+        '<td class="desc">' + esc(conns) + '</td>' +
+        '<td class="num">' + hh.links.length + '</td>' +
+        '<td class="act"><button class="mini" data-open="' + esc(hh.id) + '">Open</button>' +
+        '<button class="mini" data-clone="' + esc(hh.id) + '">Clone</button>' +
+        '<button class="mini" data-delh="' + i + '">Delete</button></td></tr>';
+    });
+    h += '</tbody></table></div><div class="tbl-actions"><button id="btn-new" class="primary">New harness</button>' +
+      '<span class="hint">Clone the closest existing harness when the new one is similar — it carries the connectors and notes across.</span></div></section>';
+    h += '<section><h2>Where things live</h2><p class="hint block">Everything is stored in this one file plus your browser. ' +
+      '<b>Save app file</b> downloads a fresh copy of the app with all harnesses baked in — replace the old file with it. ' +
+      '<b>Export JSON</b> gives you just the data, for backup or for sending to someone else.</p></section></div>';
+    return h;
+  }
+
+  var CONN_COLS = [['name', 'Name'], ['pn', 'P/N'], ['pins', 'Pos'], ['type', 'Type'], ['contactPn', 'Contact P/N']];
+  function renderConn() {
+    var h = '<div class="wrap"><header><div class="eyebrow">Vision Aerial · wire harness</div>' +
+      '<h1>Connector library</h1></header><section>' +
+      '<p class="hint block">Define a connector once here and every harness that uses it picks up the change — ' +
+      'pin count, row layout, numbering direction and pin-1 position all come from this table.</p>' +
+      '<div class="table-wrap"><table><thead><tr>';
+    CONN_COLS.forEach(function (c) { h += '<th>' + c[1] + '</th>'; });
+    h += '<th>Rows</th><th>Numbering</th><th>Pin 1</th><th>Notes</th><th class="act"></th></tr></thead><tbody>';
+    STORE.connectors.forEach(function (c, i) {
+      h += '<tr>';
+      CONN_COLS.forEach(function (col) {
+        h += '<td class="' + (col[0] === 'name' ? 'desc' : 'mono') + '">' + ed(c[col[0]], 'connectors', i, col[0]) + '</td>';
+      });
+      h += '<td>' + pick(i, 'layout', c.layout, [['single', '1 row'], ['dual', '2 rows']]) + '</td>';
+      h += '<td>' + pick(i, 'numbering', c.numbering, [['interleaved', 'odd / even'], ['column', 'down a column']]) + '</td>';
+      h += '<td>' + pick(i, 'order', c.order, [['normal', 'top'], ['reverse', 'bottom']]) + '</td>';
+      h += '<td class="desc">' + ed(c.notes, 'connectors', i, 'notes') + '</td>';
+      h += '<td class="act"><button class="mini" data-delc="' + i + '">Remove</button></td></tr>';
+    });
+    h += '</tbody></table></div><div class="tbl-actions"><button id="btn-add-conn">Add connector</button></div></section></div>';
+    return h;
+  }
+  function pick(i, key, cur, opts) {
+    var s = '<select class="connfield" data-i="' + i + '" data-k="' + key + '">';
+    opts.forEach(function (o) {
+      s += '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>';
+    });
+    return s + '</select>';
+  }
+
+  function renderEditor() {
+    var h = '<div class="wrap">';
+    h += '<header><div class="eyebrow">' + edM(DATA.eyebrow, 'eyebrow') + '</div>' +
+      '<h1>' + edM(DATA.title, 'title') + '</h1>' +
+      '<div class="pnline">' +
+        '<span><span class="lab">Assembly P/N</span> ' + edM(DATA.assemblyPn, 'assemblyPn') + '</span>' +
+        '<span><span class="lab">Rev</span> ' + edM(DATA.rev, 'rev') + '</span></div></header>';
+    h += '<section><h2>Diagram</h2>' + renderSvg() +
+      '<p class="hint drag-tip">Drag the dot on a wire to route it where you want; double-click the dot to let it ' +
+      'go straight again. Drag a filled cavity onto another to move that wire end — drop it on an occupied ' +
+      'cavity and the two swap.</p>' + renderCards() + '</section>';
+    h += '<section><h2>Cut list</h2>' + renderCutlist() + '</section>';
+    h += '<section><h2>Bill of Materials</h2>' + renderBom() + '</section>';
+    h += '<section class="bottom">' + renderPhoto() + renderTitleBlock() + '</section>';
+    h += '<footer>' + edM(DATA.footer, 'footer') + '</footer></div>';
+    return h;
+  }
+
+  function render() {
+    if (view === 'edit' && DATA) resolve(DATA);
+    var h = bar();
+    h += view === 'list' ? renderList() : view === 'conn' ? renderConn() : renderEditor();
+    app.innerHTML = h;
+    document.body.classList.toggle('view-edit', view === 'edit');
+    wireAll(); applyEditState(); wireDrag();
+    if (restored) { setStatus('Loaded your saved library'); restored = false; } else setStatus();
+  }
+  function rerenderAll() { var y = window.scrollY; render(); window.scrollTo(0, y); }
+  function redraw() { var host = app.querySelector('.draw-panel'); if (host) { resolve(DATA); host.outerHTML = renderSvg(); wireDrag(); } }
+
+  function setStatus(msg, d2) {
+    var el = document.getElementById('status'); if (!el) return;
+    if (msg) { el.textContent = msg; el.className = 'status' + (d2 ? ' dirty' : ''); return; }
+    if (dirty) { el.textContent = '⚠ Not saved — storage full. Use Export JSON or Download backup'; el.className = 'status dirty'; return; }
+    el.textContent = editing ? 'Editing — click any field' : ''; el.className = 'status';
+  }
+  /* every edit autosaves to this browser; dirty only stays set if that save fails */
+  function persist() { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize())); return true; } catch (e) { return false; } }
+  function markDirty() { dirty = !persist(); if (dirty) setStatus(); else setStatus('Saved'); }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+
+  function bindEditable(el) {
+    el.addEventListener('input', function () {
+      var txt = el.textContent.replace(/\s+/g, ' ').trim();
+      var sc = el.dataset.scope, k = el.dataset.k, meta = el.dataset.meta, i = parseInt(el.dataset.i, 10);
+      if (sc === 'connectors') { STORE.connectors[i][k] = (k === 'pins') ? (parseInt(txt, 10) || 1) : txt; }
+      else if (sc === 'connnode') {
+        var cdef = connById(DATA.nodes[i].conn);
+        if (cdef) { cdef[k] = txt; DATA.nodes[i][k] = txt; redraw(); }
+      }
+      else if (sc === 'links') { DATA.links[i][k] = txt; redraw(); }
+      else if (sc === 'nodes') { DATA.nodes[i][k] = txt; redraw(); }
+      else if (sc === 'splices') { DATA.splices[i][k] = txt; redraw(); }
+      else if (sc === 'bom') { DATA.bom[i][k] = txt; }
+      else if (sc === 'titleBlock') { DATA.titleBlock[k] = txt; }
+      else if (meta) { DATA[meta] = txt; }
+      markDirty();
+    });
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && el.dataset.k !== 'notes') { e.preventDefault(); el.blur(); }
+    });
+    el.addEventListener('paste', function (e) {
+      e.preventDefault();
+      var t = (e.clipboardData || window.clipboardData).getData('text');
+      document.execCommand('insertText', false, t.replace(/\s+/g, ' '));
+    });
+  }
+  function on(id, fn) { var el = document.getElementById(id); if (el) el.addEventListener('click', fn); }
+  function each(sel, fn) { Array.prototype.forEach.call(app.querySelectorAll(sel), fn); }
+
+  function openHarness(id, startEditing) {
+    curId = id; DATA = harnessById(id); resolve(DATA); view = 'edit';
+    editing = !!startEditing || !(DATA.nodes && DATA.nodes.length);
+    render(); window.scrollTo(0, 0);
+  }
+  function newHarness(from) {
+    var src = from ? JSON.parse(JSON.stringify(stripResolved(harnessById(from)))) : {
+      title: 'New harness', assemblyPn: 'TBD', rev: 'A', eyebrow: 'Vision Aerial · wire harness',
+      nodes: [], splices: [], links: [], bom: [],
+      titleBlock: { date: '', size: 'A4', sheet: '1 of 1', file: '' }, footer: ''
+    };
+    if (from) src.title = src.title + ' (copy)';
+    src.id = uid((src.title || 'harness').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'harness');
+    STORE.harnesses.push(src); markDirty(); openHarness(src.id, true);
+  }
+
+
+  function focusCardName(i) {
+    var el = app.querySelectorAll('.card .nm .ed')[i];
+    if (!el) return;
+    el.scrollIntoView({ block: 'center' });
+    el.focus();
+    try {
+      var r = document.createRange(); r.selectNodeContents(el);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    } catch (e) {}
+  }
+  function wireAll() {
+    on('btn-save', save);
+    on('btn-tab-list', function () { view = 'list'; render(); });
+    on('btn-tab-conn', function () { view = 'conn'; render(); });
+    on('btn-back', function () { view = 'list'; editing = false; render(); window.scrollTo(0, 0); });
+    on('btn-export', exportJson);
+    on('btn-import', importJson);
+    on('btn-new', function () { newHarness(null); });
+    on('btn-edit', function () { editing = !editing; rerenderAll(); setStatus(); });
+    on('btn-csv', exportCsv);
+    on('btn-straighten', function () {
+      var n = 0;
+      DATA.links.forEach(function (l) { if (l.route) { delete l.route; n++; } });
+      rerenderAll(); markDirty();
+      setStatus(n ? 'Routing cleared on ' + n + ' wire' + (n === 1 ? '' : 's') : 'Nothing was hand-routed');
+    });
+    on('btn-print', function () { if (editing) { editing = false; applyEditState(); } window.print(); });
+    on('btn-add-conn', function () {
+      newConnector(null); rerenderAll(); markDirty();
+      var rows = app.querySelectorAll('#app tbody tr, tbody tr');
+      var last = rows[rows.length - 1];
+      if (last) {
+        last.classList.add('just-added');
+        var f = last.querySelector('.ed');
+        if (f) { f.scrollIntoView({ block: 'center' }); f.focus();
+          try { var r = document.createRange(); r.selectNodeContents(f);
+            var sl = window.getSelection(); sl.removeAllRanges(); sl.addRange(r); } catch (e) {} }
+      }
+      setStatus('New connector added — fill in the name, P/N and positions');
+    });
+
+    each('[data-open]', function (b) {
+      b.addEventListener('click', function (e) { e.preventDefault(); openHarness(b.dataset.open); });
+    });
+    each('[data-clone]', function (b) { b.addEventListener('click', function () { newHarness(b.dataset.clone); }); });
+    each('[data-delh]', function (b) {
+      b.addEventListener('click', function () {
+        var i = parseInt(b.dataset.delh, 10);
+        if (!window.confirm('Delete "' + STORE.harnesses[i].title + '"?')) return;
+        STORE.harnesses.splice(i, 1); rerenderAll(); markDirty();
+      });
+    });
+    each('[data-delc]', function (b) {
+      b.addEventListener('click', function () {
+        var i = parseInt(b.dataset.delc, 10), c = STORE.connectors[i], used = [];
+        STORE.harnesses.forEach(function (hh) {
+          (hh.nodes || []).forEach(function (n) { if (n.conn === c.id && used.indexOf(hh.title) < 0) used.push(hh.title); });
+        });
+        if (used.length) { window.alert('Still used by: ' + used.join(', ')); return; }
+        STORE.connectors.splice(i, 1); rerenderAll(); markDirty();
+      });
+    });
+    each('select.connfield', function (s) {
+      s.addEventListener('change', function () {
+        STORE.connectors[parseInt(s.dataset.i, 10)][s.dataset.k] = s.value; rerenderAll(); markDirty();
+      });
+    });
+    each('select.connsel', function (s) {
+      s.addEventListener('change', function () {
+        var i = parseInt(s.dataset.i, 10);
+        if (s.value === '__new') {
+          var c = newConnector({ name: 'NEW CONNECTOR ' + (STORE.connectors.length + 1) });
+          DATA.nodes[i].conn = c.id; rerenderAll(); markDirty();
+          focusCardName(i); setStatus('New connector added — name it and set the positions');
+          return;
+        }
+        DATA.nodes[i].conn = s.value; rerenderAll(); markDirty();
+      });
+    });
+    each('select.sidesel', function (s) {
+      s.addEventListener('change', function () {
+        DATA.nodes[parseInt(s.dataset.i, 10)].side = s.value; rerenderAll(); markDirty();
+      });
+    });
+    each('select.ksel', function (s) {
+      s.addEventListener('change', function () {
+        DATA.links[parseInt(s.dataset.i, 10)].kind = s.value; rerenderAll(); markDirty();
+      });
+    });
+    each('select.epsel', function (s) {
+      s.addEventListener('change', function () {
+        DATA.links[parseInt(s.dataset.i, 10)][s.dataset.w] = epParse(s.value); rerenderAll(); markDirty();
+      });
+    });
+    each('.ed', bindEditable);
+    each('select.csel', function (sel) {
+      sel.addEventListener('change', function () {
+        DATA.links[parseInt(sel.dataset.csel, 10)].color = sel.value; rerenderAll(); markDirty();
+      });
+    });
+    each('[data-mv]', function (btn) {
+      btn.addEventListener('click', function () {
+        var p = btn.dataset.mv.split(':'), i = parseInt(p[0], 10), j = i + parseInt(p[1], 10);
+        if (j < 0 || j >= DATA.links.length) return;
+        var t = DATA.links[i]; DATA.links[i] = DATA.links[j]; DATA.links[j] = t;
+        rerenderAll(); markDirty();
+      });
+    });
+    each('[data-del]', function (btn) {
+      btn.addEventListener('click', function () {
+        var p = btn.dataset.del.split(':');
+        DATA[p[0]].splice(parseInt(p[1], 10), 1); rerenderAll(); markDirty();
+      });
+    });
+    on('btn-add-node', function () {
+      var c = STORE.connectors[0] || newConnector(null), n = DATA.nodes.length + 1;
+      DATA.nodes.push({ id: 'J' + n, ref: 'J' + n, conn: c.id, side: DATA.nodes.length ? 'right' : 'left', components: [], notes: '' });
+      rerenderAll(); markDirty();
+    });
+    on('btn-add-splice', function () {
+      var n = DATA.splices.length + 1;
+      DATA.splices.push({ id: 'S' + n, ref: 'S' + n, name: 'solder splice', color: colorNames()[0], notes: '' });
+      rerenderAll(); markDirty();
+    });
+    on('btn-add-link', function () {
+      DATA.links.push({ ref: 'W' + (DATA.links.length + 1), kind: 'wire', from: null, to: null,
+        color: colorNames()[0], gauge: '28 AWG', length: '', signal: '' });
+      rerenderAll(); markDirty();
+    });
+    on('btn-bom-take', function () { DATA.bom = autoBom(); rerenderAll(); markDirty(); });
+    on('btn-bom-auto', function () { DATA.bom = []; rerenderAll(); markDirty(); });
+    on('btn-add-bom', function () { DATA.bom.push({ qty: '', meas: '', item: '', desig: '', desc: '' }); rerenderAll(); markDirty(); });
+    on('btn-photo', attachPhoto);
+    on('btn-photo-clear', function () { DATA.photo = ''; rerenderAll(); markDirty(); });
+  }
+  function applyEditState() {
+    document.body.classList.toggle('editing', editing || view !== 'edit');
+    each('.ed', function (el) { el.contentEditable = (editing || view !== 'edit') ? 'true' : 'false'; });
+    var e = document.getElementById('btn-edit'); if (e) e.textContent = editing ? 'Done' : 'Edit';
+  }
+  function attachPhoto() {
+    var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+    inp.addEventListener('change', function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var mx = 1500, sc = Math.min(1, mx / img.width);
+          var cv = document.createElement('canvas');
+          cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          DATA.photo = cv.toDataURL('image/jpeg', 0.72);
+          rerenderAll(); markDirty();
+        };
+        img.src = rd.result;
+      };
+      rd.readAsDataURL(f);
+    });
+    inp.click();
+  }
+
+  function buildDoc() {
+    var css = document.getElementById('pagecss').textContent;
+    var js = document.getElementById('pagejs').textContent;
+    var json = JSON.stringify(serialize(), null, 1).replace(/</g, '\\u003c');
+    return '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+      '<title>Vision Aerial harness library</title>\n' +
+      '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500&amp;display=swap">\n' +
+      '<style id="pagecss">' + css + '</style>\n</head>\n<body>\n' +
+      '<script id="appdata" type="application/json">\n' + json + '\n<\/script>\n' +
+      '<div id="app"></div>\n<script id="pagejs">' + js + '<\/script>\n</body>\n</html>\n';
+  }
+  function download(fn, text, mime) {
+    var blob = new Blob([text], { type: mime + ';charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = fn;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  function save() {
+    download('va-harness-library.html', buildDoc(), 'text/html');
+    setStatus('Backup downloaded');
+  }
+  function exportJson() { download('va-harness-data.json', JSON.stringify(serialize(), null, 1), 'application/json'); setStatus('Data exported'); }
+  function importJson() {
+    var inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+    inp.addEventListener('change', function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        try {
+          var d = JSON.parse(rd.result);
+          if (!d || !d.harnesses) throw 0;
+          if (!window.confirm('Replace the current library with ' + d.harnesses.length + ' harnesses from this file?')) return;
+          STORE = d; STORE.colors = STORE.colors || SEED.colors; STORE.abbr = STORE.abbr || SEED.abbr;
+          view = 'list'; DATA = null; rerenderAll(); markDirty(); setStatus('Imported');
+        } catch (e) { window.alert('That file is not a harness library export.'); }
+      };
+      rd.readAsText(f);
+    });
+    inp.click();
+  }
+  function csvCell(s2) { s2 = String(s2 == null ? '' : s2); return /[",\n]/.test(s2) ? '"' + s2.replace(/"/g, '""') + '"' : s2; }
+  function exportCsv() {
+    var rows = [['CUT LIST — ' + DATA.title], ['Wire', 'Type', 'From', 'Color', 'Abbr', 'To', 'AWG', 'Length', 'Signal']];
+    DATA.links.forEach(function (l) {
+      rows.push([l.ref, l.kind, endLabel(l.from), l.color, ab(l.color), endLabel(l.to), l.gauge, l.length, l.signal]);
+    });
+    rows.push([]); rows.push(['BILL OF MATERIALS']);
+    rows.push(['Id'].concat(BOM_COLS.map(function (c) { return c[1]; })));
+    (DATA.bom && DATA.bom.length ? DATA.bom : autoBom()).forEach(function (r, i) {
+      rows.push([i + 1].concat(BOM_COLS.map(function (c) { return r[c[0]]; })));
+    });
+    download((DATA.assemblyPn || 'harness') + '-cutlist-bom.csv', '﻿' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n'), 'text/csv');
+    setStatus('CSV exported');
+  }
+  window.addEventListener('beforeunload', function (e) { if (!dirty) return; e.preventDefault(); e.returnValue = ''; });
+
+  render();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
