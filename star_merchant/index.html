@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Merchant of the Stars</title>
+<meta name="description" content="A space trading game: buy low, sell high, dodge pirates, become a Merchant Prince">
+<meta name="theme-color" content="#0b0f24">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0f24;
+  --panel: rgba(20, 26, 58, .82);
+  --panel-2: rgba(32, 40, 84, .9);
+  --line: rgba(140, 160, 255, .16);
+  --text: #e8ecff;
+  --muted: #8f99c8;
+  --cyan: #4fd8ff;
+  --amber: #ffbf3d;
+  --green: #3ddc97;
+  --red: #ff5c75;
+  --violet: #a27bff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  color: var(--text);
+  background: radial-gradient(1200px 700px at 70% 10%, #23205a 0%, transparent 60%), radial-gradient(900px 600px at 10% 90%, #0f3550 0%, transparent 60%), var(--bg);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.emo { font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; }
+.num { font-variant-numeric: tabular-nums; }
+.app { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; height: 100vh; height: 100dvh; }
+
+/* header */
+header.top { display: flex; align-items: center; gap: 18px; padding: 10px 18px; background: rgba(8, 11, 30, .7); border-bottom: 1px solid var(--line); backdrop-filter: blur(8px); }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand img { width: 38px; height: 38px; flex: none; }
+.bt { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: .95rem; letter-spacing: .04em; white-space: nowrap; }
+.rank { font-size: .78rem; color: var(--amber); cursor: pointer; }
+.hstats { flex: 1; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.hs { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 5px 11px; min-width: 92px; }
+.hs .k { font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.hs .v { font-weight: 700; font-size: .98rem; white-space: nowrap; }
+.hs.cred .v { color: var(--amber); }
+.hs.debt .v { color: var(--red); }
+.hs.debt.clear .v { color: var(--green); }
+.meter { height: 3px; border-radius: 2px; background: rgba(255,255,255,.1); margin-top: 3px; overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--cyan); transition: width .3s; }
+.meter.low i { background: var(--red); }
+.iconbtn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); display: grid; place-items: center; flex: none; }
+
+.news { display: flex; gap: 10px; align-items: center; padding: 6px 18px; font-size: .84rem; color: var(--muted); border-bottom: 1px solid var(--line); background: rgba(8, 11, 30, .45); white-space: nowrap; overflow: hidden; }
+.news b { color: var(--cyan); font-weight: 600; letter-spacing: .06em; font-size: .72rem; }
+.news span { overflow: hidden; text-overflow: ellipsis; }
+
+/* main */
+.main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(380px, 1fr); min-height: 0; }
+.mapwrap { position: relative; min-height: 0; overflow: hidden; }
+#map { width: 100%; height: 100%; display: block; }
+.planet { cursor: pointer; }
+.planet .halo { fill: none; stroke: var(--cyan); stroke-width: 2; opacity: 0; }
+.planet.sel .halo { opacity: 1; stroke-dasharray: 6 5; animation: rot 8s linear infinite; transform-box: fill-box; transform-origin: center; }
+.planet.here .halo { opacity: 1; stroke: var(--amber); stroke-dasharray: none; animation: none; }
+.planet.far .body { opacity: .45; }
+.planet text { fill: var(--text); font-size: 15px; font-weight: 600; text-anchor: middle; paint-order: stroke; stroke: rgba(5, 8, 25, .85); stroke-width: 4px; pointer-events: none; }
+.planet text.sub { font-size: 11px; fill: var(--muted); font-weight: 500; }
+.planet:hover .body { filter: brightness(1.25); }
+.danger-dot { pointer-events: none; }
+@keyframes rot { to { transform: rotate(360deg); } }
+.route { stroke: var(--cyan); stroke-width: 2; stroke-dasharray: 7 7; fill: none; opacity: .8; animation: dash 1s linear infinite; }
+.route.bad { stroke: var(--red); }
+@keyframes dash { to { stroke-dashoffset: -14; } }
+.lanes line { stroke: rgba(140,160,255,.07); stroke-width: 1; }
+
+.dest { position: absolute; left: 16px; right: 16px; bottom: 16px; max-width: 460px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; display: none; box-shadow: 0 12px 40px rgba(0,0,0,.45); backdrop-filter: blur(8px); }
+.dest.on { display: block; animation: up .2s ease-out; }
+@keyframes up { from { opacity: 0; transform: translateY(10px); } }
+.dest h3 { font-family: 'Orbitron', sans-serif; font-size: 1rem; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.dest .meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: .82rem; color: var(--muted); margin: 6px 0 8px; }
+.dest .meta b { color: var(--text); }
+.kp { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 4px 12px; font-size: .8rem; margin-bottom: 10px; max-height: 120px; overflow-y: auto; }
+.kp div { display: flex; justify-content: space-between; gap: 6px; }
+.kp .hold { color: var(--amber); }
+.dest .row { display: flex; gap: 8px; }
+
+/* panel */
+.panel { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: rgba(10, 14, 36, .55); }
+.phead { padding: 14px 16px 10px; }
+.phead h2 { font-family: 'Orbitron', sans-serif; font-size: 1.15rem; display: flex; align-items: center; gap: 10px; }
+.phead .pt { font-size: .8rem; color: var(--muted); margin-top: 3px; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.tag { font-size: .72rem; padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,.07); border: 1px solid var(--line); }
+.tag.law3 { color: var(--cyan); } .tag.law0 { color: var(--red); }
+.tag.dng2, .tag.dng3 { color: var(--red); }
+.tabs { display: flex; gap: 2px; padding: 0 10px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { border: 0; background: none; padding: 10px 9px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; position: relative; }
+.tabs button.on { color: var(--text); border-bottom-color: var(--cyan); }
+.tabs button .dot { position: absolute; top: 7px; right: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--amber); display: none; }
+.tabs button .dot.on { display: block; }
+.tabbody { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 14px 30px; min-height: 0; }
+
+/* market */
+.mkt { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.mkt th { text-align: right; font-size: .64rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; padding: 4px 6px 8px; }
+.mkt th:first-child, .mkt td:first-child { text-align: left; }
+.mkt td { padding: 8px 4px; border-top: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.mkt tr.g { cursor: pointer; }
+.mkt tr.g:hover td { background: rgba(79, 216, 255, .06); }
+.mkt tr.na td { color: #59618a; cursor: default; }
+.mkt .gn { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.mkt .ill { font-size: .62rem; color: var(--red); border: 1px solid rgba(255,92,117,.4); border-radius: 4px; padding: 0 4px; font-weight: 600; }
+.pct { font-size: .7rem; display: block; }
+.pct.lo { color: var(--green); } .pct.hi { color: var(--red); }
+.held { color: var(--amber); font-weight: 600; }
+.best { font-size: .74rem; color: var(--muted); line-height: 1.25; }
+.best b { display: block; }
+.best b { color: var(--green); font-weight: 600; }
+.fuelrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.03); flex-wrap: wrap; }
+
+.btn { border: 0; border-radius: 10px; padding: 9px 14px; font-weight: 700; background: var(--cyan); color: #04202c; white-space: nowrap; }
+.btn:hover:not(:disabled) { filter: brightness(1.1); }
+.btn:disabled { background: rgba(255,255,255,.1); color: #6b739c; cursor: default; }
+.btn.amber { background: var(--amber); color: #2a1a00; }
+.btn.red { background: var(--red); color: #fff; }
+.btn.ghost { background: rgba(255,255,255,.08); color: var(--text); border: 1px solid var(--line); }
+.btn.green { background: var(--green); color: #032316; }
+.btn.sm { padding: 6px 10px; font-size: .82rem; }
+.btn.wide { flex: 1; }
+
+.card { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: rgba(255,255,255,.03); margin-bottom: 10px; }
+.card h4 { font-size: .98rem; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.card p, .card .d { font-size: .84rem; color: var(--muted); line-height: 1.45; margin-top: 3px; }
+.card .act { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+.card.mine { border-color: rgba(255,191,61,.45); }
+.card.cur { border-color: rgba(79,216,255,.55); }
+.sec { font-family: 'Orbitron', sans-serif; font-size: .78rem; letter-spacing: .1em; color: var(--muted); margin: 16px 2px 8px; text-transform: uppercase; }
+.sec:first-child { margin-top: 2px; }
+.specs { display: flex; gap: 10px; flex-wrap: wrap; font-size: .78rem; color: var(--muted); margin-top: 6px; }
+.specs b { color: var(--text); }
+.ok { color: var(--green); font-weight: 600; font-size: .85rem; }
+.bad { color: var(--red); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.kv { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: .88rem; }
+.kv span:last-child { font-weight: 600; }
+.ranks .r { display: flex; justify-content: space-between; padding: 6px 4px; font-size: .86rem; color: var(--muted); }
+.ranks .r.done { color: var(--text); }
+.ranks .r.cur { color: var(--amber); font-weight: 700; }
+.achs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ach { border: 1px solid var(--line); border-radius: 12px; padding: 9px; font-size: .78rem; color: var(--muted); }
+.ach b { display: block; color: var(--text); font-size: .85rem; }
+.ach.no { opacity: .4; }
+.log div { font-size: .82rem; color: var(--muted); padding: 5px 0; border-bottom: 1px solid var(--line); }
+.log div i { color: #5d679a; font-style: normal; margin-right: 6px; }
+
+/* modal */
+.modal-bg { position: fixed; inset: 0; background: rgba(3, 5, 18, .7); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+.modal-bg.on { display: flex; }
+.modal { background: #151b40; border: 1px solid var(--line); border-radius: 20px; padding: 22px; width: 100%; max-width: 460px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.5); animation: mpop .22s cubic-bezier(.2,1.3,.5,1); }
+@keyframes mpop { from { transform: scale(.9); opacity: 0; } }
+.modal .mi { font-size: 2.8rem; text-align: center; }
+.modal h3 { font-family: 'Orbitron', sans-serif; font-size: 1.15rem; text-align: center; margin: 4px 0 8px; }
+.modal p { color: var(--muted); line-height: 1.5; font-size: .92rem; }
+.modal p + p { margin-top: 8px; }
+.modal .btns { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.modal .btns .btn { flex: 1; }
+.modal .big { text-align: center; font-size: 1.5rem; font-weight: 700; margin: 8px 0; }
+.modal textarea { width: 100%; height: 100px; margin-top: 10px; border-radius: 10px; border: 1px solid var(--line); background: #0d1230; color: var(--text); padding: 10px; font-family: ui-monospace, Consolas, monospace; font-size: .72rem; resize: none; }
+.seg { display: flex; background: rgba(255,255,255,.06); border-radius: 10px; padding: 3px; margin: 10px 0; }
+.seg button { flex: 1; border: 0; background: none; padding: 8px; border-radius: 8px; font-weight: 700; color: var(--muted); }
+.seg button.on { background: var(--cyan); color: #04202c; }
+.seg button.on.sell { background: var(--amber); color: #2a1a00; }
+input[type=range] { width: 100%; accent-color: var(--cyan); margin: 10px 0 4px; }
+.qtyrow { display: flex; gap: 6px; }
+.qtyrow button { flex: 1; }
+.tsum { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: .9rem; margin-top: 10px; }
+.tsum span:nth-child(even) { text-align: right; font-weight: 600; }
+.tsum .tot { font-size: 1.1rem; color: var(--text); }
+.hint { font-size: .8rem; color: var(--muted); margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,.04); }
+.bars { display: grid; gap: 8px; margin: 12px 0; }
+.bar { font-size: .78rem; color: var(--muted); }
+.bar .tr { height: 10px; border-radius: 5px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 3px; }
+.bar .tr i { display: block; height: 100%; transition: width .3s; }
+.clog { font-size: .84rem; color: var(--muted); min-height: 3.2em; margin-top: 6px; }
+.clog div:last-child { color: var(--text); }
+.shake { animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+/* toasts */
+.toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 60; pointer-events: none; align-items: flex-end; }
+.toast { background: #1d2557; border: 1px solid var(--line); padding: 10px 14px; border-radius: 12px; font-size: .88rem; max-width: 340px; box-shadow: 0 8px 24px rgba(0,0,0,.35); animation: tin .25s ease-out; }
+.toast.good { border-color: rgba(61,220,151,.5); }
+.toast.bad { border-color: rgba(255,92,117,.6); }
+.toast.gold { border-color: rgba(255,191,61,.6); }
+.toast.out { animation: tout .3s forwards; }
+@keyframes tin { from { opacity: 0; transform: translateY(10px); } }
+@keyframes tout { to { opacity: 0; transform: translateX(20px); } }
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: minmax(0, 1fr); grid-template-rows: 44vh 1fr; }
+  .panel { border-left: 0; border-top: 1px solid var(--line); }
+  .hstats { gap: 5px; }
+  .hs { min-width: 0; padding: 4px 8px; }
+  .hs .v { font-size: .84rem; }
+  .bt { display: none; }
+  .mkt .col-best { display: none; }
+  .dest { left: 8px; right: 8px; bottom: 8px; padding: 10px 12px; }
+  .kp { max-height: 70px; }
+  .toasts { left: 12px; right: 12px; align-items: stretch; }
+  .toast { max-width: none; }
+}
+@media (max-width: 560px) {
+  header.top { padding: 8px 10px; gap: 6px; }
+  .brand .rank { display: none; }
+  .brand img { width: 30px; height: 30px; }
+  .hstats { flex-wrap: nowrap; gap: 4px; min-width: 0; }
+  .hs { flex: 1; min-width: 0; padding: 4px 6px; }
+  .hs .k { font-size: .58rem; }
+  .hs .v { font-size: .74rem; overflow: hidden; text-overflow: ellipsis; }
+  .hs.day, .hs.hull { display: none; }
+  .iconbtn { width: 32px; height: 32px; }
+  .news { padding: 5px 10px; font-size: .76rem; }
+  .main { grid-template-rows: 42vh 1fr; }
+  .dest { padding: 9px 11px; }
+  .dest h3 { font-size: .88rem; }
+  .dest .meta { gap: 8px; font-size: .74rem; margin: 4px 0 6px; }
+  .kp { grid-template-columns: 1fr 1fr; max-height: 52px; font-size: .72rem; margin-bottom: 7px; }
+  .dest .btn { padding: 7px 12px; }
+  .mkt { font-size: .82rem; }
+  .mkt .pct { font-size: .64rem; }
+  .mkt .gn { gap: 5px; }
+  .mkt .ill { display: none; }
+  .phead { padding: 10px 12px 6px; }
+  .phead .pt { display: none; }
+  .tabbody { padding: 10px 10px 30px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><img src="icon.svg" alt=""><div><div class="bt">Merchant of the Stars</div><div class="rank" id="rank"></div></div></div>
+    <div class="hstats">
+      <div class="hs cred"><div class="k">Credits</div><div class="v num" id="hCred"></div></div>
+      <div class="hs debt" id="hsDebt"><div class="k">Debt</div><div class="v num" id="hDebt"></div></div>
+      <div class="hs day"><div class="k">Day</div><div class="v num" id="hDay"></div></div>
+      <div class="hs"><div class="k">Fuel</div><div class="v num" id="hFuel"></div><div class="meter" id="mFuelW"><i id="mFuel"></i></div></div>
+      <div class="hs hull"><div class="k">Hull</div><div class="v num" id="hHull"></div><div class="meter" id="mHullW"><i id="mHull"></i></div></div>
+      <div class="hs"><div class="k">Cargo</div><div class="v num" id="hCargo"></div><div class="meter"><i id="mCargo"></i></div></div>
+    </div>
+    <button class="iconbtn emo" id="muteBtn" title="Sound" aria-label="Toggle sound">🔊</button>
+  </header>
+  <div class="news"><b>NEWS</b><span id="news">Markets open across the sector.</span></div>
+  <div class="main">
+    <section class="mapwrap">
+      <svg id="map" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" aria-label="Star map"></svg>
+      <div class="dest" id="dest"></div>
+    </section>
+    <section class="panel">
+      <div class="phead" id="phead"></div>
+      <nav class="tabs" id="tabs"></nav>
+      <div class="tabbody" id="tabbody"></div>
+    </section>
+  </div>
+</div>
+<div class="toasts" id="toasts"></div>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+
+<script>
+// ═════════════════════════ DATA ═════════════════════════
+const GOODS = [
+  { id: 'water',       name: 'Water',           icon: '💧', base: 20 },
+  { id: 'food',        name: 'Food',            icon: '🌽', base: 45 },
+  { id: 'ore',         name: 'Ore',             icon: '🪨', base: 90 },
+  { id: 'textiles',    name: 'Textiles',        icon: '🧵', base: 140 },
+  { id: 'medicine',    name: 'Medicine',        icon: '💊', base: 320 },
+  { id: 'machinery',   name: 'Machinery',       icon: '⚙️', base: 480 },
+  { id: 'electronics', name: 'Electronics',     icon: '💾', base: 750 },
+  { id: 'luxury',      name: 'Luxury Goods',    icon: '💎', base: 1300 },
+  { id: 'weapons',     name: 'Weapons',         icon: '🔫', base: 1700, illegal: true },
+  { id: 'stims',       name: 'Stims',           icon: '💉', base: 2600, illegal: true },
+  { id: 'artifacts',   name: 'Alien Artifacts', icon: '🗿', base: 6500 },
+];
+const G = Object.fromEntries(GOODS.map(g => [g.id, g]));
+
+// mods: price multiplier vs galactic base. 0 = not traded here. Illegal goods aren't traded where law >= 2.
+const PLANETS = [
+  { id: 'terra', name: 'Terra Nova', type: 'Capital world', x: 500, y: 300, r: 26, c: ['#9fe3ff', '#2a6fd6'], law: 3, danger: 0, fuel: 1.1, bank: true, yard: true,
+    desc: 'The sector capital. Strict customs, deep pockets, and the bank that holds your debt.',
+    mods: { water: 1.15, food: 1.2, ore: 1.25, textiles: 1.1, medicine: 0.95, machinery: 1.05, electronics: 1.05, luxury: 1.25, artifacts: 1.6 } },
+  { id: 'helios', name: 'Helios Station', type: 'Solar refinery', x: 385, y: 170, r: 15, c: ['#fff2a8', '#ff9a2e'], law: 2, danger: 0, fuel: 0.45,
+    desc: 'A refinery skimming plasma off a blue giant. The cheapest fuel in the sector.',
+    mods: { water: 1.35, food: 1.3, ore: 1.2, textiles: 1.2, medicine: 1.15, machinery: 0.95, electronics: 1.1, luxury: 1.1, artifacts: 0 } },
+  { id: 'verdant', name: 'Verdant', type: 'Agricultural world', x: 625, y: 175, r: 21, c: ['#b6f59a', '#2f9a4a'], law: 2, danger: 0, fuel: 1,
+    desc: 'Endless farms under a gentle sun. Food is cheap; machines are not.',
+    mods: { water: 0.75, food: 0.45, ore: 1.2, textiles: 0.8, medicine: 1.3, machinery: 1.45, electronics: 1.35, luxury: 1.1, artifacts: 0 } },
+  { id: 'neon', name: 'Neon Reach', type: 'Tech hub', x: 655, y: 385, r: 19, c: ['#ff9ff0', '#7a3cff'], law: 2, danger: 0, fuel: 1.05, yard: true,
+    desc: 'A city-planet of chip foundries and collectors with money to burn.',
+    mods: { water: 1.2, food: 1.3, ore: 1.45, textiles: 1.15, medicine: 0.85, machinery: 1.2, electronics: 0.5, luxury: 1.35, artifacts: 1.9 } },
+  { id: 'forge', name: 'Forge Prime', type: 'Industrial world', x: 345, y: 405, r: 22, c: ['#ffb38a', '#a8402a'], law: 2, danger: 1, fuel: 0.95, yard: true,
+    desc: 'Smelters and assembly lines as far as the eye can see. Hungry for ore.',
+    mods: { water: 1.2, food: 1.35, ore: 1.55, textiles: 1.2, medicine: 1.1, machinery: 0.55, electronics: 0.95, luxury: 1.15, artifacts: 0 } },
+  { id: 'aurelia', name: 'Aurelia', type: 'Resort world', x: 515, y: 500, r: 18, c: ['#ffe0a8', '#e0708a'], law: 2, danger: 0, fuel: 1.2,
+    desc: 'White beaches and whiter teeth. The rich pay anything for luxuries and relics.',
+    mods: { water: 1.0, food: 1.35, ore: 0, textiles: 1.45, medicine: 1.25, machinery: 0, electronics: 1.2, luxury: 1.75, artifacts: 2.2 } },
+  { id: 'ceres', name: 'Ceres Belt', type: 'Mining colony', x: 200, y: 245, r: 17, c: ['#d9d2c5', '#6b6158'], law: 1, danger: 1, fuel: 1.1,
+    desc: 'Hollowed asteroids full of miners. Ore by the ton; everything else shipped in.',
+    mods: { water: 1.6, food: 1.55, ore: 0.45, textiles: 1.3, medicine: 1.35, machinery: 1.25, electronics: 1.2, luxury: 1.15, weapons: 1.15, stims: 1.3, artifacts: 0 } },
+  { id: 'frost', name: 'Frosthold', type: 'Ice world', x: 150, y: 470, r: 19, c: ['#e8fbff', '#6fb6d9'], law: 1, danger: 1, fuel: 1.15,
+    desc: 'A frozen moon with oceans under the ice. Water is everywhere; food is scarce.',
+    mods: { water: 0.35, food: 1.65, ore: 1.1, textiles: 1.5, medicine: 1.7, machinery: 1.3, electronics: 1.2, luxury: 1.2, weapons: 1.2, stims: 1.4, artifacts: 0 } },
+  { id: 'obsidian', name: 'Obsidian Outpost', type: 'Frontier dig site', x: 95, y: 115, r: 16, c: ['#c9a0ff', '#3a2466'], law: 1, danger: 2, fuel: 1.4,
+    desc: 'Archaeologists and claim-jumpers digging up alien ruins. Dangerous, lucrative.',
+    mods: { water: 1.35, food: 1.45, ore: 1.1, textiles: 1.3, medicine: 1.65, machinery: 1.5, electronics: 1.45, luxury: 1.2, weapons: 1.8, stims: 1.6, artifacts: 0.55 } },
+  { id: 'opaline', name: 'Opaline', type: 'Artisan world', x: 805, y: 235, r: 18, c: ['#fff', '#7fd1c8'], law: 2, danger: 1, fuel: 1.1,
+    desc: 'Glassblowers, silk weavers and jewelers. Luxuries are made here.',
+    mods: { water: 1.15, food: 1.1, ore: 1.3, textiles: 0.55, medicine: 1.2, machinery: 1.25, electronics: 1.3, luxury: 0.5, artifacts: 1.4 } },
+  { id: 'kessler', name: "Kessler's Drift", type: 'Pirate haven', x: 885, y: 515, r: 17, c: ['#ff9a8a', '#5a1020'], law: 0, danger: 3, fuel: 1.3, yard: true, black: true,
+    desc: 'A junkyard station with no laws and no questions. Contraband is cheap and legal here.',
+    mods: { water: 1.3, food: 1.5, ore: 1.2, textiles: 1.25, medicine: 1.85, machinery: 1.3, electronics: 1.3, luxury: 1.4, weapons: 0.5, stims: 0.45, artifacts: 0.85 } },
+];
+const P = Object.fromEntries(PLANETS.map(p => [p.id, p]));
+
+const SHIPS = [
+  { id: 'mule',      name: 'Mule',       desc: 'Your uncle\'s old hauler. Slow, small, stubborn.',            cargo: 30,  fuel: 20, hull: 60,  speed: 2.4, slots: 1, cost: 6000 },
+  { id: 'courier',   name: 'Swift',      desc: 'A courier ship built for speed and long hops.',              cargo: 28,  fuel: 40, hull: 70,  speed: 4.2, slots: 1, cost: 22000 },
+  { id: 'freighter', name: 'Bulwark',    desc: 'A proper freighter with room to grow.',                     cargo: 85,  fuel: 30, hull: 130, speed: 2.6, slots: 2, cost: 48000 },
+  { id: 'corsair',   name: 'Corsair',    desc: 'Armored, fast and well armed. Pirates think twice.',          cargo: 60,  fuel: 40, hull: 190, speed: 3.6, slots: 3, cost: 120000 },
+  { id: 'leviathan', name: 'Leviathan',  desc: 'A city-sized bulk carrier. The dream of every merchant.',     cargo: 240, fuel: 55, hull: 300, speed: 2.8, slots: 3, cost: 420000 },
+];
+const SH = Object.fromEntries(SHIPS.map(s => [s.id, s]));
+
+const EQUIP = [
+  { id: 'pulse',  name: 'Pulse laser',        kind: 'weapon', dmg: 8,  cost: 3000,  desc: '8 damage per volley' },
+  { id: 'beam',   name: 'Beam laser',         kind: 'weapon', dmg: 16, cost: 9500,  desc: '16 damage per volley' },
+  { id: 'plasma', name: 'Plasma cannon',      kind: 'weapon', dmg: 34, cost: 32000, desc: '34 damage per volley' },
+  { id: 'shield1', name: 'Deflector shield',  kind: 'shield', val: 25, cost: 7500,  desc: 'Absorbs 25 damage each encounter' },
+  { id: 'shield2', name: 'Aegis shield',      kind: 'shield', val: 70, cost: 30000, desc: 'Absorbs 70 damage each encounter' },
+  { id: 'pods',   name: 'Expanded cargo pods', kind: 'mod', cost: 9000,  desc: '+25% cargo space on any ship' },
+  { id: 'engine', name: 'Afterburners',       kind: 'mod', cost: 16000, desc: '+20% speed and better odds of escaping' },
+  { id: 'scoop',  name: 'Fuel scoop',         kind: 'mod', cost: 11000, desc: 'Collect 1 fuel for every day in flight' },
+  { id: 'feed',   name: 'Galactic market feed', kind: 'mod', cost: 35000, desc: 'See live prices on every planet' },
+  { id: 'hold',   name: "Smuggler's hold",    kind: 'mod', cost: 14000, desc: 'Hides 20 units of contraband from customs scans', black: true },
+];
+const EQ = Object.fromEntries(EQUIP.map(e => [e.id, e]));
+
+const RANKS = [
+  [0, 'Drifter'], [10e3, 'Hauler'], [50e3, 'Trader'], [150e3, 'Merchant'], [400e3, 'Magnate'],
+  [1e6, 'Merchant Prince'], [3e6, 'Star Baron'], [10e6, 'Legend of the Spaceways'],
+];
+const WIN_AT = 1e6;
+
+const PIRATES = [
+  { name: 'Scavenger skiff', hp: 24,  dmg: [3, 7],   loot: 600 },
+  { name: 'Raider',          hp: 60,  dmg: [6, 12],  loot: 2200 },
+  { name: 'Corsair gunship', hp: 120, dmg: [10, 18], loot: 7000 },
+  { name: 'Dread frigate',   hp: 230, dmg: [16, 28], loot: 22000 },
+  { name: 'Void Reaver',     hp: 420, dmg: [24, 40], loot: 70000 },
+];
+
+const NEWS = {
+  up: ['Plague outbreak on {p}: {g} in desperate demand', 'Strike shuts down {g} supply on {p}', 'Festival season on {p}: {g} flying off shelves', 'Pirate blockade cuts {g} shipments to {p}', 'Boom times on {p}: everyone wants {g}'],
+  down: ['Record harvest of {g} floods {p}', 'Warehouse glut: {p} dumping {g}', 'New {g} source discovered near {p}', 'Trade fleet unloads tons of {g} on {p}'],
+};
+
+const ACHS = [
+  ['firstsale', '💰', 'First profit', 'Sell cargo for a profit'],
+  ['bigsale', '📈', 'Big score', 'Make 25,000 profit on one sale'],
+  ['hugesale', '🚀', 'Market maker', 'Make 250,000 profit on one sale'],
+  ['debtfree', '🏦', 'Debt free', 'Pay off the bank'],
+  ['ship', '🛸', 'New wings', 'Buy a new ship'],
+  ['leviathan', '🐋', 'Leviathan captain', 'Own the Leviathan'],
+  ['pirate1', '⚔️', 'First blood', 'Defeat a pirate'],
+  ['pirate10', '🏴‍☠️', 'Pirate hunter', 'Defeat 10 pirates'],
+  ['reaver', '💀', 'Reaver slayer', 'Defeat a Void Reaver'],
+  ['smuggle', '🕶️', 'Smuggler', 'Sell contraband'],
+  ['contract1', '📦', 'Reliable', 'Complete a contract'],
+  ['contract10', '📜', 'Trusted hauler', 'Complete 10 contracts'],
+  ['explorer', '🗺️', 'Explorer', 'Visit every planet'],
+  ['artifact', '🗿', 'Relic hunter', 'Carry an alien artifact'],
+  ['wreck', '🔧', 'Still flying', 'Survive a wreck'],
+  ['prince', '👑', 'Merchant Prince', 'Reach 1,000,000 net worth'],
+  ['legend', '🌌', 'Legend', 'Reach 10,000,000 net worth'],
+];
+
+const IMPACT = 0.003;   // each unit traded moves the price 0.3%
+const SPREAD = 0.04;    // buy 4% above / sell 4% below mid price
+const LY = 40;          // map pixels per light-year
+const INTEREST = 0.01;  // bank debt grows 1% per day
+const SAVE_KEY = 'starmerchant_v1';
+
+// ═════════════════════════ STATE ═════════════════════════
+const rnd = (a, b) => a + Math.random() * (b - a);
+const rint = (a, b) => Math.floor(rnd(a, b + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+function fresh() {
+  const drift = {};
+  for (const p of PLANETS) { drift[p.id] = {}; for (const g of GOODS) drift[p.id][g.id] = rnd(.8, 1.2); }
+  return {
+    v: 1, credits: 2500, debt: 5000, day: 1, loc: 'terra', ship: 'mule', fuel: 20, hull: 60,
+    weapons: [], shield: null, mods: [], cargo: {}, drift, known: {}, visited: ['terra'],
+    contracts: [], boards: {}, log: [], news: 'Markets open across the sector.',
+    stats: { trips: 0, ly: 0, profit: 0, best: 0, pirates: 0, contracts: 0, smuggled: 0, wrecks: 0 },
+    ach: [], wonDay: 0, seenIntro: false, mute: false,
+  };
+}
+let S = fresh();
+function load() {
+  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const d = JSON.parse(raw); const f = fresh(); S = Object.assign(f, d); S.stats = Object.assign(fresh().stats, d.stats || {}); } } catch (e) {}
+  for (const p of PLANETS) { S.drift[p.id] = S.drift[p.id] || {}; for (const g of GOODS) if (typeof S.drift[p.id][g.id] !== 'number') S.drift[p.id][g.id] = 1; }
+}
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+
+// ═════════════════════════ ECONOMY ═════════════════════════
+const ship = () => SH[S.ship];
+const has = id => S.mods.includes(id);
+const capacity = () => Math.round(ship().cargo * (has('pods') ? 1.25 : 1));
+const speed = () => ship().speed * (has('engine') ? 1.2 : 1);
+const used = () => Object.values(S.cargo).reduce((a, c) => a + c.q, 0) + S.contracts.filter(c => c.type === 'courier').reduce((a, c) => a + c.units, 0);
+const free = () => capacity() - used();
+const held = g => (S.cargo[g] ? S.cargo[g].q : 0);
+const weaponDmg = () => 4 + S.weapons.reduce((a, w) => a + EQ[w].dmg, 0);
+const shieldVal = () => (S.shield ? EQ[S.shield].val : 0);
+
+function traded(pid, gid) {
+  const p = P[pid], g = G[gid];
+  if (g.illegal && p.law >= 2) return false;
+  const m = p.mods[gid];
+  return m === undefined ? !g.illegal : m > 0;
+}
+function mod(pid, gid) { const m = P[pid].mods[gid]; return m === undefined ? 1 : m; }
+function mid(pid, gid) { return traded(pid, gid) ? G[gid].base * mod(pid, gid) * S.drift[pid][gid] : 0; }
+const unitBuy = (pid, gid) => mid(pid, gid) * (1 + SPREAD);
+const unitSell = (pid, gid) => mid(pid, gid) * (1 - SPREAD);
+function buyTotal(pid, gid, n) { return n <= 0 ? 0 : unitBuy(pid, gid) * (Math.pow(1 + IMPACT, n) - 1) / IMPACT; }
+function sellTotal(pid, gid, n) { return n <= 0 ? 0 : unitSell(pid, gid) * (1 - Math.pow(1 - IMPACT, n)) / IMPACT; }
+function maxAfford(pid, gid) { const u = unitBuy(pid, gid); if (!u) return 0; return Math.max(0, Math.floor(Math.log(1 + S.credits * IMPACT / u) / Math.log(1 + IMPACT))); }
+function fuelPrice(pid) { return Math.max(3, Math.round(14 * P[pid].fuel)); }
+function cargoValue() { let v = 0; for (const g in S.cargo) v += S.cargo[g].q * G[g].base * .9; return v; }
+function netWorth() { return S.credits + cargoValue() - S.debt; }
+function rankIdx(nw = netWorth()) { let k = 0; RANKS.forEach((r, j) => { if (nw >= r[0]) k = j; }); return k; }
+
+function dist(a, b) { const A = P[a], B = P[b]; return Math.hypot(A.x - B.x, A.y - B.y) / LY; }
+function route(a, b) { const d = dist(a, b); return { d, fuel: Math.ceil(d), days: Math.max(1, Math.ceil(d / speed())) }; }
+
+function recordKnown(pid) {
+  const prices = {};
+  for (const g of GOODS) prices[g.id] = mid(pid, g.id);
+  S.known[pid] = { day: S.day, prices };
+}
+function knownPrice(pid, gid) {
+  if (has('feed') || pid === S.loc) return { price: mid(pid, gid), day: S.day, live: true };
+  const k = S.known[pid];
+  return k ? { price: k.prices[gid] || 0, day: k.day } : null;
+}
+function bestElsewhere(gid) {
+  let best = null;
+  for (const p of PLANETS) {
+    if (p.id === S.loc) continue;
+    const k = knownPrice(p.id, gid);
+    if (!k || !k.price) continue;
+    const s = k.price * (1 - SPREAD);
+    if (!best || s > best.price) best = { pid: p.id, price: s, age: S.day - k.day, live: k.live };
+  }
+  return best;
+}
+
+function dayTick() {
+  S.day++;
+  if (S.debt > 0) S.debt = Math.round(S.debt * (1 + INTEREST));
+  for (const p of PLANETS) for (const g of GOODS) {
+    let d = S.drift[p.id][g.id] * Math.exp(gauss() * .05);
+    d += (1 - d) * .045;
+    S.drift[p.id][g.id] = Math.min(3.5, Math.max(.35, d));
+  }
+  if (Math.random() < .14) newsEvent();
+  if (has('scoop')) S.fuel = Math.min(ship().fuel, S.fuel + 1);
+  for (const c of S.contracts.slice()) if (S.day > c.due) {
+    S.contracts.splice(S.contracts.indexOf(c), 1);
+    log(`❌ Contract expired: ${contractTitle(c)}`);
+    toast(`❌ Contract expired: ${contractTitle(c)}`, 'bad');
+  }
+}
+function newsEvent() {
+  const p = pick(PLANETS), pool = GOODS.filter(g => traded(p.id, g.id));
+  if (!pool.length) return;
+  const g = pick(pool), up = Math.random() < .55;
+  S.drift[p.id][g.id] *= up ? rnd(1.9, 2.8) : rnd(.35, .55);
+  S.drift[p.id][g.id] = Math.min(3.5, Math.max(.35, S.drift[p.id][g.id]));
+  S.news = pick(up ? NEWS.up : NEWS.down).replace('{p}', p.name).replace('{g}', g.name.toLowerCase());
+  log(`📰 ${S.news}`);
+}
+
+// ═════════════════════════ CONTRACTS ═════════════════════════
+function contractTitle(c) { return c.type === 'courier' ? `Courier package to ${P[c.dest].name}` : `${c.qty} ${G[c.good].name} to ${P[c.dest].name}`; }
+function genBoard(pid) {
+  const offers = [];
+  const others = PLANETS.filter(p => p.id !== pid);
+  for (let k = 0; k < 3; k++) {
+    const dest = pick(others), r = route(pid, dest.id);
+    const id = Math.random().toString(36).slice(2, 9);
+    if (Math.random() < .45) {
+      const units = rint(2, 5);
+      const reward = Math.round((r.d * (95 + dest.danger * 75) + 150) * (1 + Math.min(4, netWorth() / 150000)) / 10) * 10;
+      offers.push({ id, type: 'courier', from: pid, dest: dest.id, units, reward, due: S.day + Math.ceil(r.d / 2.4) + rint(3, 6) });
+    } else {
+      const pool = GOODS.filter(g => !g.illegal && traded(dest.id, g.id) && mod(dest.id, g.id) >= 1.15);
+      if (!pool.length) continue;
+      const g = pick(pool);
+      const qty = Math.max(3, Math.round(capacity() * rnd(.2, .5) * Math.min(1, 1500 / g.base)));
+      const reward = Math.round((qty * g.base * mod(dest.id, g.id) * rnd(1.45, 1.8) + r.d * 90) / 10) * 10;
+      offers.push({ id, type: 'deliver', from: pid, dest: dest.id, good: g.id, qty, reward, due: S.day + Math.ceil(r.d / 2.4) + rint(5, 10) });
+    }
+  }
+  S.boards[pid] = { day: S.day, offers };
+}
+function board(pid) { if (!S.boards[pid] || S.day - S.boards[pid].day >= 5) genBoard(pid); return S.boards[pid].offers; }
+
+// ═════════════════════════ AUDIO ═════════════════════════
+let actx;
+function tone(f, d = .08, type = 'sine', vol = .05, delay = 0) {
+  if (S.mute) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + d + .02);
+  } catch (e) {}
+}
+const sfx = {
+  click: () => tone(600, .04, 'triangle', .03),
+  buy: () => { tone(440, .06, 'triangle'); tone(660, .08, 'triangle', .05, .05); },
+  sell: () => { tone(880, .06, 'square', .025); tone(1320, .14, 'square', .025, .05); },
+  warp: () => { try { if (S.mute) return; actx = actx || new AudioContext(); const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(900, t + .7); g.gain.setValueAtTime(.025, t); g.gain.exponentialRampToValueAtTime(.0001, t + .9); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 1); } catch (e) {} },
+  alarm: () => { tone(520, .15, 'square', .03); tone(390, .15, 'square', .03, .18); },
+  hit: () => tone(120, .15, 'sawtooth', .05),
+  laser: () => { tone(1400, .08, 'square', .02); tone(700, .1, 'square', .02, .04); },
+  win: () => [523, 659, 784, 1047].forEach((f, k) => tone(f, .2, 'triangle', .05, k * .09)),
+  nope: () => tone(140, .1, 'sawtooth', .03),
+};
+
+// ═════════════════════════ UI HELPERS ═════════════════════════
+const $ = s => document.querySelector(s);
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const cr = n => fmt(n) + ' cr';
+function log(msg) { S.log.unshift({ d: S.day, m: msg }); S.log.length = Math.min(S.log.length, 60); }
+function toast(html, kind = '') {
+  const t = document.createElement('div'); t.className = 'toast ' + kind; t.innerHTML = html;
+  $('#toasts').appendChild(t);
+  while ($('#toasts').children.length > 4) $('#toasts').firstChild.remove();
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3600);
+}
+let modalResolve = null;
+function modal(html, bind) {
+  $('#modal').innerHTML = html; $('#modalBg').classList.add('on');
+  if (bind) bind();
+  return new Promise(res => { modalResolve = res; });
+}
+function closeModal(v) { $('#modalBg').classList.remove('on'); const r = modalResolve; modalResolve = null; if (r) r(v); }
+$('#modalBg').addEventListener('click', e => { if (e.target.id === 'modalBg' && $('#modal').dataset.dismiss !== 'no') closeModal(); });
+function setDismiss(ok) { $('#modal').dataset.dismiss = ok ? 'yes' : 'no'; }
+function info(icon, title, body, btn = 'OK') {
+  setDismiss(true);
+  return modal(`<div class="mi emo">${icon}</div><h3>${title}</h3>${body}<div class="btns"><button class="btn" id="mOk">${btn}</button></div>`, () => { $('#mOk').onclick = () => closeModal(); });
+}
+function confirmBox(icon, title, body, ok, cls = '') {
+  setDismiss(true);
+  return modal(`<div class="mi emo">${icon}</div><h3>${title}</h3><p>${body}</p><div class="btns"><button class="btn ghost" id="mNo">Cancel</button><button class="btn ${cls}" id="mOk">${ok}</button></div>`,
+    () => { $('#mNo').onclick = () => closeModal(false); $('#mOk').onclick = () => closeModal(true); });
+}
+
+function award(id) {
+  if (S.ach.includes(id)) return;
+  S.ach.push(id);
+  const a = ACHS.find(x => x[0] === id);
+  toast(`<span class="emo">${a[1]}</span> <b>${a[2]}</b> · ${a[3]}`, 'gold');
+  sfx.win();
+}
+let lastRank = -1;
+function checkProgress() {
+  const nw = netWorth(), ri = rankIdx(nw);
+  if (lastRank >= 0 && ri > lastRank) { toast(`⭐ Promoted to <b>${RANKS[ri][1]}</b>!`, 'gold'); sfx.win(); log(`⭐ Reached rank ${RANKS[ri][1]}`); }
+  lastRank = ri;
+  if (S.debt <= 0 && S.stats.trips > 0) award('debtfree');
+  if (S.visited.length >= PLANETS.length) award('explorer');
+  if (held('artifacts') > 0) award('artifact');
+  if (S.ship === 'leviathan') award('leviathan');
+  if (nw >= 10e6) award('legend');
+  if (nw >= WIN_AT && !S.wonDay) {
+    S.wonDay = S.day; award('prince');
+    info('👑', 'Merchant Prince!', `<p>From a rusty Mule and a 5,000-credit debt to a fortune of <b>${cr(nw)}</b>.</p><div class="big">Day ${S.day}</div><p style="text-align:center">${S.stats.trips} jumps · ${S.stats.pirates} pirates defeated · ${S.stats.contracts} contracts</p><p>You can keep trading. Star Baron and Legend are still out there.</p>`, 'Keep trading');
+  }
+}
+
+// ═════════════════════════ MAP ═════════════════════════
+let selected = null, busy = false;
+const SVGNS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function buildMap() {
+  const svg = $('#map');
+  svg.innerHTML = '';
+  const defs = el('defs', {}, svg);
+  for (const p of PLANETS) {
+    const g = el('radialGradient', { id: 'g_' + p.id, cx: '35%', cy: '30%', r: '75%' }, defs);
+    el('stop', { offset: '0', 'stop-color': p.c[0] }, g);
+    el('stop', { offset: '1', 'stop-color': p.c[1] }, g);
+  }
+  const glow = el('filter', { id: 'glow', x: '-50%', y: '-50%', width: '200%', height: '200%' }, defs);
+  el('feGaussianBlur', { stdDeviation: '6', result: 'b' }, glow);
+  const fm = el('feMerge', {}, glow); el('feMergeNode', { in: 'b' }, fm); el('feMergeNode', { in: 'SourceGraphic' }, fm);
+  // stars
+  const stars = el('g', {}, svg);
+  let seed = 7; const sr = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  for (let k = 0; k < 170; k++) el('circle', { cx: sr() * 1000, cy: sr() * 620, r: sr() * 1.3 + .2, fill: '#fff', opacity: (sr() * .6 + .15).toFixed(2) }, stars);
+  // nebula
+  el('ellipse', { cx: 800, cy: 470, rx: 210, ry: 110, fill: '#ff4d7a', opacity: .05 }, svg);
+  el('ellipse', { cx: 150, cy: 160, rx: 190, ry: 120, fill: '#8a5cff', opacity: .06 }, svg);
+  // lanes
+  const lanes = el('g', { class: 'lanes' }, svg);
+  PLANETS.forEach((a, i) => PLANETS.slice(i + 1).forEach(b => { if (dist(a.id, b.id) < 7.5) el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y }, lanes); }));
+  el('path', { id: 'routeLine', class: 'route', d: '' }, svg);
+  for (const p of PLANETS) {
+    const g = el('g', { class: 'planet', id: 'pl_' + p.id }, svg);
+    el('circle', { class: 'halo', cx: p.x, cy: p.y, r: p.r + 9 }, g);
+    el('circle', { cx: p.x, cy: p.y, r: p.r + 14, fill: 'transparent' }, g);
+    const body = el('circle', { class: 'body', cx: p.x, cy: p.y, r: p.r, fill: `url(#g_${p.id})`, filter: 'url(#glow)' }, g);
+    if (p.id === 'terra' || p.id === 'opaline') el('ellipse', { cx: p.x, cy: p.y, rx: p.r * 1.7, ry: p.r * .45, fill: 'none', stroke: p.c[0], 'stroke-opacity': .5, 'stroke-width': 2, transform: `rotate(-18 ${p.x} ${p.y})`, 'pointer-events': 'none' }, g);
+    const t = el('text', { x: p.x, y: p.y + p.r + 22 }, g); t.textContent = p.name;
+    const s = el('text', { class: 'sub', x: p.x, y: p.y + p.r + 37 }, g); s.textContent = p.type;
+    for (let k = 0; k < p.danger; k++) el('circle', { class: 'danger-dot', cx: p.x + p.r + 6 + k * 9, cy: p.y - p.r - 2, r: 3.2, fill: '#ff5c75' }, g);
+    g.addEventListener('click', () => selectPlanet(p.id));
+    void body;
+  }
+  // ship
+  const sg = el('g', { id: 'shipMark' }, svg);
+  el('path', { d: 'M0,-11 L8,9 L0,4 L-8,9 Z', fill: '#ffbf3d', stroke: '#2a1a00', 'stroke-width': 1.5 }, sg);
+  el('circle', { cx: 0, cy: 7, r: 2.5, fill: '#4fd8ff' }, sg);
+  placeShip(P[S.loc].x, P[S.loc].y - P[S.loc].r - 18, 0);
+}
+function placeShip(x, y, ang) { $('#shipMark').setAttribute('transform', `translate(${x},${y}) rotate(${ang})`); }
+function renderMap() {
+  for (const p of PLANETS) {
+    const g = $('#pl_' + p.id);
+    g.classList.toggle('here', p.id === S.loc);
+    g.classList.toggle('sel', p.id === selected);
+    g.classList.toggle('far', p.id !== S.loc && route(S.loc, p.id).fuel > S.fuel);
+  }
+  const line = $('#routeLine');
+  if (selected && selected !== S.loc) {
+    const a = P[S.loc], b = P[selected];
+    line.setAttribute('d', `M${a.x},${a.y} L${b.x},${b.y}`);
+    line.classList.toggle('bad', route(S.loc, selected).fuel > S.fuel);
+  } else line.setAttribute('d', '');
+  if (!busy) placeShip(P[S.loc].x, P[S.loc].y - P[S.loc].r - 18, 0);
+}
+function selectPlanet(pid) {
+  if (busy) return;
+  sfx.click();
+  selected = pid === S.loc ? null : pid;
+  renderMap(); renderDest();
+}
+function renderDest() {
+  const d = $('#dest');
+  if (!selected) { d.classList.remove('on'); return; }
+  const p = P[selected], r = route(S.loc, p.id), ok = r.fuel <= S.fuel;
+  const k = has('feed') ? { day: S.day } : S.known[p.id];
+  const age = k ? (has('feed') ? 'live prices' : S.day - k.day === 0 ? 'seen today' : `seen ${S.day - k.day} day${S.day - k.day > 1 ? 's' : ''} ago`) : 'never visited';
+  const rows = GOODS.filter(g => traded(p.id, g.id)).map(g => {
+    const kp = knownPrice(p.id, g.id);
+    const v = kp && kp.price ? fmt(kp.price) : '?';
+    return `<div class="${held(g.id) ? 'hold' : ''}"><span><span class="emo">${g.icon}</span> ${g.name}</span><span class="num">${v}</span></div>`;
+  }).join('');
+  const deliveries = S.contracts.filter(c => c.dest === p.id).length;
+  d.innerHTML = `<h3><span>${p.name}</span><span class="tag ${p.danger >= 2 ? 'dng2' : ''}">${['Safe', 'Some risk', 'Dangerous', 'Lawless'][p.danger]}</span></h3>
+    <div class="meta"><span><b>${r.d.toFixed(1)}</b> ly</span><span><b>${r.days}</b> day${r.days > 1 ? 's' : ''}</span><span class="${ok ? '' : 'bad'}"><b>${r.fuel}</b> fuel (have ${S.fuel})</span><span>${age}</span>${deliveries ? `<span class="ok">📦 ${deliveries} contract${deliveries > 1 ? 's' : ''} due here</span>` : ''}</div>
+    <div class="kp">${rows}</div>
+    <div class="row"><button class="btn ghost" id="dClose">Close</button><button class="btn wide" id="dGo" ${ok ? '' : 'disabled'}>${ok ? `Jump to ${p.name}` : 'Not enough fuel'}</button></div>`;
+  d.classList.add('on');
+  $('#dClose').onclick = () => { selected = null; renderMap(); renderDest(); };
+  $('#dGo').onclick = () => travel(p.id);
+}
+
+// ═════════════════════════ TRAVEL & ENCOUNTERS ═════════════════════════
+function animateShip(a, b, f0, f1, ms) {
+  return new Promise(res => {
+    const A = P[a], B = P[b], ang = Math.atan2(B.y - A.y, B.x - A.x) * 180 / Math.PI + 90;
+    const t0 = performance.now();
+    function fr(t) {
+      const k = Math.min(1, (t - t0) / ms), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2, f = f0 + (f1 - f0) * e;
+      placeShip(A.x + (B.x - A.x) * f, A.y + (B.y - A.y) * f, ang);
+      if (k < 1) requestAnimationFrame(fr); else res();
+    }
+    requestAnimationFrame(fr);
+    setTimeout(res, ms + 400); // fallback if frames are paused
+  });
+}
+async function travel(dest) {
+  if (busy) return;
+  const r = route(S.loc, dest);
+  if (r.fuel > S.fuel) { sfx.nope(); return; }
+  busy = true; selected = null; renderDest();
+  const from = S.loc;
+  S.fuel -= r.fuel;
+  sfx.warp();
+  renderAll();
+  await animateShip(from, dest, 0, .5, 700);
+  const enc = rollEncounter(from, dest, r);
+  if (enc) { await enc(); }
+  await animateShip(from, dest, .5, 1, 700);
+  for (let k = 0; k < r.days; k++) dayTick();
+  S.stats.trips++; S.stats.ly += r.d;
+  arrive(dest);
+  busy = false;
+  renderAll(); save();
+}
+function arrive(pid) {
+  S.loc = pid;
+  if (!S.visited.includes(pid)) S.visited.push(pid);
+  recordKnown(pid);
+  board(pid);
+  log(`🛬 Arrived at ${P[pid].name}`);
+  const due = S.contracts.filter(c => c.dest === pid);
+  for (const c of due) {
+    if (c.type === 'courier') completeContract(c);
+    else if (held(c.good) >= c.qty) toast(`📦 You can deliver <b>${c.qty} ${G[c.good].name}</b> here. Open Contracts.`, 'good');
+    else toast(`📦 Contract here needs <b>${c.qty} ${G[c.good].name}</b> (you have ${held(c.good)}).`);
+  }
+  if (S.hull < ship().hull * .3) toast('🔧 Hull is low. Repair at the shipyard tab.', 'bad');
+  tab = 'market';
+  checkProgress();
+}
+
+function pirateTier() {
+  const nw = Math.max(0, netWorth()), base = nw < 15e3 ? 0 : nw < 80e3 ? 1 : nw < 300e3 ? 2 : nw < 1.2e6 ? 3 : 4;
+  return Math.max(0, Math.min(4, base - (Math.random() < .4 ? 1 : 0)));
+}
+function contrabandHeld() { return GOODS.filter(g => g.illegal).reduce((a, g) => a + held(g.id), 0); }
+function rollEncounter(from, dest, r) {
+  const A = P[from], B = P[dest];
+  const danger = Math.max(A.danger, B.danger);
+  const cargoV = cargoValue();
+  const pPirate = Math.min(.55, .06 + danger * .11 + r.days * .015 + Math.min(.12, cargoV / 400000));
+  const pPolice = B.law >= 2 ? (contrabandHeld() > 0 ? .3 + B.law * .07 : .06) : 0;
+  const roll = Math.random();
+  let acc = 0;
+  if (roll < (acc += pPolice)) return () => police(B);
+  if (roll < (acc += pPirate)) return () => combat(PIRATES[pirateTier()]);
+  if (roll < (acc += .06)) return () => derelict();
+  if (roll < (acc += .05)) return () => storm();
+  if (roll < (acc += .045)) return () => distress();
+  return null;
+}
+
+function bar(label, v, max, color) { return `<div class="bar">${label} <span class="num">${Math.max(0, Math.round(v))}/${max}</span><div class="tr"><i style="width:${Math.max(0, v / max * 100)}%;background:${color}"></i></div></div>`; }
+function wreck() {
+  S.stats.wrecks++;
+  const lost = used();
+  S.cargo = {};
+  const lostC = S.contracts.filter(c => c.type === 'courier');
+  S.contracts = S.contracts.filter(c => c.type !== 'courier');
+  S.hull = Math.round(ship().hull * .25);
+  for (let k = 0; k < 2; k++) dayTick();
+  award('wreck');
+  log(`💥 Ship wrecked. Lost ${lost} units of cargo${lostC.length ? ' and courier packages' : ''}.`);
+  return info('💥', 'Ship disabled!', `<p>Your hull gave out. A salvage tug drags what's left of you to port two days later.</p><p>You lost <b>all cargo</b>${lostC.length ? ' and your courier packages' : ''}. The hull is patched to 25%.</p>`, 'Limp onward');
+}
+function combat(pir) {
+  return new Promise(resolve => {
+    let ehp = pir.hp, shield = shieldVal(), lines = [`A <b>${pir.name}</b> drops out of warp and locks weapons on you.`];
+    const tribute = Math.max(150, Math.round(Math.max(S.credits * .18, cargoValue() * .25)));
+    const fleeOdds = () => Math.max(.15, Math.min(.85, .3 + (speed() - 2.4) * .12 + (has('engine') ? .1 : 0) - PIRATES.indexOf(pir) * .03));
+    sfx.alarm();
+    function enemyFire() {
+      let d = rint(pir.dmg[0], pir.dmg[1]);
+      const absorbed = Math.min(shield, d); shield -= absorbed; d -= absorbed;
+      S.hull -= d; sfx.hit();
+      lines.push(absorbed ? `They hit you for ${d + absorbed} (${absorbed} absorbed by shields).` : `They hit you for ${d}.`);
+      $('#modal').classList.remove('shake'); void $('#modal').offsetWidth; $('#modal').classList.add('shake');
+    }
+    function done(fn) { closeModal(); renderAll(); Promise.resolve(fn && fn()).then(resolve); }
+    function draw() {
+      setDismiss(false);
+      $('#modal').innerHTML = `<div class="mi emo">🏴‍☠️</div><h3>${pir.name}</h3>
+        <div class="bars">${bar('Your hull', S.hull, ship().hull, 'var(--cyan)')}${shieldVal() ? bar('Shields', shield, shieldVal(), 'var(--violet)') : ''}${bar('Pirate hull', ehp, pir.hp, 'var(--red)')}</div>
+        <div class="clog">${lines.slice(-3).map(l => `<div>${l}</div>`).join('')}</div>
+        <div class="btns">
+          <button class="btn red" id="cFire">Fire (${weaponDmg()} dmg)</button>
+          <button class="btn ghost" id="cFlee">Flee (${Math.round(fleeOdds() * 100)}%)</button>
+          <button class="btn ghost" id="cPay">Pay ${cr(tribute)}</button>
+        </div>`;
+      $('#cFire').onclick = () => {
+        const d = Math.round(weaponDmg() * rnd(.75, 1.25));
+        ehp -= d; sfx.laser(); lines.push(`You hit the ${pir.name} for ${d}.`);
+        if (ehp <= 0) {
+          const loot = Math.round(pir.loot * rnd(.7, 1.3));
+          S.credits += loot; S.stats.pirates++;
+          award('pirate1'); if (S.stats.pirates >= 10) award('pirate10'); if (pir === PIRATES[4]) award('reaver');
+          log(`⚔️ Destroyed a ${pir.name}, collected ${cr(loot)} bounty`);
+          return done(() => info('🎆', 'Pirate destroyed!', `<p>You collect a bounty and salvage worth</p><div class="big" style="color:var(--green)">+${cr(loot)}</div>`, 'Continue'));
+        }
+        enemyFire();
+        if (S.hull <= 0) return done(wreck);
+        draw();
+      };
+      $('#cFlee').onclick = () => {
+        if (Math.random() < fleeOdds()) { log(`💨 Escaped a ${pir.name}`); sfx.warp(); return done(() => { toast('💨 You punched the engines and got away.'); }); }
+        lines.push('Escape failed!'); enemyFire();
+        if (S.hull <= 0) return done(wreck);
+        draw();
+      };
+      $('#cPay').onclick = () => {
+        if (S.credits >= tribute) { S.credits -= tribute; log(`💸 Paid ${cr(tribute)} tribute to a ${pir.name}`); return done(() => toast(`💸 The pirates take ${cr(tribute)} and let you go.`, 'bad')); }
+        // can't pay cash: they take cargo
+        const taken = takeCargo(.5);
+        log(`💸 Pirates seized ${taken} units of cargo`);
+        return done(() => toast(`💸 Short on cash, the pirates seize ${taken} units of cargo.`, 'bad'));
+      };
+    }
+    $('#modalBg').classList.add('on');
+    modalResolve = null;
+    draw();
+  });
+}
+function takeCargo(frac) {
+  let n = 0;
+  for (const g in S.cargo) { const t = Math.ceil(S.cargo[g].q * frac); S.cargo[g].cost *= (S.cargo[g].q - t) / S.cargo[g].q; S.cargo[g].q -= t; n += t; if (S.cargo[g].q <= 0) delete S.cargo[g]; }
+  return n;
+}
+async function police(B) {
+  sfx.alarm();
+  const hidden = has('hold') ? 20 : 0;
+  const exposed = Math.max(0, contrabandHeld() - hidden);
+  if (!exposed) {
+    log(`👮 Customs scan near ${B.name}: clean`);
+    return info('👮', 'Customs patrol', `<p>A ${B.name} patrol scans your hold${contrabandHeld() ? ' and somehow misses the hidden compartment' : ''}.</p><p>"All clear, captain. Fly safe."</p>`, 'Continue');
+  }
+  const value = GOODS.filter(g => g.illegal).reduce((a, g) => a + held(g.id) * G[g.id].base, 0);
+  const fine = Math.max(1000, Math.round(value * .5));
+  const bribe = Math.round(value * .3);
+  setDismiss(false);
+  const choice = await modal(`<div class="mi emo">👮</div><h3>Customs patrol</h3>
+    <p>A ${B.name} patrol orders you to stand by for a scan. Your contraband will be found.</p>
+    <p>If caught: everything illegal is seized plus a <b>${cr(fine)}</b> fine.</p>
+    <div class="btns"><button class="btn ghost" id="pSub">Submit to scan</button><button class="btn amber" id="pBribe">Bribe ${cr(bribe)} (65%)</button><button class="btn red" id="pRun">Run for it</button></div>`,
+    () => { $('#pSub').onclick = () => closeModal('sub'); $('#pBribe').onclick = () => closeModal('bribe'); $('#pRun').onclick = () => closeModal('run'); });
+  const seize = (mult) => {
+    for (const g of GOODS) if (g.illegal) delete S.cargo[g.id];
+    const f = Math.round(fine * mult); S.credits -= f; if (S.credits < 0) { S.debt = Math.round(S.debt - S.credits); S.credits = 0; }
+    log(`👮 Contraband seized and fined ${cr(f)}`);
+    return info('🚨', 'Busted', `<p>Customs seize your contraband and fine you <b>${cr(f)}</b>${S.debt > 0 ? '. Anything you couldn\'t pay was added to your bank debt' : ''}.</p>`, 'Ouch');
+  };
+  if (choice === 'sub') return seize(1);
+  if (choice === 'bribe') {
+    if (S.credits >= bribe && Math.random() < .65) { S.credits -= bribe; log(`🤝 Bribed customs (${cr(bribe)})`); return info('🤝', 'Looking the other way', `<p>The officer pockets <b>${cr(bribe)}</b> and waves you through.</p>`, 'Continue'); }
+    if (S.credits >= bribe) S.credits -= bribe;
+    toast('The officer takes the bribe and scans you anyway.', 'bad');
+    return seize(1.5);
+  }
+  const odds = Math.max(.2, Math.min(.8, .35 + (speed() - 2.4) * .15 + (has('engine') ? .1 : 0)));
+  if (Math.random() < odds) { log('💨 Outran a customs patrol'); sfx.warp(); return info('💨', 'Clean getaway', '<p>You outrun the patrol and lose them in the asteroid traffic.</p>', 'Phew'); }
+  const d = rint(10, 25); S.hull -= d; sfx.hit();
+  if (S.hull <= 0) { S.hull = 1; }
+  toast(`The patrol disables your engines (${d} hull damage).`, 'bad');
+  return seize(2);
+}
+function derelict() {
+  const roll = Math.random();
+  if (roll < .5) {
+    const g = pick(GOODS.filter(x => x.base < 2000)), n = Math.min(free(), rint(3, 12));
+    if (n > 0) { addCargo(g.id, n, 0); log(`🛰️ Salvaged ${n} ${g.name} from a derelict`); return info('🛰️', 'Derelict freighter', `<p>You find a drifting freighter and haul <b>${n} ${g.name}</b> into your hold.</p>`, 'Nice'); }
+  }
+  if (roll < .62 && free() > 0) { addCargo('artifacts', 1, 0); log('🗿 Found an alien artifact in a derelict'); return info('🗿', 'Ancient wreck', '<p>Inside a wreck older than humanity you find an <b>alien artifact</b>. Collectors on Aurelia and Neon Reach pay a fortune.</p>', 'Incredible'); }
+  const c = rint(300, 1500) * (1 + rankIdx()); S.credits += c;
+  log(`🛰️ Salvaged ${cr(c)} from a derelict`);
+  return info('🛰️', 'Derelict freighter', `<p>The cargo is gone, but you strip parts worth <b>${cr(c)}</b>.</p>`, 'Nice');
+}
+function storm() {
+  let d = rint(6, 22); const a = Math.min(shieldVal(), d); d -= a;
+  S.hull = Math.max(1, S.hull - d); sfx.hit();
+  log(`☄️ Meteor storm: ${d} hull damage`);
+  return info('☄️', 'Meteor storm', `<p>You fly straight into a debris field.${a ? ` Shields absorb ${a} damage.` : ''} The hull takes <b>${d}</b> damage.</p>`, 'Keep flying');
+}
+async function distress() {
+  setDismiss(false);
+  const help = await modal(`<div class="mi emo">🆘</div><h3>Distress signal</h3><p>A damaged transport is broadcasting an SOS. Helping will cost you a day.</p>
+    <div class="btns"><button class="btn ghost" id="dNo">Ignore it</button><button class="btn" id="dYes">Help them</button></div>`,
+    () => { $('#dNo').onclick = () => closeModal(false); $('#dYes').onclick = () => closeModal(true); });
+  if (!help) return;
+  dayTick();
+  if (Math.random() < .72) {
+    const c = rint(800, 2500) * (1 + rankIdx()); S.credits += c;
+    log(`🆘 Rescued a transport crew, reward ${cr(c)}`);
+    return info('🙏', 'Crew rescued', `<p>The grateful crew transfer <b>${cr(c)}</b> as thanks.</p>`, 'Glad to help');
+  }
+  toast('🏴‍☠️ It was a trap!', 'bad');
+  return combat(PIRATES[pirateTier()]);
+}
+
+// ═════════════════════════ ACTIONS ═════════════════════════
+function addCargo(gid, n, cost) { const c = S.cargo[gid] || (S.cargo[gid] = { q: 0, cost: 0 }); c.q += n; c.cost += cost; }
+function doBuy(gid, n) {
+  n = Math.min(n, free(), maxAfford(S.loc, gid));
+  if (n < 1) { sfx.nope(); return; }
+  const total = buyTotal(S.loc, gid, n);
+  S.credits -= total; addCargo(gid, n, total);
+  S.drift[S.loc][gid] *= Math.pow(1 + IMPACT, n);
+  recordKnown(S.loc);
+  sfx.buy(); log(`🛒 Bought ${n} ${G[gid].name} for ${cr(total)}`);
+  checkProgress(); renderAll(); save();
+}
+function doSell(gid, n) {
+  n = Math.min(n, held(gid));
+  if (n < 1) return;
+  const total = sellTotal(S.loc, gid, n), c = S.cargo[gid], basis = c.cost * n / c.q, profit = total - basis;
+  S.credits += total; c.cost -= basis; c.q -= n; if (c.q <= 0) delete S.cargo[gid];
+  S.drift[S.loc][gid] *= Math.pow(1 - IMPACT, n);
+  recordKnown(S.loc);
+  S.stats.profit += profit; S.stats.best = Math.max(S.stats.best, profit);
+  if (profit > 0) award('firstsale');
+  if (profit >= 25000) award('bigsale');
+  if (profit >= 250000) award('hugesale');
+  if (G[gid].illegal) { S.stats.smuggled += n; award('smuggle'); }
+  sfx.sell();
+  log(`💰 Sold ${n} ${G[gid].name} for ${cr(total)} (${profit >= 0 ? '+' : ''}${cr(profit)})`);
+  toast(`💰 Sold ${n} ${G[gid].name} · <b style="color:${profit >= 0 ? 'var(--green)' : 'var(--red)'}">${profit >= 0 ? '+' : ''}${cr(profit)}</b>`, profit >= 0 ? 'good' : 'bad');
+  checkProgress(); renderAll(); save();
+}
+function tradeSheet(gid, mode) {
+  const g = G[gid];
+  mode = mode || (held(gid) ? 'sell' : 'buy');
+  let qty = 0;
+  setDismiss(true);
+  modal('<div></div>');
+  const maxQ = () => mode === 'buy' ? Math.min(free(), maxAfford(S.loc, gid)) : held(gid);
+  // Static layout per mode; update() only rewrites numbers so the slider keeps working while dragged.
+  function build() {
+    const mx = maxQ(); qty = mx;
+    const best = bestElsewhere(gid);
+    $('#modal').innerHTML = `<h3><span class="emo">${g.icon}</span> ${g.name}</h3>
+      <div class="seg"><button id="tB" class="${mode === 'buy' ? 'on' : ''}">Buy</button><button id="tS" class="${mode === 'sell' ? 'on sell' : ''}" ${held(gid) ? '' : 'disabled'}>Sell (${held(gid)})</button></div>
+      <input type="range" id="tR" min="0" max="${mx}" value="${qty}" ${mx ? '' : 'disabled'}>
+      <div class="qtyrow"><button class="btn ghost sm" data-q="-10">−10</button><button class="btn ghost sm" data-q="-1">−1</button><button class="btn ghost sm" data-q="1">+1</button><button class="btn ghost sm" data-q="10">+10</button><button class="btn ghost sm" data-q="max">Max</button></div>
+      <div class="tsum" id="tSum"></div>
+      ${mode === 'buy' && !mx ? `<div class="hint bad">${free() < 1 ? 'Your hold is full.' : 'You can’t afford any.'}</div>` : ''}
+      ${best ? `<div class="hint">Best known sell price: <b>${cr(best.price)}</b> at ${P[best.pid].name} (${best.live ? 'live' : best.age === 0 ? 'today' : best.age + ' days old'})</div>` : '<div class="hint">You haven’t seen this good priced anywhere else yet.</div>'}
+      ${g.illegal ? '<div class="hint" style="color:var(--red)">Contraband: customs near lawful worlds will seize it.</div>' : ''}
+      <div class="hint">Big orders move the market: each unit shifts the price about 0.3%.</div>
+      <div class="btns"><button class="btn ghost" id="tX">Close</button><button class="btn ${mode === 'sell' ? 'amber' : ''}" id="tGo"></button></div>`;
+    $('#tB').onclick = () => { mode = 'buy'; build(); };
+    $('#tS').onclick = () => { mode = 'sell'; build(); };
+    $('#tR').oninput = e => { qty = +e.target.value; update(); };
+    document.querySelectorAll('[data-q]').forEach(btn => btn.onclick = () => {
+      const v = btn.dataset.q;
+      qty = v === 'max' ? maxQ() : Math.max(0, Math.min(maxQ(), qty + +v));
+      $('#tR').value = qty; update();
+    });
+    $('#tX').onclick = () => closeModal();
+    $('#tGo').onclick = () => { if (!qty) return; closeModal(); mode === 'buy' ? doBuy(gid, qty) : doSell(gid, qty); };
+    update();
+  }
+  function update() {
+    const total = mode === 'buy' ? buyTotal(S.loc, gid, qty) : sellTotal(S.loc, gid, qty);
+    const c = S.cargo[gid], avg = c ? c.cost / c.q : 0, best = bestElsewhere(gid);
+    let extra = '';
+    if (mode === 'sell' && c) { const prof = total - avg * qty; extra = `<span>Profit</span><span style="color:${prof >= 0 ? 'var(--green)' : 'var(--red)'}">${prof >= 0 ? '+' : ''}${cr(prof)}</span>`; }
+    if (mode === 'buy' && best && qty) { const est = best.price * qty - total; extra = `<span>Est. profit at ${P[best.pid].name}</span><span style="color:${est >= 0 ? 'var(--green)' : 'var(--red)'}">${est >= 0 ? '+' : ''}${cr(est)}</span>`; }
+    $('#tSum').innerHTML = `<span>Quantity</span><span class="num">${qty}${mode === 'buy' ? ` (room for ${free()})` : ''}</span>
+      <span>Avg price each</span><span class="num">${qty ? cr(total / qty) : '–'}</span>
+      ${c ? `<span>You paid on average</span><span class="num">${cr(avg)}</span>` : ''}
+      ${extra}
+      <span class="tot">Total</span><span class="tot num">${cr(total)}</span>`;
+    const go = $('#tGo'); go.disabled = !qty; go.textContent = `${mode === 'buy' ? 'Buy' : 'Sell'} ${qty}`;
+  }
+  build();
+}
+function buyFuel(n) {
+  const price = fuelPrice(S.loc);
+  n = Math.min(n, ship().fuel - S.fuel, Math.floor(S.credits / price));
+  if (n < 1) { sfx.nope(); return; }
+  S.credits -= n * price; S.fuel += n; sfx.buy();
+  renderAll(); save();
+}
+function repair(n) {
+  const per = P[S.loc].yard ? 12 : 25;
+  n = Math.min(n, ship().hull - S.hull, Math.floor(S.credits / per));
+  if (n < 1) { sfx.nope(); return; }
+  S.credits -= n * per; S.hull += n; sfx.buy();
+  renderAll(); save();
+}
+async function buyShip(id) {
+  const s = SH[id], trade = Math.round(ship().cost * .6), price = s.cost - trade;
+  if (S.credits < price) { sfx.nope(); return; }
+  if (used() > Math.round(s.cargo * (has('pods') ? 1.25 : 1))) { info('📦', 'Too much cargo', `<p>The ${s.name} can't hold everything you're carrying. Sell some cargo first.</p>`); return; }
+  const extraW = S.weapons.length - s.slots;
+  const ok = await confirmBox('🛸', `Buy the ${s.name}?`, `${cr(s.cost)} minus ${cr(trade)} trade-in for your ${ship().name} = <b>${cr(price)}</b>.${extraW > 0 ? ` It has fewer weapon slots, so ${extraW} weapon${extraW > 1 ? 's' : ''} will be sold for half price.` : ''}`, 'Buy ship', 'amber');
+  if (!ok) return;
+  S.credits -= price;
+  while (S.weapons.length > s.slots) { const w = S.weapons.pop(); S.credits += EQ[w].cost / 2; }
+  S.ship = id; S.hull = s.hull; S.fuel = Math.min(S.fuel, s.fuel);
+  award('ship'); sfx.win();
+  log(`🛸 Bought the ${s.name}`);
+  toast(`🛸 Welcome aboard the <b>${s.name}</b>!`, 'gold');
+  checkProgress(); renderAll(); save();
+}
+function buyEquip(id) {
+  const e = EQ[id];
+  if (S.credits < e.cost) { sfx.nope(); return; }
+  if (e.kind === 'weapon') { if (S.weapons.length >= ship().slots) { sfx.nope(); return; } S.weapons.push(id); }
+  else if (e.kind === 'shield') { if (S.shield) S.credits += EQ[S.shield].cost / 2; S.shield = id; }
+  else { if (has(id)) return; S.mods.push(id); }
+  S.credits -= e.cost; sfx.buy();
+  log(`🔧 Installed ${e.name}`); toast(`🔧 Installed <b>${e.name}</b>`, 'good');
+  renderAll(); save();
+}
+function sellWeapon(i) { const w = S.weapons.splice(i, 1)[0]; S.credits += EQ[w].cost / 2; sfx.sell(); renderAll(); save(); }
+function acceptContract(o) {
+  if (S.contracts.length >= 5) { info('📋', 'Too many contracts', '<p>You can hold at most 5 contracts at once.</p>'); return; }
+  if (o.type === 'courier' && free() < o.units) { info('📦', 'No room', `<p>The package needs ${o.units} units of cargo space.</p>`); return; }
+  S.contracts.push(o);
+  S.boards[S.loc].offers = S.boards[S.loc].offers.filter(x => x.id !== o.id);
+  sfx.buy(); log(`📋 Accepted: ${contractTitle(o)}`);
+  renderAll(); save();
+}
+function completeContract(c) {
+  if (c.type === 'deliver') {
+    const cg = S.cargo[c.good]; if (!cg || cg.q < c.qty) return;
+    cg.cost *= (cg.q - c.qty) / cg.q; cg.q -= c.qty; if (cg.q <= 0) delete S.cargo[c.good];
+  }
+  S.credits += c.reward; S.stats.contracts++;
+  S.contracts = S.contracts.filter(x => x !== c);
+  award('contract1'); if (S.stats.contracts >= 10) award('contract10');
+  sfx.sell(); log(`✅ Contract complete: ${contractTitle(c)} (+${cr(c.reward)})`);
+  toast(`✅ Contract complete · <b style="color:var(--green)">+${cr(c.reward)}</b>`, 'good');
+  checkProgress(); renderAll(); save();
+}
+async function abandon(c) {
+  const ok = await confirmBox('🗑️', 'Abandon contract?', `${contractTitle(c)}. ${c.type === 'courier' ? 'The package is returned to sender.' : ''}`, 'Abandon', 'red');
+  if (!ok) return;
+  S.contracts = S.contracts.filter(x => x !== c); renderAll(); save();
+}
+function bankBorrow(n) { const lim = loanLimit(); n = Math.min(n, lim); if (n < 1) return; S.debt += n; S.credits += n; sfx.buy(); log(`🏦 Borrowed ${cr(n)}`); renderAll(); save(); }
+function bankRepay(n) { n = Math.min(n, S.debt, S.credits); if (n < 1) return; S.debt -= n; S.credits -= n; sfx.sell(); log(`🏦 Repaid ${cr(n)}`); checkProgress(); renderAll(); save(); }
+function loanLimit() { return Math.max(0, Math.round(Math.max(8000, (S.credits + cargoValue()) * .6 + ship().cost * .3) - S.debt)); }
+async function callTow() {
+  const ok = await confirmBox('🛟', 'Call for a tow?', 'You can\'t afford fuel to reach any planet. A tug will refuel you to half a tank, and the 1,500 cr fee goes on your bank debt.', 'Call tug');
+  if (!ok) return;
+  S.fuel = Math.ceil(ship().fuel / 2); S.debt += 1500; log('🛟 Called a tug (+1,500 cr debt)'); renderAll(); save();
+}
+
+// ═════════════════════════ RENDER ═════════════════════════
+let tab = 'market';
+function renderHeader() {
+  const s = ship();
+  $('#hCred').textContent = fmt(S.credits);
+  $('#hDebt').textContent = S.debt > 0 ? fmt(S.debt) : 'Paid off';
+  $('#hsDebt').classList.toggle('clear', S.debt <= 0);
+  $('#hDay').textContent = S.day;
+  $('#hFuel').textContent = `${S.fuel}/${s.fuel}`;
+  $('#mFuel').style.width = (S.fuel / s.fuel * 100) + '%';
+  $('#mFuelW').classList.toggle('low', S.fuel / s.fuel < .3);
+  $('#hHull').textContent = `${Math.max(0, S.hull)}/${s.hull}`;
+  $('#mHull').style.width = (Math.max(0, S.hull) / s.hull * 100) + '%';
+  $('#mHullW').classList.toggle('low', S.hull / s.hull < .3);
+  $('#hCargo').textContent = `${used()}/${capacity()}`;
+  $('#mCargo').style.width = (used() / capacity() * 100) + '%';
+  $('#rank').textContent = `${RANKS[rankIdx()][1]} · net worth ${cr(netWorth())}`;
+  $('#news').textContent = S.news;
+  $('#muteBtn').textContent = S.mute ? '🔇' : '🔊';
+}
+function renderPanel() {
+  const p = P[S.loc];
+  $('#phead').innerHTML = `<h2><span class="emo">📍</span>${p.name}</h2><div class="pt">${p.type} · ${p.desc}</div>
+    <div class="tags"><span class="tag law${p.law}">${['Lawless', 'Light patrols', 'Customs patrols', 'Strict customs'][p.law]}</span><span class="tag dng${p.danger}">${['Safe space', 'Some pirates', 'Pirate activity', 'Pirate haven'][p.danger]}</span>${p.yard ? '<span class="tag">🛠️ Shipyard</span>' : ''}${p.bank ? '<span class="tag">🏦 Bank</span>' : ''}${p.black ? '<span class="tag">🕶️ Black market</span>' : ''}</div>`;
+  const deliverable = S.contracts.some(c => c.dest === S.loc && c.type === 'deliver' && held(c.good) >= c.qty);
+  const tabs = [['market', 'Market'], ['ship', p.yard ? 'Shipyard' : 'Ship'], ['contracts', 'Contracts', deliverable], ['bank', 'Bank'], ['captain', 'Captain']];
+  $('#tabs').innerHTML = tabs.map(([id, n, dot]) => `<button data-t="${id}" class="${tab === id ? 'on' : ''}">${n}<span class="dot ${dot ? 'on' : ''}"></span></button>`).join('');
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { tab = b.dataset.t; sfx.click(); renderPanel(); });
+  const body = $('#tabbody');
+  body.innerHTML = ({ market: tabMarket, ship: tabShip, contracts: tabContracts, bank: tabBank, captain: tabCaptain })[tab]();
+  bindTab();
+}
+function tabMarket() {
+  const rows = GOODS.map(g => {
+    if (!traded(S.loc, g.id)) {
+      const why = g.illegal && P[S.loc].law >= 2 ? 'illegal here' : 'not traded';
+      return `<tr class="na"><td><div class="gn"><span class="emo">${g.icon}</span>${g.name}</div></td><td colspan="2">${why}</td><td>${held(g.id) ? `<span class="held">${held(g.id)}</span>` : ''}</td><td class="col-best"></td></tr>`;
+    }
+    const m = mid(S.loc, g.id), pct = Math.round((m / g.base - 1) * 100);
+    const best = bestElsewhere(g.id);
+    const c = S.cargo[g.id];
+    return `<tr class="g" data-g="${g.id}">
+      <td><div class="gn"><span class="emo">${g.icon}</span>${g.name}${g.illegal ? '<span class="ill">ILLEGAL</span>' : ''}</div></td>
+      <td class="num">${fmt(unitBuy(S.loc, g.id))}<span class="pct ${pct < -8 ? 'lo' : pct > 8 ? 'hi' : ''}">${pct > 0 ? '+' : ''}${pct}% vs avg</span></td>
+      <td class="num">${fmt(unitSell(S.loc, g.id))}</td>
+      <td class="num">${c ? `<span class="held">${c.q}</span><span class="pct">paid ${fmt(c.cost / c.q)}</span>` : '<span style="color:#59618a">–</span>'}</td>
+      <td class="col-best best">${best ? `<b>${fmt(best.price)}</b>${P[best.pid].name.split(' ')[0]}${best.live ? '' : ` · ${best.age}d`}` : '?'}</td>
+    </tr>`;
+  }).join('');
+  const fp = fuelPrice(S.loc), need = ship().fuel - S.fuel;
+  const stuck = PLANETS.every(p => p.id === S.loc || route(S.loc, p.id).fuel > S.fuel) && S.credits < fp * Math.min(...PLANETS.filter(p => p.id !== S.loc).map(p => route(S.loc, p.id).fuel - S.fuel));
+  return `<table class="mkt"><thead><tr><th>Good</th><th>Buy</th><th>Sell</th><th>Held</th><th class="col-best">Best sell</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="fuelrow"><div><b>⛽ Fuel</b> <span class="num">${fp} cr</span>/unit · tank ${S.fuel}/${ship().fuel}</div>
+      <div style="display:flex;gap:6px"><button class="btn ghost sm" id="f5" ${need ? '' : 'disabled'}>+5</button><button class="btn sm" id="fFill" ${need ? '' : 'disabled'}>Fill up (${cr(need * fp)})</button></div></div>
+    ${stuck ? '<div class="fuelrow"><div class="bad">Stranded: not enough fuel or credits to leave.</div><button class="btn red sm" id="tow">Call a tug</button></div>' : ''}
+    <p class="hint">Tap a good to trade. Prices for other planets are what you saw on your last visit${has('feed') ? ' (market feed: live)' : ''}. Watch the news ticker for shortages and gluts.</p>`;
+}
+function tabShip() {
+  const s = ship(), p = P[S.loc], per = p.yard ? 12 : 25, dmg = s.hull - S.hull;
+  let h = `<div class="sec">Your ship</div>
+    <div class="card cur"><h4><span>🚀 ${s.name}</span><span class="num" style="font-size:.8rem;color:var(--muted)">trade-in ${cr(s.cost * .6)}</span></h4><div class="d">${s.desc}</div>
+      <div class="specs"><span>Cargo <b>${capacity()}</b></span><span>Fuel <b>${s.fuel}</b></span><span>Hull <b>${s.hull}</b></span><span>Speed <b>${speed().toFixed(1)} ly/day</b></span><span>Firepower <b>${weaponDmg()}</b></span><span>Shields <b>${shieldVal()}</b></span></div>
+      <div class="specs">${S.weapons.length ? S.weapons.map((w, i) => `<span>🔫 ${EQ[w].name} <button class="btn ghost sm" data-sellw="${i}">Sell ${cr(EQ[w].cost / 2)}</button></span>`).join('') : '<span>No weapons fitted (4 dmg mining laser)</span>'}<span>Slots ${S.weapons.length}/${s.slots}</span></div>
+      ${S.mods.length || S.shield ? `<div class="specs">${S.shield ? `<span>🛡️ ${EQ[S.shield].name}</span>` : ''}${S.mods.map(m => `<span>✔ ${EQ[m].name}</span>`).join('')}</div>` : ''}
+      <div class="act"><span class="d">Hull ${S.hull}/${s.hull} · repairs ${per} cr/pt${p.yard ? '' : ' (cheaper at shipyards)'}</span><button class="btn sm" id="rep" ${dmg ? '' : 'disabled'}>Repair all (${cr(dmg * per)})</button></div></div>`;
+  if (!p.yard) return h + '<p class="hint">No shipyard here. Ships and equipment are sold at Terra Nova, Neon Reach, Forge Prime and Kessler\'s Drift.</p>';
+  h += '<div class="sec">Equipment</div>';
+  for (const e of EQUIP) {
+    if (e.black && !p.black) continue;
+    const owned = e.kind === 'mod' ? has(e.id) : e.kind === 'shield' ? S.shield === e.id : false;
+    const full = e.kind === 'weapon' && S.weapons.length >= s.slots;
+    h += `<div class="card ${owned ? 'mine' : ''}"><h4><span>${e.name}</span><span class="num">${cr(e.cost)}</span></h4><div class="d">${e.desc}${e.kind === 'shield' && S.shield && !owned ? ' · replaces your current shield (half refund)' : ''}</div>
+      <div class="act">${owned ? '<span class="ok">Installed</span>' : full ? '<span class="d">No free weapon slot</span>' : `<button class="btn sm" data-eq="${e.id}" ${S.credits >= e.cost ? '' : 'disabled'}>Install</button>`}</div></div>`;
+  }
+  h += '<div class="sec">Ships for sale</div>';
+  for (const sh of SHIPS) {
+    if (sh.id === S.ship) continue;
+    const price = sh.cost - Math.round(s.cost * .6);
+    h += `<div class="card"><h4><span>${sh.name}</span><span class="num">${cr(sh.cost)}</span></h4><div class="d">${sh.desc}</div>
+      <div class="specs"><span>Cargo <b>${sh.cargo}</b></span><span>Fuel <b>${sh.fuel}</b></span><span>Hull <b>${sh.hull}</b></span><span>Speed <b>${sh.speed}</b></span><span>Weapon slots <b>${sh.slots}</b></span></div>
+      <div class="act"><span class="d">${price > 0 ? `${cr(price)} after trade-in` : `you'd get ${cr(-price)} back`}</span><button class="btn amber sm" data-ship="${sh.id}" ${S.credits >= price ? '' : 'disabled'}>Buy</button></div></div>`;
+  }
+  return h;
+}
+function tabContracts() {
+  let h = '<div class="sec">Your contracts</div>';
+  if (!S.contracts.length) h += '<p class="hint">No active contracts. Pick some up from the board below.</p>';
+  for (const c of S.contracts) {
+    const here = c.dest === S.loc, can = here && c.type === 'deliver' && held(c.good) >= c.qty, left = c.due - S.day;
+    h += `<div class="card mine"><h4><span>${c.type === 'courier' ? '📨' : '📦'} ${contractTitle(c)}</span><span class="num ok">${cr(c.reward)}</span></h4>
+      <div class="d">${c.type === 'courier' ? `Sealed package · uses ${c.units} cargo space · delivered automatically on arrival` : `Bring ${c.qty} ${G[c.good].name} (you have ${held(c.good)})`} · <span class="${left <= 2 ? 'bad' : ''}">due day ${c.due} (${left} left)</span></div>
+      <div class="act"><button class="btn ghost sm" data-ab="${S.contracts.indexOf(c)}">Abandon</button>${c.type === 'deliver' && here ? `<button class="btn green sm" data-done="${S.contracts.indexOf(c)}" ${can ? '' : 'disabled'}>Deliver</button>` : ''}</div></div>`;
+  }
+  h += `<div class="sec">Job board · ${P[S.loc].name}</div>`;
+  const offers = board(S.loc);
+  if (!offers.length) h += '<p class="hint">The board is empty. New jobs are posted every few days.</p>';
+  offers.forEach((o, i) => {
+    const r = route(S.loc, o.dest);
+    h += `<div class="card"><h4><span>${o.type === 'courier' ? '📨' : '📦'} ${contractTitle(o)}</span><span class="num ok">${cr(o.reward)}</span></h4>
+      <div class="d">${o.type === 'courier' ? `Sealed package, ${o.units} cargo space. No questions.` : `Buy ${o.qty} ${G[o.good].name} anywhere and deliver them.`} ${r.d.toFixed(1)} ly away · due day ${o.due} (${o.due - S.day} days)${P[o.dest].danger >= 2 ? ' · <span class="bad">dangerous route</span>' : ''}</div>
+      <div class="act"><button class="btn sm" data-acc="${i}">Accept</button></div></div>`;
+  });
+  return h;
+}
+function tabBank() {
+  if (!P[S.loc].bank) return `<div class="card"><h4><span>🏦 Bank of Terra Nova</span></h4><p>Banking is only available on Terra Nova.</p><div class="specs"><span>Debt <b class="${S.debt ? 'bad' : ''}">${S.debt ? cr(S.debt) : 'none'}</b></span><span>Interest <b>1% per day</b></span></div></div>`;
+  const lim = loanLimit();
+  return `<div class="card"><h4><span>🏦 Bank of Terra Nova</span></h4>
+    <p>Your debt grows <b>1% every day</b>. Pay it off early, or borrow to buy a bigger ship sooner. Your call.</p>
+    <div class="specs"><span>Debt <b class="${S.debt ? 'bad' : ''}">${S.debt ? cr(S.debt) : 'none'}</b></span><span>Daily interest <b>${cr(S.debt * INTEREST)}</b></span><span>Can borrow <b>${cr(lim)}</b></span></div>
+    <div class="sec">Repay</div>
+    <div class="grid2"><button class="btn green" data-rep="1000" ${S.debt && S.credits >= 1 ? '' : 'disabled'}>Repay 1,000</button><button class="btn green" data-rep="all" ${S.debt && S.credits >= 1 ? '' : 'disabled'}>Repay ${cr(Math.min(S.debt, S.credits))}</button></div>
+    <div class="sec">Borrow</div>
+    <div class="grid2"><button class="btn ghost" data-bor="5000" ${lim >= 5000 ? '' : 'disabled'}>Borrow 5,000</button><button class="btn ghost" data-bor="all" ${lim >= 1 ? '' : 'disabled'}>Borrow ${cr(lim)}</button></div></div>`;
+}
+function tabCaptain() {
+  const ri = rankIdx();
+  let h = `<div class="sec">Rank</div><div class="card ranks">${RANKS.map((r, j) => `<div class="r ${j < ri ? 'done' : j === ri ? 'cur' : ''}"><span>${j < ri ? '✓' : j === ri ? '★' : '·'} ${r[1]}${r[0] === WIN_AT ? ' 👑 goal' : ''}</span><span class="num">${cr(r[0])}</span></div>`).join('')}</div>`;
+  const st = S.stats;
+  h += `<div class="sec">Captain's log</div><div class="card">
+    ${[['Net worth', cr(netWorth())], ['Day', S.day], ['Jumps', st.trips], ['Distance flown', st.ly.toFixed(0) + ' ly'], ['Total trade profit', cr(st.profit)], ['Best single sale', cr(st.best)], ['Pirates defeated', st.pirates], ['Contracts completed', st.contracts], ['Contraband sold', st.smuggled + ' units'], ['Planets visited', `${S.visited.length}/${PLANETS.length}`], ['Became Merchant Prince', S.wonDay ? 'Day ' + S.wonDay : 'not yet']].map(([k, v]) => `<div class="kv"><span>${k}</span><span>${v}</span></div>`).join('')}</div>`;
+  h += `<div class="sec">Achievements · ${S.ach.length}/${ACHS.length}</div><div class="achs">${ACHS.map(a => `<div class="ach ${S.ach.includes(a[0]) ? '' : 'no'}"><b><span class="emo">${a[1]}</span> ${a[2]}</b>${a[3]}</div>`).join('')}</div>`;
+  h += `<div class="sec">Recent events</div><div class="card log">${S.log.slice(0, 25).map(l => `<div><i>Day ${l.d}</i>${l.m}</div>`).join('') || '<div>Nothing yet.</div>'}</div>`;
+  h += `<div class="sec">Save</div><div class="card"><p>The game saves automatically in this browser. Export a code to back it up or move it to another device.</p>
+    <div class="act"><button class="btn ghost sm" id="exp">Export save</button><button class="btn ghost sm" id="imp">Import save</button><button class="btn red sm" id="wipe">New game</button></div></div>`;
+  return h;
+}
+function bindTab() {
+  const q = s => document.querySelectorAll(s);
+  q('tr.g').forEach(r => r.onclick = () => { sfx.click(); tradeSheet(r.dataset.g); });
+  const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
+  on('f5', () => buyFuel(5)); on('fFill', () => buyFuel(999)); on('tow', callTow);
+  on('rep', () => repair(9999));
+  q('[data-sellw]').forEach(b => b.onclick = () => sellWeapon(+b.dataset.sellw));
+  q('[data-eq]').forEach(b => b.onclick = () => buyEquip(b.dataset.eq));
+  q('[data-ship]').forEach(b => b.onclick = () => buyShip(b.dataset.ship));
+  q('[data-acc]').forEach(b => b.onclick = () => acceptContract(board(S.loc)[+b.dataset.acc]));
+  q('[data-done]').forEach(b => b.onclick = () => completeContract(S.contracts[+b.dataset.done]));
+  q('[data-ab]').forEach(b => b.onclick = () => abandon(S.contracts[+b.dataset.ab]));
+  q('[data-rep]').forEach(b => b.onclick = () => bankRepay(b.dataset.rep === 'all' ? Infinity : +b.dataset.rep));
+  q('[data-bor]').forEach(b => b.onclick = () => bankBorrow(b.dataset.bor === 'all' ? Infinity : +b.dataset.bor));
+  on('exp', () => {
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+    setDismiss(true);
+    modal(`<div class="mi emo">💾</div><h3>Save code</h3><p>Copy this somewhere safe.</p><textarea readonly id="saveTxt">${code}</textarea><div class="btns"><button class="btn" id="cp">Copy</button><button class="btn ghost" id="mOk">Close</button></div>`, () => {
+      $('#mOk').onclick = () => closeModal();
+      $('#cp').onclick = () => { $('#saveTxt').select(); (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).catch(() => document.execCommand('copy')); $('#cp').textContent = 'Copied!'; };
+    });
+  });
+  on('imp', () => {
+    setDismiss(true);
+    modal(`<div class="mi emo">📥</div><h3>Import save</h3><p>Paste a save code. This replaces your current game.</p><textarea id="saveTxt"></textarea><div class="btns"><button class="btn ghost" id="mNo">Cancel</button><button class="btn" id="mOk">Import</button></div>`, () => {
+      $('#mNo').onclick = () => closeModal();
+      $('#mOk').onclick = () => {
+        try { const d = JSON.parse(decodeURIComponent(escape(atob($('#saveTxt').value.trim())))); if (!d.loc || !P[d.loc]) throw 0; localStorage.setItem(SAVE_KEY, JSON.stringify(d)); location.reload(); }
+        catch (e) { $('#saveTxt').style.borderColor = 'var(--red)'; }
+      };
+    });
+  });
+  on('wipe', async () => {
+    if (!await confirmBox('🗑️', 'Start a new game?', 'This erases your current captain, ship and fortune.', 'Start over', 'red')) return;
+    S = fresh(); S.seenIntro = true; recordKnown(S.loc); lastRank = 0; selected = null; save(); buildMap(); renderAll();
+  });
+}
+function renderAll() { renderHeader(); renderMap(); renderPanel(); renderDest(); }
+
+$('#muteBtn').onclick = () => { S.mute = !S.mute; renderHeader(); save(); };
+$('#rank').onclick = () => { tab = 'captain'; renderPanel(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modal').dataset.dismiss !== 'no') closeModal(); });
+window.addEventListener('pagehide', save);
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+
+// ═════════════════════════ BOOT ═════════════════════════
+load();
+if (!S.known[S.loc]) recordKnown(S.loc);
+lastRank = rankIdx();
+buildMap();
+renderAll();
+if (!S.seenIntro) {
+  S.seenIntro = true; save();
+  info('🚀', 'Merchant of the Stars', `<p>Your uncle left you two things: a rusty freighter called the <b>Mule</b>, and a <b>5,000 credit</b> debt to the Bank of Terra Nova that grows 1% every day.</p>
+    <p><b>Buy low, sell high.</b> Every world produces some goods cheaply and is desperate for others. Tap a planet on the map to see what you last saw it paying, then jump there.</p>
+    <p>Watch your fuel, dodge pirates (red dots mark dangerous systems), and keep contraband away from customs. Reach <b>1,000,000 credits</b> net worth to become a <b>Merchant Prince</b>.</p>`, 'Fire up the engines');
+}
+
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body>
+</html>
