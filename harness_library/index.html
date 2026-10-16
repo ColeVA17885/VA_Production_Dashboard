@@ -277,6 +277,8 @@
   body.editing td.kind .ro, body.editing td.mono .ro { display: none; }
   body.editing .tbl-actions .hint { align-self: center; }
 
+  .card .pick .p1pick { flex-basis: 100%; display: flex; align-items: center; gap: 6px; font: 600 11px/1.2 "IBM Plex Mono", ui-monospace, monospace;
+    color: var(--edit); letter-spacing: .04em; }
   .card .pick .hint { flex-basis: 100%; font-size: 10.5px; }
 
   /* ---- drag a wire end to another pin ---- */
@@ -1659,26 +1661,42 @@
     box.r = box.x + box.w; box.b = box.y + box.h;
     return box;
   }
+  /* corner of the housing that holds pin 1 on this drawing: t/b + l/r (single row: t or b).
+     Unset keeps the drawing exactly as it was before the choice existed. */
+  function pin1Of(n) {
+    if (n.pin1) return n.layout === 'dual' ? n.pin1 : n.pin1.charAt(0);
+    if (n.layout !== 'dual') return 't';
+    if (n.numbering === 'column') return n.side === 'left' ? 'tl' : 'tr';
+    return (n.order === 'reverse' ? 'b' : 't') + 'l';
+  }
+  var PIN1_DUAL = [['tl', 'top left'], ['tr', 'top right'], ['bl', 'bottom left'], ['br', 'bottom right']];
+  var PIN1_SINGLE = [['t', 'top'], ['b', 'bottom']];
   function pinPos(g, id, p) {
     var b = g.nodes[id]; if (!b || p == null) return null;
     if (b.row) return { x: b.colA + (p - 1) * L.polePitch, y: b.top, far: false, box: b, pole: true };
     if (b.stack) return { x: b.colA, y: b.top + (p - 1) * L.stackPitch, far: false, box: b, pole: true, stack: true };
-    if (!b.dual) return { x: b.colA, y: b.top + (p - 1) * L.rowPitch, far: false, box: b };
-    var row, first;
-    if (b.node.numbering === 'column') {
-      /* pins run down one column then down the other: 1..n/2 in the far column, n/2+1..n in the near */
-      var half = Math.ceil(b.node.pins / 2);
-      first = (p <= half);
-      row = first ? (p - 1) : (p - half - 1);
-      var farCol = first;
-      return { x: farCol ? (b.node.side === 'left' ? b.colA : b.colB) : (b.node.side === 'left' ? b.colB : b.colA),
-               y: b.top + row * L.rowPitch, far: farCol, box: b };
+    var c1 = pin1Of(b.node), up = c1.charAt(0) === 'b';   /* numbering runs upward from a bottom pin 1 */
+    if (!b.dual) {
+      var sr = up ? b.rows - 1 - (p - 1) : p - 1;
+      return { x: b.colA, y: b.top + sr * L.rowPitch, far: false, box: b };
     }
-    row = Math.ceil(p / 2) - 1;
-    if (b.node.order === 'reverse') row = b.rows - 1 - row;   /* pin 1 at the bottom of the housing */
-    var odd = (p % 2 === 1);
-    var side = b.node.side === 'left' ? (odd ? 'far' : 'near') : (odd ? 'near' : 'far');
-    return { x: odd ? b.colA : b.colB, y: b.top + row * L.rowPitch, far: side === 'far', box: b };
+    var p1Col = c1.charAt(1) === 'r' ? b.colB : b.colA, otherCol = p1Col === b.colA ? b.colB : b.colA;
+    var row, inP1Col;
+    if (b.node.numbering === 'column') {
+      /* pins run along pin 1's column, then along the other in the same direction */
+      var half = Math.ceil(b.node.pins / 2);
+      inP1Col = (p <= half);
+      row = inP1Col ? (p - 1) : (p - half - 1);
+    } else {
+      /* odd pins share pin 1's column, even pins sit beside them */
+      row = Math.ceil(p / 2) - 1;
+      inP1Col = (p % 2 === 1);
+    }
+    if (up) row = b.rows - 1 - row;
+    var px = inP1Col ? p1Col : otherCol;
+    /* 'far' = the column away from where the wires leave */
+    var far = b.node.side === 'left' ? px === b.colA : px === b.colB;
+    return { x: px, y: b.top + row * L.rowPitch, far: far, box: b };
   }
   function bezPts(p0, p1, p2, p3) {
     var out = [];
@@ -1713,10 +1731,9 @@
         s += '<line x1="' + rxx + '" y1="' + (b.y - 7) + '" x2="' + rxx + '" y2="' + (b.y) + '" stroke="var(--hsg-edge)" stroke-width="0.9" opacity="0.7"/>';
       }
     }
-    var p1x = (b.node.numbering === 'column')
-      ? ((b.node.side === 'left' ? b.colA : b.colB) - L.cavW / 2 - 9)
-      : (b.x + 8);
-    var bottom = (b.node.order === 'reverse');
+    var c1 = pin1Of(b.node);
+    var p1x = (b.dual && c1.charAt(1) === 'r') ? (b.r - 17) : (b.x + 8);
+    var bottom = c1.charAt(0) === 'b';
     var tx = p1x, ty = bottom ? (b.b - 13) : (b.y + 5);
     s += bottom
       ? '<path d="M ' + tx + ' ' + ty + ' L ' + (tx + 9) + ' ' + ty + ' L ' + (tx + 4.5) + ' ' + (ty + 8) + ' Z" fill="var(--ink)" opacity="0.8"/>'
@@ -2124,8 +2141,14 @@
       '<label>Pos <span class="ed mini-ed" data-scope="connectors" data-i="' + ci + '" data-k="pins">' + esc(c.pins) + '</span></label>' +
       '<label>Rows ' + pick(ci, 'layout', c.layout, [['single', '1'], ['dual', '2']]) + '</label>' +
       '<label>Numbering ' + pick(ci, 'numbering', c.numbering, [['interleaved', 'odd / even'], ['column', 'down a column']]) + '</label>' +
-      '<label>Pin 1 ' + pick(ci, 'order', c.order, [['normal', 'top'], ['reverse', 'bottom']]) + '</label>' +
       '</div>';
+  }
+  function pin1Select(i, n) {
+    var cur = pin1Of(n), opts = n.layout === 'dual' ? PIN1_DUAL : PIN1_SINGLE;
+    if (n.pins < 2 || n.arrange) return '';
+    var s = '<label class="p1pick">Pin 1 on this drawing <select class="p1sel" data-i="' + i + '">';
+    opts.forEach(function (o) { s += '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>'; });
+    return s + '</select></label>';
   }
   function sideSelect(i, cur) {
     var s = '<select class="sidesel" data-i="' + i + '" aria-label="Side">';
@@ -2142,7 +2165,7 @@
         '<span class="nm">' + ed(n.name, 'connnode', i, 'name') + '</span>' +
         '<span class="pn">' + ed(n.pn, 'connnode', i, 'pn') + '</span></div>' +
         '<div class="pick">' + connSelect(i, n.conn) + sideSelect(i, n.side) +
-        '<button class="mini" data-del="nodes:' + i + '">Remove</button>' + connSpec(n) +
+        '<button class="mini" data-del="nodes:' + i + '">Remove</button>' + connSpec(n) + pin1Select(i, n) +
         '<span class="hint">name, P/N and the spec above edit the connector library</span></div>';
       if (n.components && n.components.length) {
         h += '<div class="comp"><div class="ttl">Additional components</div>';
@@ -2715,6 +2738,13 @@
     each('select.ksel', function (s) {
       s.addEventListener('change', function () {
         DATA.links[parseInt(s.dataset.i, 10)].kind = s.value; rerenderAll(); markDirty();
+      });
+    });
+    each('select.p1sel', function (s) {
+      s.addEventListener('change', function () {
+        var n = DATA.nodes[parseInt(s.dataset.i, 10)];
+        n.pin1 = s.value; rerenderAll(); markDirty();
+        setStatus(n.ref + ' pin 1 now ' + s.options[s.selectedIndex].text + ' — check the drawing against the part');
       });
     });
     each('select.lsel', function (s) {
