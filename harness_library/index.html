@@ -26,6 +26,7 @@
     --cav: #3a3f41; --cav-edge: #23282a; --cav-text: #f0f2f1;
     --xt-hi: #f2c53d; --xt-lo: #d39f14; --xt-edge: #8a6708;
     --iec-hi: #5b6064; --iec-lo: #34383b; --iec-edge: #15181a; --iec-slot: #141719;
+    --qd-hi: #7fd36f; --qd-lo: #3f9a3c; --qd-edge: #2a6b28;
     --shadow: 0 1px 2px rgba(20,22,24,.05), 0 10px 26px rgba(20,22,24,.05);
   }
   @media (prefers-color-scheme: dark) {
@@ -40,6 +41,7 @@
     --xt-hi: #d6a92a; --xt-lo: #9c7510; --xt-edge: #ffd968;
       --xt-hi: #d6a92a; --xt-lo: #9c7510; --xt-edge: #ffd968;
       --iec-hi: #4f5458; --iec-lo: #2c3033; --iec-edge: #8d9397; --iec-slot: #0c0e0f;
+    --qd-hi: #5fae52; --qd-lo: #2f7a2d; --qd-edge: #9be08d;
       --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.35);
     }
   }
@@ -52,6 +54,7 @@
     --hsg-hi: #4d5254; --hsg-lo: #2e3234; --hsg-edge: #656a6d;
     --cav: #141718; --cav-edge: #0b0d0e; --cav-text: #e4e8e7;
     --iec-hi: #4f5458; --iec-lo: #2c3033; --iec-edge: #8d9397; --iec-slot: #0c0e0f;
+    --qd-hi: #5fae52; --qd-lo: #2f7a2d; --qd-edge: #9be08d;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.35);
   }
 
@@ -224,6 +227,7 @@
       --cav: #3a3f41; --cav-edge: #23282a; --cav-text: #fff;
       --xt-hi: #f2c53d; --xt-lo: #d39f14; --xt-edge: #8a6708;
     --iec-hi: #5b6064; --iec-lo: #34383b; --iec-edge: #15181a; --iec-slot: #141719;
+    --qd-hi: #7fd36f; --qd-lo: #3f9a3c; --qd-edge: #2a6b28;
       --wire-edge: #555; --shadow: none;
     }
     body { background: #fff; font-size: 8pt; line-height: 1.3; padding: 0;
@@ -274,6 +278,7 @@
   table.list td.act button { display: inline-block; margin-left: 4px; }
   .card .pick { display: none; gap: 5px; padding: 6px 8px; border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
   body.editing.view-edit .card .pick { display: flex; }
+  .card .pick .p1pick select { max-width: 170px; }
   .card .pick select { font: 500 11px/1.2 var(--mono); padding: 3px 4px; border: 1px solid var(--rule-strong);
     border-radius: 4px; background: var(--panel); color: var(--ink); max-width: 150px; }
   select.ksel, select.epsel, select.connfield, select.lsel { display: none; }
@@ -1609,6 +1614,7 @@
   }
 
   /* ---------------- layout ---------------- */
+  function pitchOf(n) { return n.style === 'pem' ? 64 : L.stackPitch; }
   var L = { cavW: 28, cavH: 12, rowPitch: 20, colPitch: 50, polePitch: 74, poleR: 14, stackPitch: 48, bodyW: 132, leftX: 152, rightX: 840, topY: 112 };
 
   function geom() {
@@ -1631,12 +1637,12 @@
       var y0 = L.topY - 8, y = y0;
       /* hand-placed connectors sit where they were dropped; the rest stack below them */
       list.forEach(function (n) {
-        if (!n.pos) return;
+        if (!n.pos || mateOf(n)) return;
         var pb = boxFor(n, n.pos.x, n.pos.y, rowsOf(n));
         g.nodes[n.id] = pb; y = Math.max(y, pb.b + 62);
       });
       list.forEach(function (n) {
-        if (n.pos) return;
+        if (n.pos || mateOf(n)) return;
         var rows = rowsOf(n);
         y += leadRoom(n, 'up');
         var box = boxFor(n, cx, y, rows);
@@ -1648,6 +1654,14 @@
     }
     stack(left, L.leftX);
     stack(right, L.rightX);
+    /* plugged-on terminals sit on their tab, receptacle pushed over the blade */
+    DATA.nodes.forEach(function (n) {
+      var t = mateOf(n); if (!t || !g.nodes[t.id]) return;
+      var tb = g.nodes[t.id], tp = pinPos(g, t.id, n.mate.p);
+      n.side = tb.dir < 0 ? 'right' : 'left';
+      var mb = boxFor(n, tb.back + tb.dir * 74, tp.y, 1);
+      mb.mated = t; g.nodes[n.id] = mb;
+    });
 
     DATA.splices.forEach(function (sp, si) {
       var ys = [];
@@ -1686,7 +1700,7 @@
     var dual = n.layout === 'dual';
     if (n.arrange === 'stack') {
       /* side view: body lies across, poles stacked, wires leaving the back */
-      var sh = (n.pins - 1) * L.stackPitch + 78;
+      var sh = (n.pins - 1) * pitchOf(n) + 78;
       var left = n.side === 'left';
       var bx2 = { node: n, dual: false, stack: true, rows: n.pins, top: top + 10,
                   x: cx - (left ? 34 : L.bodyW - 34), w: L.bodyW,
@@ -1719,6 +1733,18 @@
   }
   /* corner of the housing that holds pin 1 on this drawing: t/b + l/r (single row: t or b).
      Unset keeps the drawing exactly as it was before the choice existed. */
+  /* the power entry module a push-on terminal is plugged onto, while that module and tab still exist */
+  function mateOf(n) {
+    if (!n.mate || n.style !== 'qdf') return null;
+    var t = null;
+    DATA.nodes.forEach(function (m) { if (m.id === n.mate.n && m.style === 'pem') t = m; });
+    return t && n.mate.p >= 1 && n.mate.p <= t.pins ? t : null;
+  }
+  function matedOn(tid, p) {
+    var r = null;
+    DATA.nodes.forEach(function (m) { if (mateOf(m) && m.mate.n === tid && m.mate.p === p) r = m; });
+    return r;
+  }
   function pin1Of(n) {
     if (n.pin1) return n.layout === 'dual' ? n.pin1 : n.pin1.charAt(0);
     if (n.layout !== 'dual') return 't';
@@ -1730,7 +1756,7 @@
   function pinPos(g, id, p) {
     var b = g.nodes[id]; if (!b || p == null) return null;
     if (b.row) return { x: b.colA + (p - 1) * L.polePitch, y: b.top, far: false, box: b, pole: true };
-    if (b.stack) return { x: b.colA, y: b.top + (p - 1) * L.stackPitch, far: false, box: b, pole: true, stack: true };
+    if (b.stack) return { x: b.colA, y: b.top + (p - 1) * pitchOf(b.node), far: false, box: b, pole: true, stack: true };
     var c1 = pin1Of(b.node), up = c1.charAt(0) === 'b';   /* numbering runs upward from a bottom pin 1 */
     if (!b.dual) {
       var sr = up ? b.rows - 1 - (p - 1) : p - 1;
@@ -1902,16 +1928,28 @@
       'fill="url(#iecBody)" stroke="var(--iec-edge)" stroke-width="1.5"/>';
     s += '<rect x="' + Math.min(fl, back) + '" y="' + y + '" width="' + Math.abs(back - fl) + '" height="' + (bot - y) + '" rx="4" ' +
       'fill="url(#iecBody)" stroke="var(--iec-edge)" stroke-width="1.6"/>';
-    /* small C14 face so the part is recognisable at a glance */
-    var fx = (fl + back) / 2 - d * 12, fy = (y + bot) / 2, fw = 40, fh = 30, c = 8;
-    s += '<path d="M ' + (fx - fw / 2) + ' ' + (fy - fh / 2) + ' L ' + (fx + fw / 2) + ' ' + (fy - fh / 2) +
+    var midX = (fl + back) / 2, sw = d > 0 ? fl + 8 : fl - 48;
+    /* C14 inlet, turned a quarter turn, at the top */
+    var fx = midX, fy = y + 36, fw = 40, fh = 30, c = 8;
+    s += '<g transform="rotate(90 ' + fx + ' ' + fy + ')">' +
+      '<path d="M ' + (fx - fw / 2) + ' ' + (fy - fh / 2) + ' L ' + (fx + fw / 2) + ' ' + (fy - fh / 2) +
       ' L ' + (fx + fw / 2) + ' ' + (fy + fh / 2 - c) + ' L ' + (fx + fw / 2 - c) + ' ' + (fy + fh / 2) +
       ' L ' + (fx - fw / 2 + c) + ' ' + (fy + fh / 2) + ' L ' + (fx - fw / 2) + ' ' + (fy + fh / 2 - c) + ' Z" ' +
-      'fill="var(--iec-slot)" stroke="var(--iec-edge)" stroke-width="1"/>';
-    s += '<rect x="' + (fx - 12) + '" y="' + (fy - 9) + '" width="4" height="9" fill="var(--hsg-hi)"/>' +
+      'fill="var(--iec-slot)" stroke="var(--iec-edge)" stroke-width="1"/>' +
+      '<rect x="' + (fx - 12) + '" y="' + (fy - 9) + '" width="4" height="9" fill="var(--hsg-hi)"/>' +
       '<rect x="' + (fx + 8) + '" y="' + (fy - 9) + '" width="4" height="9" fill="var(--hsg-hi)"/>' +
-      '<rect x="' + (fx - 2) + '" y="' + (fy + 3) + '" width="4" height="9" fill="var(--hsg-hi)"/>';
-    s += '<text class="svg-lbl tiny pem-mark" x="' + fx + '" y="' + (y + 14) + '" text-anchor="middle">DF12</text>';
+      '<rect x="' + (fx - 2) + '" y="' + (fy + 3) + '" width="4" height="9" fill="var(--hsg-hi)"/></g>';
+    s += '<text class="svg-lbl tiny pem-mark" x="' + midX + '" y="' + ((y + bot) / 2 + 4) + '" text-anchor="middle">DF12</text>';
+    /* big white rocker switch, low down beside the flange */
+    var ry = bot - 70;
+    s += '<rect x="' + (sw - 3) + '" y="' + (ry - 3) + '" width="46" height="66" rx="5" fill="var(--iec-slot)"/>';
+    s += '<rect x="' + sw + '" y="' + ry + '" width="40" height="60" rx="4" fill="#f4f4f0" stroke="#a9aba4" stroke-width="1.2"/>';
+    s += '<path d="M ' + sw + ' ' + (ry + 30) + ' L ' + (sw + 40) + ' ' + (ry + 30) + ' L ' + (sw + 40) + ' ' + (ry + 56) +
+      ' Q ' + (sw + 40) + ' ' + (ry + 60) + ' ' + (sw + 36) + ' ' + (ry + 60) + ' L ' + (sw + 4) + ' ' + (ry + 60) +
+      ' Q ' + sw + ' ' + (ry + 60) + ' ' + sw + ' ' + (ry + 56) + ' Z" fill="#dcddd6"/>';
+    s += '<line x1="' + sw + '" y1="' + (ry + 30) + '" x2="' + (sw + 40) + '" y2="' + (ry + 30) + '" stroke="#a9aba4" stroke-width="1"/>';
+    s += '<line x1="' + (sw + 20) + '" y1="' + (ry + 9) + '" x2="' + (sw + 20) + '" y2="' + (ry + 21) + '" stroke="#55595c" stroke-width="2"/>';
+    s += '<circle cx="' + (sw + 20) + '" cy="' + (ry + 45) + '" r="6" fill="none" stroke="#55595c" stroke-width="2"/>';
     s += '<text class="svg-lbl tiny" x="' + ((mate + back) / 2) + '" y="' + (bot + 26) + '" text-anchor="middle">' +
       'REAR TABS: L LIVE · N NEUTRAL · ⏚ EARTH</text>';
     return s;
@@ -1924,16 +1962,16 @@
     var outer = d < 0 ? b.x : b.r, inner = d < 0 ? b.r : b.x, tip = outer + d * 44;
     var hx0 = Math.min(outer - d * 4, tip), hx1 = Math.max(outer - d * 4, tip);
     s += '<rect x="' + hx0 + '" y="' + (cy - 17) + '" width="' + (hx1 - hx0) + '" height="34" rx="5" ' +
-      'fill="url(#xtBody)" stroke="var(--xt-edge)" stroke-width="1.5"/>';
+      'fill="url(#qdBody)" stroke="var(--qd-edge)" stroke-width="1.5"/>';
     /* the receptacle's rolled contacts inside the sleeve, and the mouth the tab slides into */
     s += '<rect x="' + (Math.min(outer + d * 4, tip - d * 8)) + '" y="' + (cy - 8) + '" width="' + (Math.abs(tip - d * 8 - outer - d * 4)) +
-      '" height="16" rx="3" fill="none" stroke="var(--xt-edge)" stroke-width="1" opacity="0.65"/>';
+      '" height="16" rx="3" fill="none" stroke="var(--qd-edge)" stroke-width="1" opacity="0.65"/>';
     s += '<rect x="' + (d > 0 ? tip - 5 : tip) + '" y="' + (cy - 4) + '" width="5" height="8" rx="1" fill="var(--cav)"/>';
     var x0 = Math.min(outer, inner), x1 = Math.max(outer, inner);
     s += '<rect x="' + x0 + '" y="' + (cy - 13) + '" width="' + (x1 - x0) + '" height="26" rx="6" ' +
-      'fill="url(#xtBody)" stroke="var(--xt-edge)" stroke-width="1.5"/>';
+      'fill="url(#qdBody)" stroke="var(--qd-edge)" stroke-width="1.5"/>';
     s += '<line x1="' + (inner - d * 9) + '" y1="' + (cy - 11) + '" x2="' + (inner - d * 9) + '" y2="' + (cy + 11) +
-      '" stroke="var(--xt-edge)" stroke-width="1" opacity="0.6"/>';
+      '" stroke="var(--qd-edge)" stroke-width="1" opacity="0.6"/>';
     return s;
   }
 
@@ -1963,6 +2001,8 @@
         '<stop offset="0" stop-color="var(--hsg-hi)"/><stop offset="1" stop-color="var(--hsg-lo)"/></linearGradient>' +
       '<linearGradient id="iecBody" x1="0" y1="0" x2="1" y2="0">' +
         '<stop offset="0" stop-color="var(--iec-hi)"/><stop offset="1" stop-color="var(--iec-lo)"/></linearGradient>' +
+      '<linearGradient id="qdBody" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="var(--qd-hi)"/><stop offset="1" stop-color="var(--qd-lo)"/></linearGradient>' +
       '<linearGradient id="xtBody" x1="0" y1="0" x2="0" y2="1">' +
         '<stop offset="0" stop-color="var(--xt-hi)"/><stop offset="1" stop-color="var(--xt-lo)"/></linearGradient>' +
       '<marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
@@ -1970,6 +2010,7 @@
 
     DATA.nodes.forEach(function (n) { s += housing(g.nodes[n.id]); });
     DATA.nodes.forEach(function (n) {
+      if (g.nodes[n.id].mated) return;   /* it moves with its module */
       var b = g.nodes[n.id], lft = n.side === 'left', ring = n.style === 'ring' ? 54 : (n.style === 'qdf' ? 46 : 0), boot = n.style === 'iec' ? 24 : 0;
       var mx = b.x - (lft ? ring : boot) - 10, mw = (b.r + (lft ? boot : ring) + 10) - mx;
       s += '<rect class="movehit" data-move="' + esc(n.id) + '" x="' + mx + '" y="' + (b.y - 36) + '" width="' + mw +
@@ -1979,6 +2020,7 @@
     /* headings */
     DATA.nodes.forEach(function (n) {
       var b = g.nodes[n.id], leftSide = n.side === 'left';
+      if (b.mated) return;   /* no room for a heading in the lane; the ref joins the label under the barrel */
       var hx = leftSide ? b.x : b.r, anch = leftSide ? 'start' : 'end';
       s += '<text class="svg-lbl" x="' + hx + '" y="' + (b.y - 22) + '" text-anchor="' + anch + '">' +
         esc(n.ref) + ' · ' + esc(n.name) + '</text>';
@@ -2172,9 +2214,9 @@
           /* 6.3 mm quick-connect blade out of the back face, with a big wire-colour badge saying which line it is */
           var tb = pp.box, td = tb.dir, tx0 = tb.back - td * 2, tx1 = tb.back + td * 30;
           var bc = PEM_BADGE[p - 1] || ['var(--cav)', 'var(--cav-edge)'];
-          s += '<rect x="' + Math.min(tx0, tx1) + '" y="' + (pp.y - 6) + '" width="' + Math.abs(tx1 - tx0) + '" height="12" rx="2" ' +
+          if (!matedOn(n.id, p)) s += '<rect x="' + Math.min(tx0, tx1) + '" y="' + (pp.y - 6) + '" width="' + Math.abs(tx1 - tx0) + '" height="12" rx="2" ' +
             'fill="url(#hsgSide)" stroke="var(--hsg-edge)" stroke-width="1.3"' + (link ? '' : ' stroke-dasharray="3 2.5"') + '/>';
-          s += '<circle cx="' + (tb.back + td * 18) + '" cy="' + pp.y + '" r="2.4" fill="var(--hsg-edge)"/>';
+          if (!matedOn(n.id, p)) s += '<circle cx="' + (tb.back + td * 18) + '" cy="' + pp.y + '" r="2.4" fill="var(--hsg-edge)"/>';
           var bx0 = tb.back - td * 17;
           s += '<circle cx="' + bx0 + '" cy="' + pp.y + '" r="11" fill="' + bc[0] + '" stroke="' + bc[1] + '" stroke-width="2.4"/>';
           s += '<text class="svg-badge" x="' + bx0 + '" y="' + (pp.y + 4.5) + '" text-anchor="middle">' + pinMark(n, p) + '</text>';
@@ -2218,6 +2260,8 @@
       for (var p = 1; p <= n.pins; p++) {
         var pp = pinPos(g, n.id, p), link = used[n.id + ':' + p];
         var lab = link ? (ab(link.color) + ' · ' + (link.signal || '')) : 'N/A';
+        var mq = n.style === 'pem' ? matedOn(n.id, p) : null;
+        if (mq) lab = mq.ref + ' plugged on';
         if (pp.stack) {  /* side view: label on the mating side, clear of the wires */
           var sb = pp.box;
           s += '<text class="svg-lbl dim" x="' + (sb.mate - sb.dir * 10) + '" y="' + (pp.y + 4) +
@@ -2230,6 +2274,7 @@
           continue;
         }
         if (n.style === 'ring' || n.style === 'qdf') {   /* the terminal fills the outer side, so the label sits under the barrel */
+          if (b.mated) lab = n.ref + ' · ' + lab;
           s += '<text class="svg-lbl dim" x="' + ((b.x + b.r) / 2) + '" y="' + (b.b + 12) + '" text-anchor="middle">' +
             esc(lab) + '</text>';
           continue;
@@ -2298,6 +2343,19 @@
     opts.forEach(function (o) { s += '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>'; });
     return s + '</select></label>';
   }
+  function mateSelect(i, n) {
+    if (n.style !== 'qdf') return '';
+    var cur = mateOf(n) ? n.mate.n + ':' + n.mate.p : '', any = false;
+    var s = '<label class="p1pick">Plugs onto <select class="matesel" data-i="' + i + '"><option value="">— nothing —</option>';
+    DATA.nodes.forEach(function (m) {
+      if (m.style !== 'pem') return;
+      for (var p = 1; p <= m.pins; p++) {
+        var v = m.id + ':' + p; any = true;
+        s += '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(m.ref) + ' tab ' + pinMark(m, p) + '</option>';
+      }
+    });
+    return any ? s + '</select></label>' : '';
+  }
   function sideSelect(i, cur) {
     var s = '<select class="sidesel" data-i="' + i + '" aria-label="Side">';
     ['left', 'right'].forEach(function (v) {
@@ -2313,7 +2371,7 @@
         '<span class="nm">' + ed(n.name, 'connnode', i, 'name') + '</span>' +
         '<span class="pn">' + ed(n.pn, 'connnode', i, 'pn') + '</span></div>' +
         '<div class="pick">' + connSelect(i, n.conn) + sideSelect(i, n.side) +
-        '<button class="mini" data-del="nodes:' + i + '">Remove</button>' + connSpec(n) + pin1Select(i, n) +
+        '<button class="mini" data-del="nodes:' + i + '">Remove</button>' + connSpec(n) + pin1Select(i, n) + mateSelect(i, n) +
         '<span class="hint">name, P/N and the spec above edit the connector library</span></div>';
       if (n.components && n.components.length) {
         h += '<div class="comp"><div class="ttl">Additional components</div>';
@@ -2897,6 +2955,17 @@
     each('select.ksel', function (s) {
       s.addEventListener('change', function () {
         DATA.links[parseInt(s.dataset.i, 10)].kind = s.value; rerenderAll(); markDirty();
+      });
+    });
+    each('select.matesel', function (s) {
+      s.addEventListener('change', function () {
+        var n = DATA.nodes[parseInt(s.dataset.i, 10)];
+        if (!s.value) { delete n.mate; rerenderAll(); markDirty(); setStatus(n.ref + ' unplugged'); return; }
+        var v = s.value.split(':'), tgt = { n: v[0], p: parseInt(v[1], 10) };
+        /* one terminal per tab: whatever was on it comes off */
+        DATA.nodes.forEach(function (m) { if (m !== n && m.mate && m.mate.n === tgt.n && m.mate.p === tgt.p) delete m.mate; });
+        n.mate = tgt; rerenderAll(); markDirty();
+        setStatus(n.ref + ' plugged onto ' + s.options[s.selectedIndex].text);
       });
     });
     each('select.p1sel', function (s) {
