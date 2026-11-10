@@ -576,6 +576,20 @@
    "notes": "Three 6.3 x 0.8 mm tabs on the back: L (live), N (neutral), ⏚ (earth). Match each tab to the mark moulded beside it on the module, not to its position. Wires take 6.3 mm female receptacles.",
    "style": "pem",
    "arrange": "stack"
+  },
+  {
+   "id": "V3519",
+   "name": "10-12 AWG 0.25in Female Stud",
+   "pn": "V3519",
+   "pins": 1,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "fully insulated female quick-disconnect, 6.3 mm (0.25 in) tab, yellow 12-10 AWG",
+   "termination": "crimp",
+   "contactPn": "",
+   "notes": "Single crimp terminal. Slides onto a 0.25 in (6.3 mm) male tab.",
+   "style": "qdf"
   }
  ],
  "harnesses": [
@@ -1758,6 +1772,7 @@
     var s = '';
     if (b.node.style === 'xt90') return xt90Housing(b);
     if (b.node.style === 'ring') return ringHousing(b);
+    if (b.node.style === 'qdf') return qdfHousing(b);
     if (b.node.style === 'iec') return iecHousing(b);
     if (b.node.style === 'pem') return pemHousing(b);
     s += '<rect x="' + b.x + '" y="' + b.y + '" width="' + b.w + '" height="' + b.h +
@@ -1903,6 +1918,25 @@
   }
   var PEM_BADGE = [['#8a5a2b', '#5e3b19'], ['#2f6fb3', '#1d4a7a'], ['#3a9a4a', '#e0c020']];
 
+  /* fully insulated female quick-disconnect: crimp barrel, then a wider sleeve over the receptacle, open at the tip */
+  function qdfHousing(b) {
+    var s = '', d = b.node.side === 'left' ? -1 : 1, cy = b.top;
+    var outer = d < 0 ? b.x : b.r, inner = d < 0 ? b.r : b.x, tip = outer + d * 44;
+    var hx0 = Math.min(outer - d * 4, tip), hx1 = Math.max(outer - d * 4, tip);
+    s += '<rect x="' + hx0 + '" y="' + (cy - 17) + '" width="' + (hx1 - hx0) + '" height="34" rx="5" ' +
+      'fill="url(#xtBody)" stroke="var(--xt-edge)" stroke-width="1.5"/>';
+    /* the receptacle's rolled contacts inside the sleeve, and the mouth the tab slides into */
+    s += '<rect x="' + (Math.min(outer + d * 4, tip - d * 8)) + '" y="' + (cy - 8) + '" width="' + (Math.abs(tip - d * 8 - outer - d * 4)) +
+      '" height="16" rx="3" fill="none" stroke="var(--xt-edge)" stroke-width="1" opacity="0.65"/>';
+    s += '<rect x="' + (d > 0 ? tip - 5 : tip) + '" y="' + (cy - 4) + '" width="5" height="8" rx="1" fill="var(--cav)"/>';
+    var x0 = Math.min(outer, inner), x1 = Math.max(outer, inner);
+    s += '<rect x="' + x0 + '" y="' + (cy - 13) + '" width="' + (x1 - x0) + '" height="26" rx="6" ' +
+      'fill="url(#xtBody)" stroke="var(--xt-edge)" stroke-width="1.5"/>';
+    s += '<line x1="' + (inner - d * 9) + '" y1="' + (cy - 11) + '" x2="' + (inner - d * 9) + '" y2="' + (cy + 11) +
+      '" stroke="var(--xt-edge)" stroke-width="1" opacity="0.6"/>';
+    return s;
+  }
+
   /* face-on fallback, for a bullet connector laid out as a row */
   function xt90Face(b) {
     var s = '', x = b.x, y = b.y, w = b.w, h = b.h, ch = 9;
@@ -1936,7 +1970,7 @@
 
     DATA.nodes.forEach(function (n) { s += housing(g.nodes[n.id]); });
     DATA.nodes.forEach(function (n) {
-      var b = g.nodes[n.id], lft = n.side === 'left', ring = n.style === 'ring' ? 54 : 0, boot = n.style === 'iec' ? 24 : 0;
+      var b = g.nodes[n.id], lft = n.side === 'left', ring = n.style === 'ring' ? 54 : (n.style === 'qdf' ? 46 : 0), boot = n.style === 'iec' ? 24 : 0;
       var mx = b.x - (lft ? ring : boot) - 10, mw = (b.r + (lft ? boot : ring) + 10) - mx;
       s += '<rect class="movehit" data-move="' + esc(n.id) + '" x="' + mx + '" y="' + (b.y - 36) + '" width="' + mw +
         '" height="' + (b.h + 42) + '" rx="8" fill="transparent"/>';
@@ -2195,7 +2229,7 @@
             esc(lab) + '</text>';
           continue;
         }
-        if (n.style === 'ring') {   /* the ring fills the outer side, so the label sits under the barrel */
+        if (n.style === 'ring' || n.style === 'qdf') {   /* the terminal fills the outer side, so the label sits under the barrel */
           s += '<text class="svg-lbl dim" x="' + ((b.x + b.r) / 2) + '" y="' + (b.b + 12) + '" text-anchor="middle">' +
             esc(lab) + '</text>';
           continue;
