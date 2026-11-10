@@ -1619,6 +1619,13 @@
     var maxB = 0;
     Object.keys(g.nodes).forEach(function (k) { maxB = Math.max(maxB, g.nodes[k].b); });
     g.H = maxB + 46;
+    /* crop empty sheet above the top-most part (e.g. after a hand-placed connector's neighbour is removed);
+       84 is where the automatic layout puts the first housing, so untouched drawings keep their framing */
+    var minY = Infinity;
+    DATA.nodes.forEach(function (n) { var b = g.nodes[n.id]; if (b) minY = Math.min(minY, b.y - leadRoom(n, 'up')); });
+    Object.keys(g.splices).forEach(function (k) { minY = Math.min(minY, g.splices[k].y - 30); });
+    DATA.links.forEach(function (l) { if (l.route && l.route.y != null) minY = Math.min(minY, l.route.y - 20); });
+    g.vy = minY === Infinity ? 0 : Math.max(0, Math.floor(minY - 84));
     return g;
   }
   function boxFor(n, cx, top, rows) {
@@ -1825,7 +1832,7 @@
       [l.from, l.to].forEach(function (e) { if (e && e.n != null) used[e.n + ':' + e.p] = l; });
     });
 
-    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Harness from a 26 position ZPD connector to a 2 position Nano-Fit and a 20 position housing, with two solder splices.">';
+    var s = '<svg viewBox="0 ' + g.vy + ' ' + W + ' ' + (H - g.vy) + '" role="img" aria-label="Harness from a 26 position ZPD connector to a 2 position Nano-Fit and a 20 position housing, with two solder splices.">';
     s += '<defs>' +
       '<linearGradient id="hsgSide" x1="0" y1="0" x2="1" y2="0">' +
         '<stop offset="0" stop-color="var(--hsg-hi)"/><stop offset="1" stop-color="var(--hsg-lo)"/></linearGradient>' +
@@ -2341,7 +2348,7 @@
   function svgPt(ev) {
     var svg = theSvg(); if (!svg) return { x: 0, y: 0 };
     var r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
-    return { x: (ev.clientX - r.left) / r.width * vb.width, y: (ev.clientY - r.top) / r.height * vb.height };
+    return { x: vb.x + (ev.clientX - r.left) / r.width * vb.width, y: vb.y + (ev.clientY - r.top) / r.height * vb.height };
   }
   function targetUnder(ev) {
     var el = document.elementFromPoint(ev.clientX, ev.clientY);
