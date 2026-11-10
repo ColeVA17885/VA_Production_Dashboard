@@ -25,6 +25,7 @@
     --hsg-hi: #f4f4f2; --hsg-lo: #c8cac4; --hsg-edge: #94968f;
     --cav: #3a3f41; --cav-edge: #23282a; --cav-text: #f0f2f1;
     --xt-hi: #f2c53d; --xt-lo: #d39f14; --xt-edge: #8a6708;
+    --iec-hi: #5b6064; --iec-lo: #34383b; --iec-edge: #15181a; --iec-slot: #141719;
     --shadow: 0 1px 2px rgba(20,22,24,.05), 0 10px 26px rgba(20,22,24,.05);
   }
   @media (prefers-color-scheme: dark) {
@@ -38,6 +39,7 @@
       --cav: #141718; --cav-edge: #0b0d0e; --cav-text: #e4e8e7;
     --xt-hi: #d6a92a; --xt-lo: #9c7510; --xt-edge: #ffd968;
       --xt-hi: #d6a92a; --xt-lo: #9c7510; --xt-edge: #ffd968;
+      --iec-hi: #4f5458; --iec-lo: #2c3033; --iec-edge: #8d9397; --iec-slot: #0c0e0f;
       --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.35);
     }
   }
@@ -49,6 +51,7 @@
     --wire-edge: #9aa0a3;
     --hsg-hi: #4d5254; --hsg-lo: #2e3234; --hsg-edge: #656a6d;
     --cav: #141718; --cav-edge: #0b0d0e; --cav-text: #e4e8e7;
+    --iec-hi: #4f5458; --iec-lo: #2c3033; --iec-edge: #8d9397; --iec-slot: #0c0e0f;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.35);
   }
 
@@ -218,6 +221,7 @@
       --hsg-hi: #f6f6f4; --hsg-lo: #d6d7d2; --hsg-edge: #8e908a;
       --cav: #3a3f41; --cav-edge: #23282a; --cav-text: #fff;
       --xt-hi: #f2c53d; --xt-lo: #d39f14; --xt-edge: #8a6708;
+    --iec-hi: #5b6064; --iec-lo: #34383b; --iec-edge: #15181a; --iec-slot: #141719;
       --wire-edge: #555; --shadow: none;
     }
     body { background: #fff; font-size: 8pt; line-height: 1.3; padding: 0;
@@ -541,6 +545,20 @@
    "contactPn": "",
    "notes": "Single crimp ring terminal. Yellow vinyl sleeve = 12-10 AWG. Confirm stud size before ordering.",
    "style": "ring"
+  },
+  {
+   "id": "IECC13",
+   "name": "AC POWER WIRE",
+   "pn": "TBD",
+   "pins": 3,
+   "layout": "single",
+   "numbering": "interleaved",
+   "order": "normal",
+   "type": "IEC C13 mains cord",
+   "termination": "cord conductors",
+   "contactPn": "",
+   "notes": "Pin 1 = L (live), pin 2 = N (neutral), pin 3 = GND (earth). Mains voltage: check L and N against the marks moulded on the plug face before power-up.",
+   "style": "iec"
   }
  ],
  "harnesses": [
@@ -1714,6 +1732,8 @@
     }
     return out;
   }
+  var IEC_MARKS = ['L', 'N', '⏚'];
+  function pinMark(n, p) { return n.style === 'iec' ? (IEC_MARKS[p - 1] || p) : p; }
   function casing(d) { return '<path d="' + d + '" fill="none" stroke="var(--wire-edge)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>'; }
   function core(d, c) { return '<path d="' + d + '" fill="none" stroke="' + c + '" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>'; }
 
@@ -1721,6 +1741,7 @@
     var s = '';
     if (b.node.style === 'xt90') return xt90Housing(b);
     if (b.node.style === 'ring') return ringHousing(b);
+    if (b.node.style === 'iec') return iecHousing(b);
     s += '<rect x="' + b.x + '" y="' + b.y + '" width="' + b.w + '" height="' + b.h +
       '" rx="6" fill="url(#hsgSide)" stroke="var(--hsg-edge)" stroke-width="1.5"/>';
     var rx = b.node.side === 'left' ? (b.x - 8) : (b.r - 1);
@@ -1812,6 +1833,33 @@
     return s;
   }
 
+  /* IEC C13 mains plug: black moulded body keyed on the mating side, ribbed cord boot where the conductors leave */
+  function iecHousing(b) {
+    var s = '', d = b.node.side === 'left' ? -1 : 1;
+    var outer = d < 0 ? b.x : b.r, inner = d < 0 ? b.r : b.x, ch = 12, top = b.y - 4, bot = b.b + 4;
+    /* cord boot, tapering away from the body */
+    var by0 = (top + bot) / 2 - 22, by1 = (top + bot) / 2 + 22, bx = inner - d * 22;
+    s += '<path d="M ' + inner + ' ' + by0 + ' L ' + bx + ' ' + (by0 + 9) + ' L ' + bx + ' ' + (by1 - 9) + ' L ' + inner + ' ' + by1 + ' Z" ' +
+      'fill="var(--iec-lo)" stroke="var(--iec-edge)" stroke-width="1.3"/>';
+    for (var k = 1; k <= 3; k++) {
+      var rx = inner - d * 5.5 * k;
+      s += '<line x1="' + rx + '" y1="' + (by0 + 2.5 * k + 1) + '" x2="' + rx + '" y2="' + (by1 - 2.5 * k - 1) +
+        '" stroke="var(--iec-edge)" stroke-width="1" opacity="0.7"/>';
+    }
+    /* body: the two chamfered corners on the mating face are the C13 key */
+    s += '<path d="M ' + inner + ' ' + top + ' L ' + (outer + d * -ch) + ' ' + top + ' L ' + outer + ' ' + (top + ch) +
+      ' L ' + outer + ' ' + (bot - ch) + ' L ' + (outer + d * -ch) + ' ' + bot + ' L ' + inner + ' ' + bot + ' Z" ' +
+      'fill="url(#iecBody)" stroke="var(--iec-edge)" stroke-width="1.6"/>';
+    /* recessed slots behind each contact */
+    for (var p = 1; p <= b.node.pins; p++) {
+      var py = b.top + (p - 1) * L.rowPitch;
+      s += '<rect x="' + (b.colA - L.cavW / 2 - 3) + '" y="' + (py - L.cavH / 2 - 3) + '" width="' + (L.cavW + 6) +
+        '" height="' + (L.cavH + 6) + '" rx="3" fill="var(--iec-slot)"/>';
+    }
+    s += '<text class="svg-lbl tiny" x="' + ((b.x + b.r) / 2) + '" y="' + (bot + 13) + '" text-anchor="middle">IEC C13</text>';
+    return s;
+  }
+
   /* face-on fallback, for a bullet connector laid out as a row */
   function xt90Face(b) {
     var s = '', x = b.x, y = b.y, w = b.w, h = b.h, ch = 9;
@@ -1836,6 +1884,8 @@
     s += '<defs>' +
       '<linearGradient id="hsgSide" x1="0" y1="0" x2="1" y2="0">' +
         '<stop offset="0" stop-color="var(--hsg-hi)"/><stop offset="1" stop-color="var(--hsg-lo)"/></linearGradient>' +
+      '<linearGradient id="iecBody" x1="0" y1="0" x2="1" y2="0">' +
+        '<stop offset="0" stop-color="var(--iec-hi)"/><stop offset="1" stop-color="var(--iec-lo)"/></linearGradient>' +
       '<linearGradient id="xtBody" x1="0" y1="0" x2="0" y2="1">' +
         '<stop offset="0" stop-color="var(--xt-hi)"/><stop offset="1" stop-color="var(--xt-lo)"/></linearGradient>' +
       '<marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
@@ -1843,8 +1893,8 @@
 
     DATA.nodes.forEach(function (n) { s += housing(g.nodes[n.id]); });
     DATA.nodes.forEach(function (n) {
-      var b = g.nodes[n.id], lft = n.side === 'left', ring = n.style === 'ring' ? 54 : 0;
-      var mx = b.x - (lft ? ring : 0) - 10, mw = (b.r + (lft ? 0 : ring) + 10) - mx;
+      var b = g.nodes[n.id], lft = n.side === 'left', ring = n.style === 'ring' ? 54 : 0, boot = n.style === 'iec' ? 24 : 0;
+      var mx = b.x - (lft ? ring : boot) - 10, mw = (b.r + (lft ? boot : ring) + 10) - mx;
       s += '<rect class="movehit" data-move="' + esc(n.id) + '" x="' + mx + '" y="' + (b.y - 36) + '" width="' + mw +
         '" height="' + (b.h + 42) + '" rx="8" fill="transparent"/>';
     });
@@ -2062,11 +2112,11 @@
         if (link) {
           s += '<rect x="' + cx + '" y="' + cy + '" width="' + L.cavW + '" height="' + L.cavH +
             '" rx="2.5" fill="var(--cav)" stroke="var(--cav-edge)" stroke-width="1.2"' + hit + '/>';
-          s += '<text class="svg-cav" x="' + pp.x + '" y="' + (pp.y + 3) + '" text-anchor="middle">' + p + '</text>';
+          s += '<text class="svg-cav" x="' + pp.x + '" y="' + (pp.y + 3) + '" text-anchor="middle">' + pinMark(n, p) + '</text>';
         } else {
           s += '<rect x="' + cx + '" y="' + cy + '" width="' + L.cavW + '" height="' + L.cavH +
             '" rx="2.5" fill="var(--hsg-lo)" stroke="var(--hsg-edge)" stroke-width="1" stroke-dasharray="3 2.5"' + hit + '/>';
-          s += '<text class="svg-pin" x="' + pp.x + '" y="' + (pp.y + 3) + '" text-anchor="middle">' + p + '</text>';
+          s += '<text class="svg-pin" x="' + pp.x + '" y="' + (pp.y + 3) + '" text-anchor="middle">' + pinMark(n, p) + '</text>';
         }
       }
     });
