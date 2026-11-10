@@ -116,6 +116,7 @@
   .svg-lbl.dim { fill: var(--ink-2); font-size: 12px; }
   .svg-lbl.pem-mark { fill: var(--cav-text); letter-spacing: .12em; }
   .svg-badge { font-family: Archivo, system-ui, sans-serif; font-weight: 700; font-size: 13px; fill: #fff; }
+  .svg-lbl.twist-lbl { fill: var(--ink); font-weight: 600; }
   .svg-lbl.tiny { fill: var(--ink-3); font-size: 11px; letter-spacing: .09em; }
   .svg-len { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10px; fill: var(--ink-2); }
   body.editing.view-edit .lenlbl { transform: translateY(-18px); }
@@ -281,6 +282,14 @@
   .card .pick .p1pick select { max-width: 170px; }
   .card .pick select { font: 500 11px/1.2 var(--mono); padding: 3px 4px; border: 1px solid var(--rule-strong);
     border-radius: 4px; background: var(--panel); color: var(--ink); max-width: 150px; }
+  .twists { margin-top: 14px; }
+  .twists .ttl { font: 600 11px/1.2 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
+  .twists.empty { display: none; }
+  body.editing .twists.empty { display: block; }
+  select.tatsel { display: none; }
+  body.editing select.tatsel { display: inline-block; font: 500 11px/1.2 "IBM Plex Mono", ui-monospace, monospace; padding: 2px 3px;
+    border: 1px solid var(--rule-strong); border-radius: 4px; background: var(--panel); color: var(--ink); }
+  body.editing .twists td.mono .ro { display: none; }
   select.ksel, select.epsel, select.connfield, select.lsel { display: none; }
   body.editing select.ksel, body.editing select.epsel, body.editing select.connfield, body.editing select.lsel {
     display: inline-block; font: 500 11px/1.2 var(--mono); padding: 2px 3px;
@@ -1518,6 +1527,213 @@
     "file": ""
    },
    "footer": "Two solder splices: three 28 AWG pigtails from J1 join one 24 AWG lead into J2. J3 carries two internal jumpers. Pin 1 positions to be confirmed against the parts before crimping."
+  },
+  {
+   "id": "v3106",
+   "title": "HRNS VS Taisync ETH",
+   "assemblyPn": "V3106",
+   "rev": "Rev 1",
+   "eyebrow": "Vision Aerial · wire harness",
+   "nodes": [
+    {
+     "id": "CON1",
+     "ref": "CON1",
+     "conn": "V2267",
+     "side": "left",
+     "components": [
+      {
+       "qty": "5",
+       "desc": "Terminals, V1705",
+       "bom": 1
+      }
+     ],
+     "notes": "Add 30 mm label heat shrink V2228 on the bundle next to CON1, printed \"V3106 R1\"."
+    },
+    {
+     "id": "CON2",
+     "ref": "CON2",
+     "conn": "V2267",
+     "side": "right",
+     "components": [
+      {
+       "qty": "5",
+       "desc": "Terminals, V1705",
+       "bom": 1
+      }
+     ],
+     "notes": "Crossed pinout: CON1 1/2 land on CON2 4/5 and CON1 4/5 land on CON2 1/2."
+    }
+   ],
+   "splices": [],
+   "links": [
+    {
+     "ref": "W1",
+     "kind": "wire",
+     "from": {
+      "n": "CON1",
+      "p": 1
+     },
+     "to": {
+      "n": "CON2",
+      "p": 4
+     },
+     "color": "blue",
+     "gauge": "28 AWG",
+     "length": "100 mm",
+     "signal": "",
+     "note": "V1800"
+    },
+    {
+     "ref": "W2",
+     "kind": "wire",
+     "from": {
+      "n": "CON1",
+      "p": 2
+     },
+     "to": {
+      "n": "CON2",
+      "p": 5
+     },
+     "color": "green",
+     "gauge": "28 AWG",
+     "length": "100 mm",
+     "signal": "",
+     "note": "V2575"
+    },
+    {
+     "ref": "W3",
+     "kind": "wire",
+     "from": {
+      "n": "CON1",
+      "p": 3
+     },
+     "to": {
+      "n": "CON2",
+      "p": 3
+     },
+     "color": "black",
+     "gauge": "28 AWG",
+     "length": "100 mm",
+     "signal": "",
+     "note": "V1799"
+    },
+    {
+     "ref": "W4",
+     "kind": "wire",
+     "from": {
+      "n": "CON1",
+      "p": 4
+     },
+     "to": {
+      "n": "CON2",
+      "p": 1
+     },
+     "color": "yellow",
+     "gauge": "28 AWG",
+     "length": "100 mm",
+     "signal": "",
+     "note": "V2574"
+    },
+    {
+     "ref": "W5",
+     "kind": "wire",
+     "from": {
+      "n": "CON1",
+      "p": 5
+     },
+     "to": {
+      "n": "CON2",
+      "p": 2
+     },
+     "color": "orange",
+     "gauge": "28 AWG",
+     "length": "100 mm",
+     "signal": "",
+     "note": "V2573"
+    }
+   ],
+   "twists": [
+    {
+     "wires": "W1, W2",
+     "tpi": "4",
+     "at": "start"
+    },
+    {
+     "wires": "W4, W5",
+     "tpi": "4",
+     "at": "start"
+    },
+    {
+     "wires": "W1-W5",
+     "tpi": "1",
+     "at": "end"
+    }
+   ],
+   "bom": [
+    {
+     "qty": "12",
+     "meas": "EACH",
+     "item": "V1705",
+     "desig": "CON1, CON2",
+     "desc": "CONN TERM JSTGH F CRIMP 26-30AWG"
+    },
+    {
+     "qty": "100",
+     "meas": "mm",
+     "item": "V1799",
+     "desig": "W3",
+     "desc": "WIRE STRANDED 28AWG PTFE BLK"
+    },
+    {
+     "qty": "100",
+     "meas": "mm",
+     "item": "V1800",
+     "desig": "W1",
+     "desc": "WIRE STRANDED 28AWG PTFE BLU"
+    },
+    {
+     "qty": "30",
+     "meas": "mm",
+     "item": "V2228",
+     "desig": "",
+     "desc": "HEAT SHRINK LABEL 0.25\" DYMO WHT"
+    },
+    {
+     "qty": "2",
+     "meas": "EACH",
+     "item": "V2267",
+     "desig": "CON1, CON2",
+     "desc": "CONN HOUS JSTGH 1.25 M 1X5 WHT"
+    },
+    {
+     "qty": "100",
+     "meas": "mm",
+     "item": "V2573",
+     "desig": "W5",
+     "desc": "WIRE STRANDED 28AWG PTFE ORA"
+    },
+    {
+     "qty": "100",
+     "meas": "mm",
+     "item": "V2574",
+     "desig": "W4",
+     "desc": "WIRE STRANDED 28AWG PTFE YEL"
+    },
+    {
+     "qty": "100",
+     "meas": "mm",
+     "item": "V2575",
+     "desig": "W2",
+     "desc": "WIRE STRANDED 28AWG PTFE GRE"
+    }
+   ],
+   "titleBlock": {
+    "date": "2/23/2026",
+    "size": "A4",
+    "sheet": "1 of 1",
+    "file": "V3106_HRNS_VS_Taisync_ETH.WirDoc"
+   },
+   "footer": ""
   }
  ]
 }
@@ -1538,6 +1754,20 @@
     STORE.connectors.forEach(function (c) { have[c.id] = 1; });
     (SEED.connectors || []).forEach(function (c) {
       if (!have[c.id]) { STORE.connectors.push(JSON.parse(JSON.stringify(c))); added++; }
+    });
+    if (added) { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(STORE)); } catch (e) {} }
+  })();
+  /* harnesses shipped with a newer app file are added once; deleting one afterwards sticks */
+  var SHIPPED = ['v3106'];
+  (function () {
+    STORE.shipped = STORE.shipped || [];
+    var have = {}, added = 0;
+    STORE.harnesses.forEach(function (h) { have[h.id] = 1; });
+    SHIPPED.forEach(function (id) {
+      if (STORE.shipped.indexOf(id) >= 0) return;
+      STORE.shipped.push(id);
+      if (have[id] || !restored) return;
+      (SEED.harnesses || []).forEach(function (h) { if (h.id === id) { STORE.harnesses.push(JSON.parse(JSON.stringify(h))); added++; } });
     });
     if (added) { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(STORE)); } catch (e) {} }
   })();
@@ -1583,7 +1813,7 @@
   function serialize() {
     return {
       version: 1, colors: STORE.colors, abbr: STORE.abbr,
-      connectors: STORE.connectors,
+      connectors: STORE.connectors, shipped: STORE.shipped,
       harnesses: STORE.harnesses.map(stripResolved)
     };
   }
@@ -1796,6 +2026,21 @@
   }
   var IEC_MARKS = ['L', 'N', '⏚'];
   function pinMark(n, p) { return (n.style === 'iec' || n.style === 'pem') ? (IEC_MARKS[p - 1] || p) : p; }
+  /* "W1, W2" or "W1-W5" -> link indexes */
+  function twistLinks(tw) {
+    var refs = [], out = [];
+    String(tw.wires || '').split(/[,;\s]+/).forEach(function (tok) {
+      var r = /^([A-Za-z]*)(\d+)\s*-\s*[A-Za-z]*(\d+)$/.exec(tok);
+      if (r) { for (var k = +r[2]; k <= +r[3]; k++) refs.push((r[1] || 'W') + k); }
+      else if (tok) refs.push(tok);
+    });
+    refs.forEach(function (rf) {
+      DATA.links.forEach(function (l, i) { if (String(l.ref).toUpperCase() === rf.toUpperCase() && l.kind === 'wire' && out.indexOf(i) < 0) out.push(i); });
+    });
+    return out;
+  }
+  var TWIST_AT = [['start', 'near the start', 0.27], ['middle', 'middle', 0.5], ['end', 'near the end', 0.73]];
+  function twistT(tw) { var t = 0.27; TWIST_AT.forEach(function (o) { if (o[0] === tw.at) t = o[2]; }); return t; }
   function casing(d) { return '<path d="' + d + '" fill="none" stroke="var(--wire-edge)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>'; }
   function core(d, c) { return '<path d="' + d + '" fill="none" stroke="' + c + '" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>'; }
 
@@ -2110,12 +2355,36 @@
 
     /* wire lengths, tagged at the middle of each run; edit mode lifts them clear of the route handle */
     var placed = [];
+    /* twists: a zigzag across the twisted wires where they run side by side, with the rate over it */
+    var alongOf = {};
+    handles.forEach(function (h) { alongOf[h.i] = h.along; });
+    var twSpans = [];
+    (DATA.twists || []).forEach(function (tw) {
+      var pts = [], t = twistT(tw);
+      twistLinks(tw).forEach(function (i) { var a = alongOf[i]; if (a && a.length) pts.push(a[Math.round(t * (a.length - 1))]); });
+      if (pts.length < 2) return;
+      var x = 0, y0 = Infinity, y1 = -Infinity;
+      pts.forEach(function (q) { x += q[0] / pts.length; y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); });
+      y0 -= 9; y1 += 9;
+      var n = Math.max(3, Math.round((y1 - y0) / 7)), dz = 'M ' + (x - 7) + ' ' + y0;
+      for (var k = 1; k <= n; k++) dz += ' L ' + (x + (k % 2 ? 7 : -7)) + ' ' + (y0 + (y1 - y0) * k / n);
+      s += '<path class="twist" d="' + dz + '" fill="none" stroke="var(--panel)" stroke-width="4.5" stroke-linejoin="round"/>';
+      s += '<path class="twist" d="' + dz + '" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linejoin="round"/>';
+      var lab = '(' + (tw.tpi || '?') + ' TPI)';
+      /* rate over the zigzag, or under it when another twist already owns that space */
+      var ly = y0 - 6;
+      if (twSpans.some(function (o) { return Math.abs(o.x - x) < 46 && ly > o.y0 - 22 && ly < o.y1 + 16; })) ly = y1 + 15;
+      twSpans.push({ x: x, y0: Math.min(y0, ly - 12), y1: Math.max(y1, ly) });
+      s += '<text class="svg-lbl tiny twist-lbl" x="' + x + '" y="' + ly + '" text-anchor="middle">' + esc(lab) + '</text>';
+      placed.push({ x: x, y: ly - 4, w: lab.length * 7 + 8 });
+      for (var yy = y0; yy <= y1; yy += 16) placed.push({ x: x, y: yy, w: 22 });
+    });
     handles.forEach(function (h) {
       var len = String(DATA.links[h.i].length || '').trim(); if (!len) return;
       var w = len.length * 6.1 + 24;
       /* start at the middle of the run and slide outward along the wire until the tag sits clear of the others */
       var pts = h.along, n = pts.length, best = null;
-      for (var step = 0; step <= n * 0.36 && !best; step++) {
+      for (var step = 0; step <= n * 0.44 && !best; step++) {
         for (var sg = -1; sg <= 1; sg += 2) {
           var pt = pts[Math.round(n / 2 + sg * step)]; if (!pt) continue;
           var hitT = placed.some(function (q) { return Math.abs(q.x - pt[0]) < (q.w + w) / 2 + 4 && Math.abs(q.y - pt[1]) < 22; });
@@ -2264,7 +2533,7 @@
       var b = g.nodes[n.id];
       for (var p = 1; p <= n.pins; p++) {
         var pp = pinPos(g, n.id, p), link = used[n.id + ':' + p];
-        var lab = link ? (ab(link.color) + ' · ' + (link.signal || '')) : 'N/A';
+        var lab = link ? (ab(link.color) + (link.signal ? ' · ' + link.signal : '')) : 'N/A';
         var mq = n.style === 'pem' ? matedOn(n.id, p) : null;
         if (mq) lab = mq.ref + ' plugged on';
         if (pp.stack) {  /* side view: label on the mating side, clear of the wires */
@@ -2454,7 +2723,29 @@
         '<button class="mini" data-del="links:' + i + '">Remove</button></td></tr>';
     });
     h += '</tbody></table></div><div class="tbl-actions"><button id="btn-add-link">Add conductor</button></div>';
+    h += renderTwists();
     return h;
+  }
+  function renderTwists() {
+    var tws = DATA.twists || [];
+    var h = '<div class="twists' + (tws.length ? '' : ' empty') + '"><div class="ttl">Twists</div>';
+    if (tws.length) {
+      h += '<div class="table-wrap"><table><thead><tr><th>Wires</th><th>Rate</th><th>Drawn</th><th class="act"></th></tr></thead><tbody>';
+      tws.forEach(function (tw, i) {
+        var n = twistLinks(tw).length;
+        var at = '<span class="ro">' + esc((TWIST_AT.filter(function (o) { return o[0] === tw.at; })[0] || TWIST_AT[0])[1]) + '</span>' +
+          '<select class="tatsel" data-i="' + i + '">';
+        TWIST_AT.forEach(function (o) { at += '<option value="' + o[0] + '"' + (o[0] === (tw.at || 'start') ? ' selected' : '') + '>' + o[1] + '</option>'; });
+        at += '</select>';
+        h += '<tr><td class="mono">' + ed(tw.wires, 'twists', i, 'wires') +
+          (n < 2 ? ' <span class="hint">needs two or more wires from the cut list</span>' : '') + '</td>' +
+          '<td class="mono">' + ed(tw.tpi, 'twists', i, 'tpi') + ' TPI</td><td class="mono">' + at + '</td>' +
+          '<td class="act"><button class="mini" data-del="twists:' + i + '">Remove</button></td></tr>';
+      });
+      h += '</tbody></table></div>';
+    }
+    return h + '<div class="tbl-actions edit-only"><button id="btn-add-twist">Add twist</button>' +
+      '<span class="hint">List wires as W1, W2 or a range like W1-W5. TPI = turns per inch.</span></div></div>';
   }
 
   var BOM_COLS = [['qty','Qty','num'],['meas','Meas','mono'],['item','Item','mono'],['desig','Designators','mono'],['desc','Description','desc']];
@@ -2861,6 +3152,7 @@
       else if (sc === 'nodes') { DATA.nodes[i][k] = txt; redraw(); }
       else if (sc === 'splices') { DATA.splices[i][k] = txt; redraw(); }
       else if (sc === 'bom') { DATA.bom[i][k] = txt; }
+      else if (sc === 'twists') { DATA.twists[i][k] = txt; redraw(); }
       else if (sc === 'titleBlock') { DATA.titleBlock[k] = txt; }
       else if (meta) { DATA[meta] = txt; }
       markDirty();
@@ -3054,6 +3346,13 @@
         color: colorNames()[0], gauge: '28 AWG', length: '', signal: '' });
       rerenderAll(); markDirty();
     });
+    on('btn-add-twist', function () {
+      (DATA.twists = DATA.twists || []).push({ wires: 'W1, W2', tpi: '4', at: 'start' });
+      rerenderAll(); markDirty();
+    });
+    each('select.tatsel', function (sl) {
+      sl.addEventListener('change', function () { DATA.twists[parseInt(sl.dataset.i, 10)].at = sl.value; rerenderAll(); markDirty(); });
+    });
     on('btn-bom-take', function () { DATA.bom = autoBom(); rerenderAll(); markDirty(); });
     on('btn-bom-auto', function () { DATA.bom = []; rerenderAll(); markDirty(); });
     on('btn-add-bom', function () { DATA.bom.push({ qty: '', meas: '', item: '', desig: '', desc: '' }); rerenderAll(); markDirty(); });
@@ -3135,6 +3434,10 @@
     DATA.links.forEach(function (l) {
       rows.push([l.ref, l.kind, endLabel(l.from), l.color, ab(l.color), endLabel(l.to), l.gauge, l.length, l.signal]);
     });
+    if (DATA.twists && DATA.twists.length) {
+      rows.push([]); rows.push(['TWISTS']); rows.push(['Wires', 'TPI']);
+      DATA.twists.forEach(function (tw) { rows.push([tw.wires, tw.tpi]); });
+    }
     rows.push([]); rows.push(['BILL OF MATERIALS']);
     rows.push(['Id'].concat(BOM_COLS.map(function (c) { return c[1]; })));
     (DATA.bom && DATA.bom.length ? DATA.bom : autoBom()).forEach(function (r, i) {
