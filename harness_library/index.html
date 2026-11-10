@@ -1614,6 +1614,9 @@
   }
 
   /* ---------------- layout ---------------- */
+  /* DF12 rear tabs, top to bottom: earth, live, neutral (pins stay 1 = L, 2 = N, 3 = earth) */
+  var PEM_ROW = [1, 2, 0];
+  function stackRow(n, p) { return n.style === 'pem' && PEM_ROW[p - 1] != null ? PEM_ROW[p - 1] : p - 1; }
   function pitchOf(n) { return n.style === 'pem' ? 64 : L.stackPitch; }
   var L = { cavW: 28, cavH: 12, rowPitch: 20, colPitch: 50, polePitch: 74, poleR: 14, stackPitch: 48, bodyW: 132, leftX: 152, rightX: 840, topY: 112 };
 
@@ -1756,7 +1759,7 @@
   function pinPos(g, id, p) {
     var b = g.nodes[id]; if (!b || p == null) return null;
     if (b.row) return { x: b.colA + (p - 1) * L.polePitch, y: b.top, far: false, box: b, pole: true };
-    if (b.stack) return { x: b.colA, y: b.top + (p - 1) * pitchOf(b.node), far: false, box: b, pole: true, stack: true };
+    if (b.stack) return { x: b.colA, y: b.top + stackRow(b.node, p) * pitchOf(b.node), far: false, box: b, pole: true, stack: true };
     var c1 = pin1Of(b.node), up = c1.charAt(0) === 'b';   /* numbering runs upward from a bottom pin 1 */
     if (!b.dual) {
       var sr = up ? b.rows - 1 - (p - 1) : p - 1;
@@ -1929,9 +1932,9 @@
     s += '<rect x="' + Math.min(fl, back) + '" y="' + y + '" width="' + Math.abs(back - fl) + '" height="' + (bot - y) + '" rx="4" ' +
       'fill="url(#iecBody)" stroke="var(--iec-edge)" stroke-width="1.6"/>';
     var midX = (fl + back) / 2, sw = d > 0 ? fl + 8 : fl - 48;
-    /* C14 inlet, turned a quarter turn, at the top */
-    var fx = midX, fy = y + 36, fw = 40, fh = 30, c = 8;
-    s += '<g transform="rotate(90 ' + fx + ' ' + fy + ')">' +
+    /* C14 inlet, keyed edge up, at the top, lined up over the rocker */
+    var fx = sw + 20, fy = y + 34, fw = 40, fh = 30, c = 8;
+    s += '<g transform="rotate(180 ' + fx + ' ' + fy + ')">' +
       '<path d="M ' + (fx - fw / 2) + ' ' + (fy - fh / 2) + ' L ' + (fx + fw / 2) + ' ' + (fy - fh / 2) +
       ' L ' + (fx + fw / 2) + ' ' + (fy + fh / 2 - c) + ' L ' + (fx + fw / 2 - c) + ' ' + (fy + fh / 2) +
       ' L ' + (fx - fw / 2 + c) + ' ' + (fy + fh / 2) + ' L ' + (fx - fw / 2) + ' ' + (fy + fh / 2 - c) + ' Z" ' +
@@ -1951,7 +1954,7 @@
     s += '<line x1="' + (sw + 20) + '" y1="' + (ry + 9) + '" x2="' + (sw + 20) + '" y2="' + (ry + 21) + '" stroke="#55595c" stroke-width="2"/>';
     s += '<circle cx="' + (sw + 20) + '" cy="' + (ry + 45) + '" r="6" fill="none" stroke="#55595c" stroke-width="2"/>';
     s += '<text class="svg-lbl tiny" x="' + ((mate + back) / 2) + '" y="' + (bot + 26) + '" text-anchor="middle">' +
-      'REAR TABS: L LIVE · N NEUTRAL · ⏚ EARTH</text>';
+      'REAR TABS, TOP TO BOTTOM: ⏚ EARTH · L LIVE · N NEUTRAL</text>';
     return s;
   }
   var PEM_BADGE = [['#8a5a2b', '#5e3b19'], ['#2f6fb3', '#1d4a7a'], ['#3a9a4a', '#e0c020']];
