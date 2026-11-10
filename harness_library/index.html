@@ -1756,6 +1756,7 @@
   }
   var PIN1_DUAL = [['tl', 'top left'], ['tr', 'top right'], ['bl', 'bottom left'], ['br', 'bottom right']];
   var PIN1_SINGLE = [['t', 'top'], ['b', 'bottom']];
+  var IEC_ORDERS = [['t', 'L · N · ⏚'], ['e', '⏚ · L · N'], ['b', '⏚ · N · L']];
   function pinPos(g, id, p) {
     var b = g.nodes[id]; if (!b || p == null) return null;
     if (b.row) return { x: b.colA + (p - 1) * L.polePitch, y: b.top, far: false, box: b, pole: true };
@@ -1763,6 +1764,7 @@
     var c1 = pin1Of(b.node), up = c1.charAt(0) === 'b';   /* numbering runs upward from a bottom pin 1 */
     if (!b.dual) {
       var sr = up ? b.rows - 1 - (p - 1) : p - 1;
+      if (c1 === 'e' && b.node.style === 'iec') sr = [1, 2, 0][p - 1];   /* mains cord drawn earth-first: earth, live, neutral */
       return { x: b.colA, y: b.top + sr * L.rowPitch, far: false, box: b };
     }
     var p1Col = c1.charAt(1) === 'r' ? b.colB : b.colA, otherCol = p1Col === b.colA ? b.colB : b.colA;
@@ -2340,9 +2342,10 @@
       '</div>';
   }
   function pin1Select(i, n) {
-    var cur = pin1Of(n), opts = n.layout === 'dual' ? PIN1_DUAL : PIN1_SINGLE;
+    var cur = pin1Of(n), opts = n.layout === 'dual' ? PIN1_DUAL : PIN1_SINGLE, lbl = 'Pin 1 on this drawing';
     if (n.pins < 2 || n.arrange) return '';
-    var s = '<label class="p1pick">Pin 1 on this drawing <select class="p1sel" data-i="' + i + '">';
+    if (n.style === 'iec') { opts = IEC_ORDERS; lbl = 'Contacts, top to bottom'; }
+    var s = '<label class="p1pick">' + lbl + ' <select class="p1sel" data-i="' + i + '">';
     opts.forEach(function (o) { s += '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>'; });
     return s + '</select></label>';
   }
@@ -2975,7 +2978,7 @@
       s.addEventListener('change', function () {
         var n = DATA.nodes[parseInt(s.dataset.i, 10)];
         n.pin1 = s.value; rerenderAll(); markDirty();
-        setStatus(n.ref + ' pin 1 now ' + s.options[s.selectedIndex].text + ' — check the drawing against the part');
+        setStatus(n.ref + (n.style === 'iec' ? ' contacts now ' : ' pin 1 now ') + s.options[s.selectedIndex].text + ' — check the drawing against the part');
       });
     });
     each('select.lsel', function (s) {
