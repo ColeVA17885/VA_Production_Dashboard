@@ -2039,7 +2039,7 @@
     });
     return out;
   }
-  var TWIST_AT = [['start', 'near the start', 0.27], ['middle', 'middle', 0.5], ['end', 'near the end', 0.73]];
+  var TWIST_AT = [['start', 'near the start', 0.18], ['middle', 'middle', 0.5], ['end', 'near the end', 0.82]];
   function twistT(tw) { var t = 0.27; TWIST_AT.forEach(function (o) { if (o[0] === tw.at) t = o[2]; }); return t; }
   function casing(d) { return '<path d="' + d + '" fill="none" stroke="var(--wire-edge)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>'; }
   function core(d, c) { return '<path d="' + d + '" fill="none" stroke="' + c + '" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>'; }
@@ -2358,26 +2358,38 @@
     /* twists: a zigzag across the twisted wires where they run side by side, with the rate over it */
     var alongOf = {};
     handles.forEach(function (h) { alongOf[h.i] = h.along; });
-    var twSpans = [];
+    var twSpans = [], twSeen = {};
     (DATA.twists || []).forEach(function (tw) {
-      var pts = [], t = twistT(tw);
+      /* twists drawn at the same spot are staggered along the run so each reads on its own */
+      var at = tw.at || 'start', k0 = twSeen[at] = (twSeen[at] == null ? 0 : twSeen[at] + 1);
+      var t = twistT(tw) + (at === 'end' ? -1 : 1) * (at === 'middle' ? (k0 % 2 ? 1 : -1) * Math.ceil(k0 / 2) : k0) * 0.12;
+      t = Math.max(0.12, Math.min(0.88, t));
+      var pts = [], all = [];
       twistLinks(tw).forEach(function (i) { var a = alongOf[i]; if (a && a.length) pts.push(a[Math.round(t * (a.length - 1))]); });
       if (pts.length < 2) return;
+      handles.forEach(function (h) { if (h.along && h.along.length) all.push(h.along[Math.round(t * (h.along.length - 1))][1]); });
       var x = 0, y0 = Infinity, y1 = -Infinity;
       pts.forEach(function (q) { x += q[0] / pts.length; y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); });
       y0 -= 9; y1 += 9;
+      /* outline round just the twisted wires */
+      s += '<rect class="twist" x="' + (x - 17) + '" y="' + (y0 - 3) + '" width="34" height="' + (y1 - y0 + 6) + '" rx="14" ' +
+        'fill="var(--edit-soft)" fill-opacity=".35" stroke="var(--ink)" stroke-width="1.3" stroke-dasharray="4 3"/>';
       var n = Math.max(3, Math.round((y1 - y0) / 7)), dz = 'M ' + (x - 7) + ' ' + y0;
       for (var k = 1; k <= n; k++) dz += ' L ' + (x + (k % 2 ? 7 : -7)) + ' ' + (y0 + (y1 - y0) * k / n);
       s += '<path class="twist" d="' + dz + '" fill="none" stroke="var(--panel)" stroke-width="4.5" stroke-linejoin="round"/>';
       s += '<path class="twist" d="' + dz + '" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linejoin="round"/>';
-      var lab = '(' + (tw.tpi || '?') + ' TPI)';
-      /* rate over the zigzag, or under it when another twist already owns that space */
-      var ly = y0 - 6;
-      if (twSpans.some(function (o) { return Math.abs(o.x - x) < 46 && ly > o.y0 - 22 && ly < o.y1 + 16; })) ly = y1 + 15;
+      var who = String(tw.wires || '').trim().replace(/\s*[,;]\s*|\s+/g, '+');
+      var lab = who + ' TWIST \u00b7 ' + (tw.tpi || '?') + ' TPI';
+      /* label on the side away from the other wires: below for a twist in the lower half of the bundle */
+      all.sort(function (a2, b2) { return a2 - b2; });
+      var mid = all.length ? all[Math.floor(all.length / 2)] : (y0 + y1) / 2;
+      var below = (y0 + y1) / 2 > mid + 4;
+      var ly = below ? y1 + 15 : y0 - 8;
+      if (twSpans.some(function (o) { return Math.abs(o.x - x) < 80 && ly > o.y0 - 22 && ly < o.y1 + 16; })) ly = below ? y0 - 8 : y1 + 15;
       twSpans.push({ x: x, y0: Math.min(y0, ly - 12), y1: Math.max(y1, ly) });
       s += '<text class="svg-lbl tiny twist-lbl" x="' + x + '" y="' + ly + '" text-anchor="middle">' + esc(lab) + '</text>';
       placed.push({ x: x, y: ly - 4, w: lab.length * 7 + 8 });
-      for (var yy = y0; yy <= y1; yy += 16) placed.push({ x: x, y: yy, w: 22 });
+      for (var yy = y0; yy <= y1; yy += 16) placed.push({ x: x, y: yy, w: 40 });
     });
     handles.forEach(function (h) {
       var len = String(DATA.links[h.i].length || '').trim(); if (!len) return;

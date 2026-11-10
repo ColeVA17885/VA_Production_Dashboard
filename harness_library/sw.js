@@ -1,4 +1,4 @@
-const CACHE = 'harness-library-v16';
+const CACHE = 'harness-library-v17';
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
