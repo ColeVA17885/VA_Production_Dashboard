@@ -2026,10 +2026,10 @@
     DATA.nodes.forEach(function (n) {
       var b = g.nodes[n.id], leftSide = n.side === 'left';
       if (b.mated) return;   /* no room for a heading in the lane; the ref joins the label under the barrel */
-      var hx = leftSide ? b.x : b.r, anch = leftSide ? 'start' : 'end';
-      s += '<text class="svg-lbl" x="' + hx + '" y="' + (b.y - 22) + '" text-anchor="' + anch + '">' +
+      var hx = leftSide ? b.x : b.r, anch = leftSide ? 'start' : 'end', hd = ' data-hd="' + esc(n.id) + '"';
+      s += '<text class="svg-lbl"' + hd + ' x="' + hx + '" y="' + (b.y - 22) + '" text-anchor="' + anch + '">' +
         esc(n.ref) + ' · ' + esc(n.name) + '</text>';
-      s += '<text class="svg-lbl dim" x="' + hx + '" y="' + (b.y - 8) + '" text-anchor="' + anch + '">P/N ' + esc(n.pn) + '</text>';
+      s += '<text class="svg-lbl dim"' + hd + ' x="' + hx + '" y="' + (b.y - 8) + '" text-anchor="' + anch + '">P/N ' + esc(n.pn) + '</text>';
     });
 
     /* ---- conductors ---- */
@@ -2280,8 +2280,11 @@
         }
         if (n.style === 'ring' || n.style === 'qdf') {   /* the terminal fills the outer side, so the label sits under the barrel */
           if (b.mated) lab = n.ref + ' · ' + lab;
-          s += '<text class="svg-lbl dim" x="' + ((b.x + b.r) / 2) + '" y="' + (b.b + 12) + '" text-anchor="middle">' +
+          s += '<text class="svg-lbl dim" data-lb="' + esc(n.id) + '" x="' + ((b.x + b.r) / 2) + '" y="' + (b.b + 12) + '" text-anchor="middle">' +
             esc(lab) + '</text>';
+          /* compact name, shown instead of the heading when the heading would run into other text */
+          if (!b.mated) s += '<text class="svg-lbl" data-cp="' + esc(n.id) + '" display="none" x="' + ((b.x + b.r) / 2) +
+            '" y="' + (b.b + 10) + '" text-anchor="middle">' + esc(n.ref) + ' · ' + esc(n.pn) + '</text>';
           continue;
         }
         s += n.side === 'left'
@@ -2566,8 +2569,31 @@
 
   /* trim the sheet to what is actually drawn, so empty space never sits above the parts
      (whatever left it there: a removed connector, an old route, a stray splice) */
+  /* small terminals crowded together: swap any heading that collides with other text for the compact
+     "ref · P/N" line under the barrel, with the wire label dropped a line below it */
+  function declutter(svg) {
+    var boxOf = function (t) { try { return t.getBBox(); } catch (e) { return null; } };
+    var hit = function (a, c) { return a.x < c.x + c.width && c.x < a.x + a.width && a.y < c.y + c.height && c.y < a.y + a.height; };
+    Array.prototype.forEach.call(svg.querySelectorAll('text[data-cp]'), function (cp) {
+      var id = cp.getAttribute('data-cp');
+      var own = svg.querySelectorAll('text[data-hd="' + id + '"]');
+      var others = Array.prototype.filter.call(svg.querySelectorAll('text'), function (t) {
+        return t.getAttribute('display') !== 'none' && t.getAttribute('data-hd') !== id &&
+          t.getAttribute('data-lb') !== id && t.getAttribute('data-cp') !== id;
+      }).map(boxOf).filter(Boolean);
+      var clash = Array.prototype.some.call(own, function (t) {
+        var b = boxOf(t); return b && others.some(function (o) { return hit(b, o); });
+      });
+      if (!clash) return;
+      Array.prototype.forEach.call(own, function (t) { t.setAttribute('display', 'none'); });
+      cp.removeAttribute('display');
+      var lb = svg.querySelector('text[data-lb="' + id + '"]');
+      if (lb) lb.setAttribute('y', parseFloat(lb.getAttribute('y')) + 10);
+    });
+  }
   function fitSvg() {
     var svg = theSvg(); if (!svg || dragState) return;
+    declutter(svg);
     var bb; try { bb = svg.getBBox(); } catch (e) { return; }
     if (!bb || !bb.width) return;
     var vb = svg.viewBox.baseVal, bottom = vb.y + vb.height;
